@@ -90,12 +90,6 @@ export default class ExtractHtmlContentPlugin extends Plugin {
             suffixResult[selector] = Array.from(baseElm.querySelectorAll(suffixSelector))
               .map(elm => this.getContent((elm as HTMLElement), property))
               .filter(val => val);
-
-            /*
-            result[selector].push(
-              Array.from(baseElm.querySelectorAll(suffixSelector)).map(elm => this.getContent((elm as HTMLElement), property)).join(','),
-            );
-            */
           }
 
           // scraped content row is valid, at least one column contains a non-empty scraped value
@@ -120,9 +114,6 @@ export default class ExtractHtmlContentPlugin extends Plugin {
         },
         {},
       );
-
-      // remove entire empty rows
-      const rmIdxs = [];
     }
     // no common base detected
     else {
