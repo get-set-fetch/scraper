@@ -123,6 +123,27 @@ describe('ExtractHtmlContentPlugin', () => {
     assert.deepEqual(content, expectedContent);
   });
 
+  it('extract html content - multiple selectors, different result length, common base, invalid rows', () => {
+    plugin = new ExtractHtmlContentPlugin(
+      { selectorPairs: [ { selector: '[class|="top"] h1' }, { selector: '[class|="top"] h2' }, { selector: '[class|="top"] h3' } ] },
+    );
+
+    stubQuerySelectorAll.withArgs('[class|="top"]').returns([
+      { querySelectorAll: () => [] },
+      { querySelectorAll: selector => (selector === 'h2' ? [] : [ { innerText: `${selector} valB` } ]) },
+      { querySelectorAll: selector => (selector === 'h1' ? [] : [ { innerText: `${selector} valC` } ]) },
+    ]);
+
+    const expectedContent = {
+      '[class|="top"] h1': [ 'h1 valB', '' ],
+      '[class|="top"] h2': [ '', 'h2 valC' ],
+      '[class|="top"] h3': [ 'h3 valB', 'h3 valC' ],
+    };
+
+    const { content } = plugin.apply();
+    assert.deepEqual(content, expectedContent);
+  });
+
   it('extract html content - multiple selectors, different result length, cumulative apply', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' }, { selector: 'h2' }, { selector: 'h3' } ] });
 
