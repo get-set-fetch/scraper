@@ -1,0 +1,187 @@
+import { assert } from 'chai';
+import { JSONSchema7 } from 'json-schema';
+import SchemaHelper from '../../../src/schema/SchemaHelper';
+
+describe('Schema Helper', () => {
+  it('instantiate string', async () => {
+    const schemaWithDefault:JSONSchema7 = {
+      type: 'string',
+      default: 'valA',
+    };
+
+    let inst = SchemaHelper.instantiate(schemaWithDefault);
+    assert.strictEqual(inst, 'valA');
+
+    inst = SchemaHelper.instantiate(schemaWithDefault, 'valB');
+    assert.strictEqual(inst, 'valB');
+  });
+
+  it('validate string', async () => {
+    const schemaWithConst:JSONSchema7 = {
+      type: 'string',
+      const: 'valA',
+    };
+
+    let err;
+
+    try {
+      SchemaHelper.instantiate(schemaWithConst);
+    }
+    catch (e) {
+      err = e;
+    }
+    assert.strictEqual(err.message, 'invalid value undefined, path: /');
+
+    try {
+      SchemaHelper.instantiate(schemaWithConst, 'valB');
+    }
+    catch (e) {
+      err = e;
+    }
+    assert.strictEqual(err.message, 'invalid value valB, path: /');
+  });
+
+  it('instantiate integer', async () => {
+    const schemaWithDefault:JSONSchema7 = {
+      type: 'integer',
+      default: 2,
+    };
+
+    let inst = SchemaHelper.instantiate(schemaWithDefault);
+    assert.strictEqual(inst, 2);
+
+    inst = SchemaHelper.instantiate(schemaWithDefault, 5);
+    assert.strictEqual(inst, 5);
+
+    inst = SchemaHelper.instantiate(schemaWithDefault, 0);
+    assert.strictEqual(inst, 0);
+  });
+
+  it('validate integer', async () => {
+    const schemaWithConst:JSONSchema7 = {
+      type: 'integer',
+      const: 2,
+    };
+
+    let err;
+
+    try {
+      SchemaHelper.instantiate(schemaWithConst, 3);
+    }
+    catch (e) {
+      err = e;
+    }
+    assert.strictEqual(err.message, 'invalid value 3, path: /');
+  });
+
+  it('instantiate number', async () => {
+    const schemaWithDefault:JSONSchema7 = {
+      type: 'number',
+      default: 2.01,
+    };
+
+    let inst = SchemaHelper.instantiate(schemaWithDefault);
+    assert.strictEqual(inst, 2.01);
+
+    inst = SchemaHelper.instantiate(schemaWithDefault, 5.01);
+    assert.strictEqual(inst, 5.01);
+  });
+
+  it('validate number', async () => {
+    const schemaWithConst:JSONSchema7 = {
+      type: 'number',
+      const: 2.01,
+    };
+
+    let err;
+
+    try {
+      SchemaHelper.instantiate(schemaWithConst, 3.1);
+    }
+    catch (e) {
+      err = e;
+    }
+    assert.strictEqual(err.message, 'invalid value 3.1, path: /');
+  });
+
+  it('instantiate boolean', async () => {
+    const schemaWithDefault:JSONSchema7 = {
+      type: 'boolean',
+      default: false,
+    };
+
+    let inst = SchemaHelper.instantiate(schemaWithDefault);
+    assert.strictEqual(inst, false);
+
+    inst = SchemaHelper.instantiate(schemaWithDefault, true);
+    assert.strictEqual(inst, true);
+  });
+
+  it('validate boolean', async () => {
+    const schemaWithConst:JSONSchema7 = {
+      type: 'boolean',
+      const: true,
+    };
+
+    let err;
+
+    try {
+      SchemaHelper.instantiate(schemaWithConst, 3);
+    }
+    catch (e) {
+      err = e;
+    }
+    assert.strictEqual(err.message, 'invalid value 3, path: /');
+  });
+
+  it('instantiate object', async () => {
+    const schemaWithDefault:JSONSchema7 = {
+      type: 'object',
+      properties: {
+        propA: {
+          type: 'string',
+          default: 'valA',
+        },
+        propB: {
+          type: 'integer',
+          default: 3,
+        },
+        propC: {
+          type: 'boolean',
+          default: true,
+        },
+        propD: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              d1: {
+                type: 'string',
+              },
+              d2: {
+                type: 'number',
+              },
+            },
+          },
+        },
+      },
+    };
+
+    let inst = SchemaHelper.instantiate(schemaWithDefault);
+    assert.deepEqual(inst, {
+      propA: 'valA',
+      propB: 3,
+      propC: true,
+      propD: [],
+    });
+
+    const fullObj = {
+      propA: 'valA1',
+      propB: 4,
+      propC: false,
+      propD: [ { d1: 'a', d2: 3 } ],
+    };
+    inst = SchemaHelper.instantiate(schemaWithDefault, fullObj);
+    assert.strictEqual(inst, fullObj);
+  });
+});
