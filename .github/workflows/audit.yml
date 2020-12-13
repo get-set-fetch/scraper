@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  audit:
     runs-on: ubuntu-18.04
 
     steps:
