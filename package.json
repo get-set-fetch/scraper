@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "lint": "eslint src/**/*.ts",
     "test": "mocha --config test/.mocharc.js \"test/**/*.ts\"",
