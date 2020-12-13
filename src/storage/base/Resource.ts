@@ -22,6 +22,7 @@ export default abstract class Resource extends Entity {
 
   contentType: string;
   content: IResourceContent;
+  blob: Blob;
 
   // stored as json string, initialized as IResourceParent[]
   parent: IResourceParent;
@@ -52,7 +53,7 @@ export default abstract class Resource extends Entity {
   }
 
   get dbCols() {
-    return [ 'id', 'siteId', 'url', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'parent' ];
+    return [ 'id', 'siteId', 'url', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'blob', 'parent' ];
   }
 }
 

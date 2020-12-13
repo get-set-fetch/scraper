@@ -24,6 +24,7 @@ export default class KnexResource extends Resource {
         builder.boolean('scrapeInProgress');
         builder.string('contentType');
         builder.string('content');
+        builder.binary('blob');
         builder.string('parent');
       },
     );
