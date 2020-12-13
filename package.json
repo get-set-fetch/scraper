@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "lint": "eslint src/**/*.ts",
-    "test": "mocha --config=test/.mocharc.js \"test/**/*.ts\"",
-    "test:single": "mocha --config=test/.mocharc.js \"test/**/*.ts\" --grep \"Static - Tabular - Complete Table - No Nested Elements\"",
+    "test": "mocha --config test/.mocharc.js \"test/**/*.ts\"",
+    "test:single": "mocha --config test/.mocharc.js --grep \"CRUD Resource\"",
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
   },
