@@ -3,7 +3,7 @@ import Site, { IStaticSite } from '../../../../src/storage/base/Site';
 import Storage from '../../../../src/storage/base/Storage';
 
 export default function crudSite(storage: Storage) {
-  describe(`CRUD Site using ${storage.constructor.name}`, () => {
+  describe(`CRUD Site using ${storage.config.client}`, () => {
     let Site: IStaticSite;
     let expectedSite: Site;
 

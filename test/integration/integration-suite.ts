@@ -8,7 +8,7 @@ import { IStaticSite } from '../../src/storage/base/Site';
 import Storage from '../../src/storage/base/Storage';
 
 export default function integrationSuite(storage: Storage) {
-  describe(`integration suite using ${storage.constructor.name}`, () => {
+  describe(`integration suite using ${storage.config.client}`, () => {
     let srv: GsfServer;
     let browserClient:BrowserClient;
     let Site: IStaticSite;

@@ -3,7 +3,7 @@ import Resource, { IStaticResource } from '../../../../src/storage/base/Resource
 import Storage from '../../../../src/storage/base/Storage';
 
 export default function crudResource(storage: Storage) {
-  describe(`CRUD Resource using ${storage.constructor.name}`, () => {
+  describe(`CRUD Resource using ${storage.config.client}`, () => {
     let Resource: IStaticResource;
     let expectedResource: Resource;
 
