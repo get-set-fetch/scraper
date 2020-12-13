@@ -13,8 +13,8 @@
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Andrei Sabau",
+  "license": "MIT",
   "devDependencies": {
     "@types/chai": "^4.2.13",
     "@types/json-schema": "^7.0.6",
