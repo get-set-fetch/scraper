@@ -50,28 +50,43 @@ export default class FetchPlugin extends Plugin {
       return this.openInTab(site, resource, client);
     }
 
-    return null;
-
     // url appears to be a non html mime type, download it and store it as blob
-    // return this.fetch(resource);
+    return this.fetch(resource, client);
+  }
+
+  // fetch resource via builtin fetch
+  fetch(resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
+    return client.evaluate(
+      (url: string) => new Promise(async (resolve, reject) => {
+        try {
+          const response = await fetch(url, { method: 'GET', credentials: 'include' });
+          if (response.blob) {
+            const blob = await response.blob();
+            resolve({ blob, contentType: blob.type });
+          }
+        }
+        catch (err) {
+          reject(err);
+        }
+      }),
+      resource.url,
+    );
   }
 
   async openInTab(site: Site, resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
-    const response = await client.goto(resource.url, { waitUntil: [ 'domcontentloaded', 'networkidle0' ] });
+    const response = await client.goto(resource.url, { waitUntil: 'networkidle0' });
 
     // to do add response status handling, 4xx, 5xx, for now assume it's 200
-    // const contentType = await page.evaluate(() => document.contentType);
     const contentType:string = await client.evaluate(() => document.contentType);
 
     if (/html/.test(contentType) && this.opts.stabilityTimeout > 0) {
-      // await page.evaluate(this.waitForDomStability, this.opts.stabilityTimeout, this.opts.maxStabilityWaitingTime);
       await client.evaluate(this.waitForDomStability, this.opts.stabilityTimeout, this.opts.maxStabilityWaitingTime);
     }
 
     // in case of redirects also return the updated resource url
     return response.url() === resource.url
       ? { contentType }
-      : { contentType, url: response.url() };
+      : { contentType, url: response.url(), redirectOrigin: resource.url };
   }
 
   probableHtmlMimeType(urlStr: string) {
