@@ -1,0 +1,26 @@
+name: test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup node 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+    - name: Clean install dependencies
+      run: npm ci
+
+    - name: Unit tests
+      run: npm run test:unit
+
+    - name: Integration tests using sqlite3 storage
+      run: npm run test:integration:sqlite
