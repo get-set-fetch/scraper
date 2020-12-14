@@ -3,6 +3,7 @@ import { rollup, Plugin as RollupPlugin } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import { join } from 'path';
 import Plugin, { IPlugin } from '../plugins/Plugin';
+import getLogger from '../logger/Logger';
 
 export interface IStoreEntry {
   filepath: string;
@@ -10,6 +11,7 @@ export interface IStoreEntry {
   Cls: IPlugin;
 }
 export default class PluginStore {
+  static logger = getLogger('PluginStore');
   static store: {[key: string]: IStoreEntry} = {};
 
   static init():Promise<void> {
@@ -49,7 +51,7 @@ export default class PluginStore {
       };
     }
     catch (err) {
-      console.log(err);
+      PluginStore.logger.error(err, 'Could not add filepath %s', filepath);
     }
   }
 

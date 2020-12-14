@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint src/**/*.ts",
-
+    
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
     "test:integration:sqlite": "mocha --config test/.mocharc.js \"test/integration/sqlite-integration-suite\"",
 
-    "test:single": "mocha --config test/.mocharc.js --grep \"storage\"",
+    "test:single": "mocha --config test/.mocharc.js --grep \"Redirect\"",
+
+    
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
   },
@@ -20,6 +22,7 @@
     "@types/json-schema": "^7.0.6",
     "@types/mocha": "^8.0.3",
     "@types/node": "^14.11.8",
+    "@types/pino": "^6.3.4",
     "@types/puppeteer": "^3.0.2",
     "@types/sinon": "^9.0.9",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
@@ -48,6 +51,7 @@
   "dependencies": {
     "@rollup/plugin-typescript": "^6.1.0",
     "immutable": "^4.0.0-rc.12",
+    "pino": "^6.8.0",
     "puppeteer": "^5.3.1",
     "rollup": "^2.33.2",
     "tslib": "^2.0.1",

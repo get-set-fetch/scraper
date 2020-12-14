@@ -5,6 +5,7 @@ import Site from '../storage/base/Site';
 import Resource from '../storage/base/Resource';
 import Plugin from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
+import getLogger from '../logger/Logger';
 
 /*
 scraper is:
@@ -12,6 +13,8 @@ scraper is:
 - storage agnostic (init storage outside scraper)
 */
 export default class Scraper {
+  logger = getLogger('Scraper');
+
   browserClient:BrowserClient;
 
   constructor(browserClient:BrowserClient) {
@@ -19,16 +22,15 @@ export default class Scraper {
   }
 
   async scrape(site: Site) {
+    this.logger.debug(site, 'Scraping site');
     try {
       site.plugins = site.initPlugins();
     }
     catch (err) {
-      console.error(
-        `Error instantiating plugin definitions for site ${site.name}`,
-        err,
-      );
+      this.logger.error(err, 'Error instantiating plugin definitions for site %s', site.name);
 
       // no plugins > no scrape process > abort
+      return;
     }
 
     const domWritePluginsPresent = site.plugins.some(
@@ -66,6 +68,8 @@ export default class Scraper {
     let pluginIdx: number;
     let resourceFound = false;
 
+    this.logger.info('Started scraping a new resource from site %s', site.name);
+
     try {
       /*
       will execute the plugins in the order they are defined
@@ -83,8 +87,7 @@ export default class Scraper {
         - additional data/content to be merged with the current resource (ex: ExtractUrlsPlugin, ExtractHtmlContentPlugin, ...)
           - generic object
         */
-
-        console.debug(`Plugin result (json): ${JSON.stringify(result)}`);
+        this.logger.debug(result || undefined, 'Plugin result');
 
         // current plugin did not returned a result, move on to the next one
         // eslint-disable-next-line no-continue
@@ -123,18 +126,18 @@ export default class Scraper {
       }
 
       if (resource) {
-        console.debug(`Resource successfully crawled (json): ${JSON.stringify(resource)}`);
-        // console.info(`Resource successfully crawled (url): ${resource.url}`);
+        this.logger.debug(resource, 'Resource successfully scraped');
+        this.logger.info('Resource successfully scraped %s', resource.url);
       }
       else {
-        console.info(`No crawlable resource found for site ${site.name}`);
+        this.logger.info('No crawlable resource found for site %s', site.name);
       }
     }
     catch (err) {
-      console.error(
-        // eslint-disable-next-line max-len
-        `Crawl error for site ${site.name}, Plugin ${site.plugins[pluginIdx].constructor.name} against resource ${resource ? resource.url : ''}`,
+      this.logger.error(
         err,
+        'Crawl error for site %s , Plugin %s against resource %s',
+        site.name, site.plugins[pluginIdx].constructor.name, resource ? resource.url : '',
       );
 
       /*
@@ -161,16 +164,10 @@ export default class Scraper {
   }
 
   async executePlugin(site: Site, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
-    /*
-    console.info(
-      `Executing plugin ${plugin.constructor.name}
-      using options ${JSON.stringify(plugin.opts)}
-      against resource ${JSON.stringify(resource)}
-      against site ${JSON.stringify((await site.toJSONAsync()))}
-      --
-      `,
+    this.logger.debug(
+      'Executing plugin %s using options %o , against resource %o',
+      plugin.constructor.name, plugin.opts, resource,
     );
-    */
 
     if (plugin.opts && (plugin.opts.domRead || plugin.opts.domWrite)) {
       return this.executePluginInDom(site, resource, plugin);
@@ -198,8 +195,7 @@ export default class Scraper {
     const pluginInstanceName = `inst${pluginClsName}`;
     const pluginCode = PluginStore.get(pluginClsName).bundle;
 
-    console.debug(`injecting in browser tab ${pluginClsName}`);
-
+    this.logger.debug('injecting plugin in browser tab: %s', pluginClsName);
     const code = `
      {
        (async function() {
