@@ -23,4 +23,4 @@ jobs:
       run: npm run test:unit
 
     - name: Integration tests using sqlite3 storage
-      run: npm run test:integration:sqlite
+      run: npm run test:storage:sqlite:integration

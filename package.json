@@ -5,10 +5,12 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint src/**/*.ts",
-    
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
+    "test:storage:sqlite:unit": "mocha --config test/.mocharc.js \"test/storage/sqlite/sqlite-unit-suite.ts\"",
+    "test:storage:sqlite:integration": "mocha --config test/.mocharc.js \"test/storage/sqlite/sqlite-integration-suite.ts\"",
     "test:storage:mysql:unit": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-unit-suite.ts\"",
     "test:storage:mysql:integration": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-integration-suite.ts\"",
+    "test:single:sqlite": "mocha --config test/.mocharc.js --grep \"sqlite3 site\"",
     "test:single:mysql": "mocha --config test/.mocharc.js --grep \"mysql site\"",
     
     "start": "ts-node src/main.ts",
