@@ -1,0 +1,12 @@
+{
+  "client": "mysql",
+  "useNullAsDefault": true,
+  "connection": {
+    "host": "localhost",
+    "port": "33060",
+    "user": "gsf-user",
+    "password": "gsf-pswd",
+    "database": "gsf-db"
+  },
+  "debug": false
+}

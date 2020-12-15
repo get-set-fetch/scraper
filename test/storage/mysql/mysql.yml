@@ -1,0 +1,13 @@
+version: "3.9"
+services:                
+  mysql:
+    image: mysql/mysql-server:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: gsf-root
+      MYSQL_USER: gsf-user
+      MYSQL_PASSWORD: gsf-pswd
+      MYSQL_DATABASE: gsf-db
+      MYSQL_HOST: localhost
+    ports:
+      - 33060:3306
+

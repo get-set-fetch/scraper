@@ -7,10 +7,9 @@
     "lint": "eslint src/**/*.ts",
     
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
-    "test:integration:sqlite": "mocha --config test/.mocharc.js \"test/integration/sqlite-integration-suite\"",
-
-    "test:single": "mocha --config test/.mocharc.js --grep \"Redirect\"",
-
+    "test:storage:mysql:unit": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-unit-suite.ts\"",
+    "test:storage:mysql:integration": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-integration-suite.ts\"",
+    "test:single:mysql": "mocha --config test/.mocharc.js --grep \"mysql site\"",
     
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
@@ -46,7 +45,8 @@
   },
   "peerDependencies": {
     "knex": ">=0.21.0 <0.22.0",
-    "sqlite3": "^5.0.0"
+    "sqlite3": "^5.0.0",
+    "mysql": "^2.18.1"
   },
   "dependencies": {
     "@rollup/plugin-typescript": "^6.1.0",
