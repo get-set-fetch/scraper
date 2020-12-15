@@ -1,9 +1,15 @@
+export type CapabilitiesType = {
+  jsonb?: boolean;
+  json?: boolean;
+}
+
 export default abstract class Entity {
   abstract save():Promise<number>;
   abstract update():Promise<void>;
   abstract del():Promise<number>;
 
   abstract get dbCols(): string[];
+  abstract get capabilities(): CapabilitiesType;
 
   constructor(kwArgs: Partial<Entity>) {
     Object.keys(kwArgs).forEach(kwArgKey => {
@@ -14,11 +20,12 @@ export default abstract class Entity {
   toJSON() {
     return this.dbCols.reduce(
       (obj, dbCol) => {
-        const dbColStoresObj = this[dbCol] !== null
-        && !(this[dbCol] instanceof Date)
-        && typeof this[dbCol] === 'object';
+        const stringifyObj = this[dbCol] !== null
+        && !this.capabilities.jsonb
+        && typeof this[dbCol] === 'object'
+        && !(this[dbCol] instanceof Date);
 
-        const dbVal = dbColStoresObj ? JSON.stringify(this[dbCol]) : this[dbCol];
+        const dbVal = stringifyObj ? JSON.stringify(this[dbCol]) : this[dbCol];
         return dbVal !== undefined ? Object.assign(obj, { [dbCol]: dbVal }) : obj;
       },
       {},

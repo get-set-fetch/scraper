@@ -22,7 +22,16 @@ export default class KnexSite extends Site {
         builder.increments('id').primary();
         builder.string('name');
         builder.string('url');
-        builder.string('pluginOpts');
+
+        if (KnexStorage.capabilities.jsonb) {
+          builder.jsonb('pluginOpts');
+        }
+        else if (KnexStorage.capabilities.json) {
+          builder.json('pluginOpts');
+        }
+        else {
+          builder.string('pluginOpts');
+        }
       },
     );
   }
@@ -47,16 +56,8 @@ export default class KnexSite extends Site {
   }
 
   async save():Promise<number> {
-    let result:number[];
-
     // save the site
-    const { config } = KnexStorage.knex.client;
-    if (config.client === 'sqlite3') {
-      result = await KnexSite.builder.insert(this.toJSON());
-    }
-    else {
-      result = await KnexSite.builder.insert(this.toJSON()).returning('id');
-    }
+    const result:number[] = await KnexSite.builder.insert(this.toJSON());
     [ this.id ] = result;
 
     // save the site url as a new resource, scraping will start with this resource
@@ -103,5 +104,9 @@ export default class KnexSite extends Site {
       );
       await knexResource.save();
     }
+  }
+
+  get capabilities() {
+    return KnexStorage.capabilities;
   }
 }

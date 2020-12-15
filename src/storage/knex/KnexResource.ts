@@ -23,9 +23,21 @@ export default class KnexResource extends Resource {
         builder.dateTime('scrapedAt');
         builder.boolean('scrapeInProgress');
         builder.string('contentType');
-        builder.string('content');
+
+        if (KnexStorage.capabilities.jsonb) {
+          builder.jsonb('content');
+          builder.jsonb('parent');
+        }
+        else if (KnexStorage.capabilities.json) {
+          builder.json('content');
+          builder.json('parent');
+        }
+        else {
+          builder.string('content');
+          builder.string('parent');
+        }
+
         builder.binary('blob');
-        builder.string('parent');
       },
     );
   }
@@ -71,19 +83,10 @@ export default class KnexResource extends Resource {
   }
 
   async save():Promise<number> {
-    let result:number[];
+    const result:number[] = await KnexResource.builder.insert(this.toJSON());
+    [ this.id ] = result;
 
-    const { config } = KnexStorage.knex.client;
-
-    // save the resource not using returning for sqlite since it does not support it
-    if (config.client === 'sqlite3') {
-      result = await KnexResource.builder.insert(this.toJSON());
-    }
-    else {
-      result = await KnexResource.builder.insert(this.toJSON()).returning('id');
-    }
-
-    return result[0];
+    return this.id;
   }
 
   update():Promise<void> {
@@ -92,5 +95,9 @@ export default class KnexResource extends Resource {
 
   del() {
     return KnexResource.builder.where('id', this.id).del();
+  }
+
+  get capabilities() {
+    return KnexStorage.capabilities;
   }
 }
