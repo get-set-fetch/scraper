@@ -1,6 +1,6 @@
 import { assert } from 'chai';
-import Site, { IStaticSite } from '../../../../src/storage/base/Site';
-import Storage from '../../../../src/storage/base/Storage';
+import Site, { IStaticSite } from '../../../src/storage/base/Site';
+import Storage from '../../../src/storage/base/Storage';
 
 export default function crudSite(storage: Storage) {
   describe(`CRUD Site using ${storage.config.client}`, () => {
@@ -25,7 +25,7 @@ export default function crudSite(storage: Storage) {
       await storage.close();
     });
 
-    it('get', async () => {
+    it(`${storage.config.client} site get`, async () => {
       const siteById = await Site.get(expectedSite.id);
       assert.deepEqual(siteById, expectedSite);
 
@@ -41,7 +41,7 @@ export default function crudSite(storage: Storage) {
       assert.strictEqual(resourceNo, 1);
     });
 
-    it('update', async () => {
+    it(`${storage.config.client} site update`, async () => {
       Object.assign(expectedSite, {
         url: 'urlB',
         pluginOpts: [
@@ -57,14 +57,14 @@ export default function crudSite(storage: Storage) {
       assert.deepEqual(actualSite, expectedSite);
     });
 
-    it('del', async () => {
+    it(`${storage.config.client} site del`, async () => {
       await expectedSite.del();
 
       const actualSite = await Site.get(expectedSite.id);
       assert.isUndefined(actualSite);
     });
 
-    it('delAll', async () => {
+    it(`${storage.config.client} site delAll`, async () => {
       await Site.delAll();
       const actualSite = await Site.get(expectedSite.id);
 
