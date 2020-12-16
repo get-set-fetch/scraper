@@ -25,7 +25,7 @@ export default class BrowserClient {
     return this.page.goto(url, opts);
   }
 
-  evaluate(pageFunction, ...args) {
+  evaluate(pageFunction, ...args):any {
     return this.page.evaluate(pageFunction, ...args);
   }
 }
