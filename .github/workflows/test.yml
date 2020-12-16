@@ -42,3 +42,30 @@ jobs:
 
     - name: Sqlite3 integration tests
       run: npm run test:storage:sqlite:integration
+
+  mysql_test:
+    name: MySQL tests
+    runs-on: ubuntu-18.04
+    needs: unit_test
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup node 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+    - name: Install dependencies
+      run: npm ci
+
+    - name: MySQL up
+      run: docker-compose -f ./test/storage/mysql/mysql.yml up -d
+
+    - name: MySQL unit tests
+      run: npm run test:storage:mysql:unit
+
+    - name: MySQL integration tests
+      run: npm run test:storage:mysql:integration
+
+    - name: MySQL down
+      run: docker-compose -f ./test/storage/mysql/mysql.yml down
+
