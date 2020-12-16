@@ -1,12 +1,23 @@
 {
-    "compilerOptions": {
-      "esModuleInterop": true,
-      "resolveJsonModule": true,
-      "target": "esnext",
-      "strict": false,
-      "moduleResolution": "node",
-      "module": "commonjs",
-      "allowJs": true,
-    },
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "target": "esnext",
+    "strict": false,
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "allowJs": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
     "newLine": "LF"
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+  
 }

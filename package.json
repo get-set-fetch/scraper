@@ -2,7 +2,8 @@
   "name": "get-set-fetch-scraper",
   "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "lint": "eslint src/**/*.ts",
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
@@ -10,9 +11,7 @@
     "test:storage:sqlite:integration": "mocha --config test/.mocharc.js \"test/storage/sqlite/sqlite-integration-suite.ts\"",
     "test:storage:mysql:unit": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-unit-suite.ts\"",
     "test:storage:mysql:integration": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-integration-suite.ts\"",
-    "test:single:sqlite": "mocha --config test/.mocharc.js --grep \"sqlite3 site\"",
-    "test:single:mysql": "mocha --config test/.mocharc.js --grep \"mysql site\"",
-    
+    "build": "tsc",
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
   },
@@ -51,7 +50,7 @@
     "mysql": "^2.18.1"
   },
   "dependencies": {
-    "@rollup/plugin-typescript": "^6.1.0",
+    "@rollup/plugin-typescript": "^8.1.0",
     "immutable": "^4.0.0-rc.12",
     "pino": "^6.8.0",
     "puppeteer": "^5.3.1",
