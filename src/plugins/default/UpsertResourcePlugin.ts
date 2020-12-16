@@ -4,7 +4,7 @@ import Site from '../../storage/base/Site';
 import Resource from '../../storage/base/Resource';
 
 /**
- * Plugin responsible for updating a resource after crawling it.
+ * Plugin responsible for updating a resource after scraping it.
  */
 export default class UpsertResourcePlugin extends Plugin {
   static get schema() {
@@ -41,7 +41,7 @@ export default class UpsertResourcePlugin extends Plugin {
       await resource.update();
     }
 
-    // dynamic resources are found and scrapped on the fly starting from an already scrapped static resource, do save
+    // dynamic resources are found and scraped on the fly starting from an already scraped static resource, do save
     else {
       await resource.save();
     }
