@@ -1,0 +1,12 @@
+{
+  "client": "pg",
+  "useNullAsDefault": true,
+  "connection": {
+    "host": "localhost",
+    "port": "54320",
+    "user": "gsf-user",
+    "password": "gsf-pswd",
+    "database": "gsf-db"
+  },
+  "debug": false
+}

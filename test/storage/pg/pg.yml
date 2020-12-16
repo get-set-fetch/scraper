@@ -1,0 +1,11 @@
+version: "3.9"
+services:   
+  pg:
+    image: postgres:11-alpine
+    environment:
+      POSTGRES_USER: gsf-user
+      POSTGRES_PASSWORD: gsf-pswd
+      POSTGRES_DB: gsf-db
+    ports:
+      - 54320:5432
+

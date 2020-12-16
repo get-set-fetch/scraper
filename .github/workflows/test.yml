@@ -69,3 +69,28 @@ jobs:
     - name: MySQL down
       run: docker-compose -f ./test/storage/mysql/mysql.yml down
 
+  pg_test:
+    name: PostgreSQL tests
+    runs-on: ubuntu-18.04
+    needs: unit_test
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup node 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+    - name: Install dependencies
+      run: npm ci
+
+    - name: PostgreSQL up
+      run: docker-compose -f ./test/storage/pg/pg.yml up -d
+
+    - name: PostgreSQL unit tests
+      run: npm run test:storage:pg:unit
+
+    - name: PostgreSQL integration tests
+      run: npm run test:storage:pg:integration
+
+    - name: PostgreSQL down
+      run: docker-compose -f ./test/storage/pg/pg.yml down
