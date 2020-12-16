@@ -59,7 +59,7 @@ export default function integrationSuite(storage: Storage) {
     const tests = ScrapingSuite.getTests();
 
     tests.forEach((test:IScrapingTest) => {
-      it(test.title, async () => {
+      it(`${storage.config.client} - ${test.title}`, async () => {
         srv.update(test.vhosts);
 
         // save a site for the current scraping test
