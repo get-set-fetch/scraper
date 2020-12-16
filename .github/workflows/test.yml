@@ -7,7 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  unit_test:
+    name: Non-storage unit tests
     runs-on: ubuntu-18.04
 
     steps:
@@ -16,11 +17,28 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 14.x
-    - name: Clean install dependencies
+    - name: Install dependencies
       run: npm ci
 
     - name: Unit tests
       run: npm run test:unit
 
-    - name: Integration tests using sqlite3 storage
+  sqlite_test:
+    name: Sqlite3 tests
+    runs-on: ubuntu-18.04
+    needs: unit_test
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup node 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Sqlite3 unit tests
+      run: npm run test:storage:sqlite:unit
+
+    - name: Sqlite3 integration tests
       run: npm run test:storage:sqlite:integration
