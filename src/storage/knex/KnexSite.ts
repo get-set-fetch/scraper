@@ -52,12 +52,16 @@ export default class KnexSite extends Site {
 
   async countResources():Promise<number> {
     const [ result ] = await KnexResource.builder.where('siteId', this.id).count('id', { as: 'count' });
-    return result.count;
+    return this.capabilities.int8String ? parseInt(result.count, 10) : result.count;
   }
 
   async save():Promise<number> {
     // save the site
-    const result:number[] = await KnexSite.builder.insert(this.toJSON());
+    const result:number[] = await (
+      this.capabilities.returning
+        ? KnexSite.builder.insert(this.toJSON()).returning('id')
+        : KnexSite.builder.insert(this.toJSON())
+    );
     [ this.id ] = result;
 
     // save the site url as a new resource, scraping will start with this resource

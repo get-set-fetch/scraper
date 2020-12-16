@@ -7,10 +7,13 @@
   "scripts": {
     "lint": "eslint src/**/*.ts",
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
+    "test:single": "mocha --config test/.mocharc.js --grep \"pg resource\"",
     "test:storage:sqlite:unit": "mocha --config test/.mocharc.js \"test/storage/sqlite/sqlite-unit-suite.ts\"",
     "test:storage:sqlite:integration": "mocha --config test/.mocharc.js \"test/storage/sqlite/sqlite-integration-suite.ts\"",
     "test:storage:mysql:unit": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-unit-suite.ts\"",
     "test:storage:mysql:integration": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-integration-suite.ts\"",
+    "test:storage:pg:unit": "mocha --config test/.mocharc.js \"test/storage/pg/pg-unit-suite.ts\"",
+    "test:storage:pg:integration": "mocha --config test/.mocharc.js \"test/storage/pg/pg-integration-suite.ts\"",
     "build": "tsc",
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
@@ -47,7 +50,8 @@
   "peerDependencies": {
     "knex": ">=0.21.0 <0.22.0",
     "sqlite3": "^5.0.0",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "pg": "^8.5.1"
   },
   "dependencies": {
     "@rollup/plugin-typescript": "^8.1.0",

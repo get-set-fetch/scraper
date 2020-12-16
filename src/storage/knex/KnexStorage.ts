@@ -36,12 +36,23 @@ export default class KnexStorage extends Storage {
     */
     const json = config.client !== 'sqlite3';
 
-    // only postgresql supports jsonb
+    // only postgres supports jsonb
     const jsonb = config.client === 'pg';
+
+    // only postgres needs returning on insert statements to retrieve newly inserted data
+    const returning = config.client === 'pg';
+
+    /*
+    only postgres returns 64-bit integers (int8) from queries like count(*)
+    javascript doesn't support 64-bit integers so postgres returns them as string
+    */
+    const int8String = config.client === 'pg';
 
     return {
       json,
       jsonb,
+      returning,
+      int8String,
     };
   }
 

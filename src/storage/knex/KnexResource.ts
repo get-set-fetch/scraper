@@ -83,7 +83,11 @@ export default class KnexResource extends Resource {
   }
 
   async save():Promise<number> {
-    const result:number[] = await KnexResource.builder.insert(this.toJSON());
+    const result:number[] = await (
+      this.capabilities.returning
+        ? KnexResource.builder.insert(this.toJSON()).returning('id')
+        : KnexResource.builder.insert(this.toJSON())
+    );
     [ this.id ] = result;
 
     return this.id;

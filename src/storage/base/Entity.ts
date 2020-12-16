@@ -1,6 +1,8 @@
 export type CapabilitiesType = {
   jsonb?: boolean;
   json?: boolean;
+  returning?: boolean;
+  int8String?: boolean;
 }
 
 export default abstract class Entity {
@@ -21,7 +23,6 @@ export default abstract class Entity {
     return this.dbCols.reduce(
       (obj, dbCol) => {
         const stringifyObj = this[dbCol] !== null
-        && !this.capabilities.jsonb
         && typeof this[dbCol] === 'object'
         && !(this[dbCol] instanceof Date);
 
