@@ -65,9 +65,6 @@ const client = new BrowserClient(launchOpts);
 ## Init scraper
 ```js
 const { Scraper } = require('get-set-fetch-scraper');
-const launchOpts = {
-  "headless": true,
-}
 const scraper = new Scraper(storage, client);
 ```
 
