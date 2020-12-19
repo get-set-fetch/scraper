@@ -1,11 +1,14 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-param-reassign */
+import { URL } from 'url';
 import BrowserClient from '../browserclient/BrowserClient';
 import Site from '../storage/base/Site';
 import Resource from '../storage/base/Resource';
-import Plugin from '../plugins/Plugin';
+import Plugin, { IPluginOpts } from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
+import Storage from '../storage/base/Storage';
+import { scenarios, mergePluginOpts } from '../scenarios/scenarios';
 
 /*
 scraper is:
@@ -15,13 +18,45 @@ scraper is:
 export default class Scraper {
   logger = getLogger('Scraper');
 
+  storage: Storage;
   browserClient:BrowserClient;
 
-  constructor(browserClient:BrowserClient) {
+  constructor(storage: Storage, browserClient:BrowserClient) {
+    this.storage = storage;
     this.browserClient = browserClient;
   }
 
-  async scrape(site: Site) {
+  async preScrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]):Promise<Site> {
+    if (!this.storage.isConnected) {
+      await this.storage.connect();
+    }
+
+    let site;
+    if (typeof siteOrUrl === 'string') {
+      const { Site } = this.storage;
+      site = new Site({
+        name: new URL(siteOrUrl).hostname,
+        url: siteOrUrl,
+        pluginOpts: scenarios[scenario] ? mergePluginOpts(scenarios[scenario].defaultPluginOpts, pluginOpts) : pluginOpts,
+      });
+      await site.save();
+    }
+    else {
+      site = siteOrUrl;
+    }
+
+    if (!this.browserClient.isLaunched) {
+      await this.browserClient.launch();
+    }
+
+    return site;
+  }
+
+  async scrape(site: Site):Promise<void>
+  async scrape(url: string, scenario: string, pluginOpts: IPluginOpts[]):Promise<void>
+  async scrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]) {
+    const site = await this.preScrape(siteOrUrl, scenario, pluginOpts);
+
     this.logger.debug(site, 'Scraping site');
     try {
       site.plugins = site.initPlugins();

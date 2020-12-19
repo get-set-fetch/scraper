@@ -15,10 +15,13 @@ export default class KnexStorage extends Storage {
     // create tables if missing
     await KnexResource.init();
     await KnexSite.init();
+
+    this.isConnected = true;
   }
 
-  close():Promise<void> {
-    return KnexStorage.knex.destroy();
+  async close():Promise<void> {
+    await KnexStorage.knex.destroy();
+    this.isConnected = false;
   }
 
   static get capabilities():CapabilitiesType {

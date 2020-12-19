@@ -73,7 +73,7 @@ export default function integrationSuite(storage: Storage) {
         await site.save();
 
         // start scraping
-        const scraper = new Scraper(browserClient);
+        const scraper = new Scraper(storage, browserClient);
         await scraper.scrape(site);
 
         // compare results
