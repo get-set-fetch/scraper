@@ -1,8 +1,10 @@
 import { GsfServer, ScrapingSuite } from 'get-set-fetch-test-utils';
 import { IScrapingTest } from 'get-set-fetch-test-utils/lib/scraping-suite/ScrapingSuite';
+import BrowserClient from '../../src/browserclient/BrowserClient';
+import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
 import PluginStore from '../../src/pluginstore/PluginStore';
 import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
-import BrowserClient from '../../src/scraper/BrowserClient';
+
 import Scraper from '../../src/scraper/Scraper';
 import { IStaticSite } from '../../src/storage/base/Site';
 import Storage from '../../src/storage/base/Storage';
@@ -19,8 +21,7 @@ export default function integrationSuite(storage: Storage) {
       srv.start();
 
       // launch browser with above web server as proxy
-      browserClient = new BrowserClient();
-      await browserClient.launch({
+      browserClient = new PuppeteerClient({
         headless: true,
         ignoreHTTPSErrors: true,
         slowMo: 20,
@@ -37,6 +38,7 @@ export default function integrationSuite(storage: Storage) {
           '--single-process',
         ],
       });
+      await browserClient.launch();
 
       // init storage
       await storage.connect();

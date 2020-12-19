@@ -5,7 +5,7 @@ import { JSONSchema7 } from 'json-schema';
 import SchemaHelper from '../schema/SchemaHelper';
 import Site from '../storage/base/Site';
 import Resource from '../storage/base/Resource';
-import BrowserClient from '../scraper/BrowserClient';
+import BrowserClient from '../browserclient/BrowserClient';
 
 export interface IPluginOpts {
   name: string;

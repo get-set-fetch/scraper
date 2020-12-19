@@ -2,7 +2,7 @@ import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
 import Site from '../../storage/base/Site';
 import Resource from '../../storage/base/Resource';
-import BrowserClient from '../../scraper/BrowserClient';
+import BrowserClient from '../../browserclient/BrowserClient';
 
 export default class FetchPlugin extends Plugin {
   static get schema() {
@@ -44,7 +44,7 @@ export default class FetchPlugin extends Plugin {
     return protocol === 'http:' || protocol === 'https:';
   }
 
-  apply(site: Site, resource: Resource, client:BrowserClient) {
+  apply(site: Site, resource: Resource, client: BrowserClient) {
     // url appears to be of html mime type, loaded it in a browser tab
     if (this.probableHtmlMimeType(resource.url)) {
       return this.openInTab(site, resource, client);
@@ -103,7 +103,7 @@ export default class FetchPlugin extends Plugin {
     return /htm|php/.test(ext);
   }
 
-  waitForDomStability(timeout: number, maxWaitingTime: number) {
+  waitForDomStability(timeout: number, maxWaitingTime: number):Promise<void> {
     return new Promise(resolve => {
       const startTime = Date.now();
 

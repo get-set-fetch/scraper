@@ -1,24 +1,33 @@
 import { Browser, LaunchOptions, launch as plaunch, Page, DirectNavigationOptions } from 'puppeteer';
+import BrowserClient from './BrowserClient';
 
-export default class BrowserClient {
+export default class PuppeteerClient extends BrowserClient {
   browser: Browser;
   page: Page;
+  opts: LaunchOptions;
 
-  async launch(opts:LaunchOptions = {}):Promise<void> {
+  constructor(opts:LaunchOptions = {}) {
+    super();
     const defaultOpts:LaunchOptions = {
       headless: true,
     };
-    const mergedOpts = Object.assign(defaultOpts, opts);
+    this.opts = Object.assign(defaultOpts, opts);
+    this.isLaunched = false;
+  }
 
-    this.browser = await plaunch(mergedOpts);
+  async launch():Promise<void> {
+    this.browser = await plaunch(this.opts);
     // eslint-disable-next-line prefer-destructuring
     this.page = await this.browser.newPage();
 
     await this.page.setCacheEnabled(false);
+
+    this.isLaunched = true;
   }
 
-  close():Promise<void> {
-    return this.browser.close();
+  async close():Promise<void> {
+    await this.browser.close();
+    this.isLaunched = false;
   }
 
   goto(url: string, opts: DirectNavigationOptions) {

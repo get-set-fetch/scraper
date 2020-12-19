@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-param-reassign */
-import BrowserClient from './BrowserClient';
+import BrowserClient from '../browserclient/BrowserClient';
 import Site from '../storage/base/Site';
 import Resource from '../storage/base/Resource';
 import Plugin from '../plugins/Plugin';
