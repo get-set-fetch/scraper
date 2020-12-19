@@ -19,6 +19,8 @@ jobs:
         node-version: 14.x
     - name: Install dependencies
       run: npm ci
+    - name: Install required peer dependencies
+      run: npm install knex --save
 
     - name: Unit tests
       run: npm run test:unit
