@@ -47,6 +47,18 @@ export default class KnexResource extends Resource {
     return rawResource ? new KnexResource(rawResource) : undefined;
   }
 
+  static async getPagedContent(siteId: number, offset: number, limit: number):Promise<Partial<Resource>[]> {
+    const rawResources = await KnexResource.builder.select('url', 'content').where({ siteId }).offset(offset).limit(limit);
+
+    // json not supported natively at storage level, parse the content string into proper json obj
+    if (!(KnexStorage.capabilities.json || KnexStorage.capabilities.jsonb)) {
+      return rawResources.map(rawResource => Object.assign(rawResource, { content: JSON.parse(rawResource.content) }));
+    }
+
+    // no conversion required
+    return rawResources;
+  }
+
   static getAll(siteId: number) {
     return KnexResource.builder.where({ siteId });
   }

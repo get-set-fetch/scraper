@@ -66,6 +66,7 @@ export default abstract class Resource extends Entity {
 export interface IStaticResource extends IEntity {
   new(kwArgs: Partial<Resource>): Resource;
   getResource(siteId:number, url: string):Promise<Resource>;
+  getPagedContent(siteId: number, offset:number, limit: number):Promise<Partial<Resource>[]>;
   getAll(siteId: number):Promise<any[]>;
   getResourceToCrawl(siteId:number):Promise<Resource>;
 }

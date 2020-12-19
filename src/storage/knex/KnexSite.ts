@@ -88,9 +88,8 @@ export default class KnexSite extends Site {
     return rawResources.map(rawResource => new KnexResource(rawResource));
   }
 
-  async getContent():Promise<IResourceContent[]> {
-    const rawResources = await KnexResource.getAll(this.id);
-    return rawResources.map(rawResource => JSON.parse(rawResource.content) as IResourceContent);
+  async getPagedContent(offset: number, limit: number):Promise<Partial<Resource>[]> {
+    return KnexResource.getPagedContent(this.id, offset, limit);
   }
 
   getResourceToCrawl() {

@@ -38,9 +38,9 @@ export default abstract class Site extends Entity {
 
   abstract getResource(url: string):Promise<Resource>;
 
-  abstract getResources():Promise<Resource[]>
+  abstract getResources():Promise<Resource[]>;
 
-  abstract getContent():Promise<IResourceContent[]>;
+  abstract getPagedContent(offset:number, limit: number):Promise<Partial<Resource>[]>;
 
   abstract saveResources(resources: Partial<Resource>[]):Promise<void>;
 
