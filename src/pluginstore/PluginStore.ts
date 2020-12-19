@@ -81,7 +81,12 @@ export default class PluginStore {
     });
 
     const plugins = [
-      typescript({ lib: [], target: 'esnext', module: 'es6' }),
+      typescript({
+        lib: [],
+        target: 'esnext',
+        module: 'es6',
+        tsconfig: false,
+      }),
       exportToGlobalPlugin(),
     ];
 
