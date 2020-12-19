@@ -58,13 +58,14 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 14.x
+
+    - name: MySQL up
+      run: docker-compose -f ./test/storage/mysql/mysql.yml up -d
+
     - name: Install dependencies
       run: npm ci
     - name: Install MySQL peer dependencies
       run: npm install knex mysql --save
-
-    - name: MySQL up
-      run: docker-compose -f ./test/storage/mysql/mysql.yml up -d
 
     - name: MySQL unit tests
       run: npm run test:storage:mysql:unit
