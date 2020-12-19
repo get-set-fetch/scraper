@@ -5,7 +5,7 @@ import Site from '../storage/base/Site';
 import Resource from '../storage/base/Resource';
 import Plugin from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
-import getLogger from '../logger/Logger';
+import { getLogger } from '../logger/Logger';
 
 /*
 scraper is:

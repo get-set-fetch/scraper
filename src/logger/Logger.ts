@@ -10,7 +10,7 @@ function setLogger(opts?: pino.LoggerOptions, stream?: pino.DestinationStream) {
   logger = pino(opts, stream);
 }
 
-export default getLogger;
 export {
+  getLogger,
   setLogger,
 };

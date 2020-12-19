@@ -3,7 +3,7 @@ import { rollup, Plugin as RollupPlugin } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import { join } from 'path';
 import Plugin, { IPlugin } from '../plugins/Plugin';
-import getLogger from '../logger/Logger';
+import { getLogger } from '../logger/Logger';
 
 export interface IStoreEntry {
   filepath: string;

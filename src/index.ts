@@ -1,7 +1,7 @@
 import Scraper from './scraper/Scraper';
-import Logger from './logger/Logger';
+import { getLogger, setLogger } from './logger/Logger';
 
 export {
   Scraper,
-  Logger,
+  getLogger, setLogger,
 };
