@@ -48,10 +48,10 @@ export default class KnexResource extends Resource {
   }
 
   static async getPagedContent(siteId: number, offset: number, limit: number):Promise<Partial<Resource>[]> {
-    const rawResources = await KnexResource.builder.select('url', 'content').where({ siteId }).offset(offset).limit(limit);
+    const rawResources:any[] = await KnexResource.builder.select('url', 'content').where({ siteId }).offset(offset).limit(limit);
 
-    // json not supported natively at storage level, parse the content string into proper json obj
-    if (!(KnexStorage.capabilities.json || KnexStorage.capabilities.jsonb)) {
+    // json value returned as string not obj, parse the content string into proper json obj
+    if (rawResources.length > 0 && typeof rawResources[0].content === 'string') {
       return rawResources.map(rawResource => Object.assign(rawResource, { content: JSON.parse(rawResource.content) }));
     }
 
