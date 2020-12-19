@@ -9,6 +9,8 @@ import PluginStore from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
 import Storage from '../storage/base/Storage';
 import { scenarios, mergePluginOpts } from '../scenarios/scenarios';
+import CsvExporter from '../export/CsvExporter';
+import Exporter, { ExportOptions } from '../export/Exporter';
 
 /*
 scraper is:
@@ -20,6 +22,7 @@ export default class Scraper {
 
   storage: Storage;
   browserClient:BrowserClient;
+  site: Site;
 
   constructor(storage: Storage, browserClient:BrowserClient) {
     this.storage = storage;
@@ -55,20 +58,20 @@ export default class Scraper {
   async scrape(site: Site):Promise<void>
   async scrape(url: string, scenario: string, pluginOpts: IPluginOpts[]):Promise<void>
   async scrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]) {
-    const site = await this.preScrape(siteOrUrl, scenario, pluginOpts);
+    this.site = await this.preScrape(siteOrUrl, scenario, pluginOpts);
 
-    this.logger.debug(site, 'Scraping site');
+    this.logger.debug(this.site, 'Scraping site');
     try {
-      site.plugins = site.initPlugins();
+      this.site.plugins = this.site.initPlugins();
     }
     catch (err) {
-      this.logger.error(err, 'Error instantiating plugin definitions for site %s', site.name);
+      this.logger.error(err, 'Error instantiating plugin definitions for site %s', this.site.name);
 
       // no plugins > no scrape process > abort
       return;
     }
 
-    const domWritePluginsPresent = site.plugins.some(
+    const domWritePluginsPresent = this.site.plugins.some(
       plugin => plugin.opts && plugin.opts.domWrite,
     );
 
@@ -86,12 +89,12 @@ export default class Scraper {
       */
 
       // retrieve static resource, opening its url in a new browser tab
-      staticResource = await this.scrapeResource(site);
+      staticResource = await this.scrapeResource(this.site);
 
       if (staticResource && domWritePluginsPresent) {
         do {
           // retrieve dynamic resource, use the current tab dom state to further scroll, click, etc..
-          dynamicResource = await this.scrapeResource(site, staticResource);
+          dynamicResource = await this.scrapeResource(this.site, staticResource);
         }
         while (dynamicResource);
       }
@@ -264,5 +267,19 @@ export default class Scraper {
     }
 
     return result;
+  }
+
+  async export(type: 'csv', filepath: string, opts: ExportOptions):Promise<void> {
+    let exporter: Exporter;
+    if (type === 'csv') {
+      exporter = new CsvExporter(this.site, filepath, opts);
+    }
+
+    if (!exporter) {
+      this.logger.error(`unsupported export type ${type}`);
+      return;
+    }
+
+    await exporter.export();
   }
 }
