@@ -36,6 +36,8 @@ jobs:
         node-version: 14.x
     - name: Install dependencies
       run: npm ci
+    - name: Install Sqlite3 peer dependencies
+      run: npm install knex, sqlite3 --save
 
     - name: Sqlite3 unit tests
       run: npm run test:storage:sqlite:unit
@@ -56,6 +58,8 @@ jobs:
         node-version: 14.x
     - name: Install dependencies
       run: npm ci
+    - name: Install MySQL peer dependencies
+      run: npm install knex, mysql --save
 
     - name: MySQL up
       run: docker-compose -f ./test/storage/mysql/mysql.yml up -d
@@ -82,6 +86,8 @@ jobs:
         node-version: 14.x
     - name: Install dependencies
       run: npm ci
+    - name: Install PostgreSQL peer dependencies
+      run: npm install knex, pg --save
 
     - name: PostgreSQL up
       run: docker-compose -f ./test/storage/pg/pg.yml up -d
