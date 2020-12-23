@@ -59,7 +59,14 @@ export default class Scraper {
   async scrape(site: Site):Promise<void>
   async scrape(url: string, scenario: string, pluginOpts: IPluginOpts[]):Promise<void>
   async scrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]) {
-    this.site = await this.preScrape(siteOrUrl, scenario, pluginOpts);
+    try {
+      this.site = await this.preScrape(siteOrUrl, scenario, pluginOpts);
+    }
+    catch (err) {
+      this.logger.error(err, 'Error preScraping operations');
+      // no site > no scrape process > abort
+      return;
+    }
 
     this.logger.debug(this.site, 'Scraping site');
     try {
@@ -67,7 +74,6 @@ export default class Scraper {
     }
     catch (err) {
       this.logger.error(err, 'Error instantiating plugin definitions for site %s', this.site.name);
-
       // no plugins > no scrape process > abort
       return;
     }
