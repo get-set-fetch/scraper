@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "link:gsf": "npm link ../test-utils",
     "lint": "eslint src/**/*.ts",
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
     "test:single": "mocha --config test/.mocharc.js --grep \"pg resource\"",
