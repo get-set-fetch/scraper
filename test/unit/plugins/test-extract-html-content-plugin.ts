@@ -24,9 +24,10 @@ describe('ExtractHtmlContentPlugin', () => {
       { innerText: 'h1 valB' },
     ]);
 
-    const expectedContent = {
-      h1: [ 'h1 valA', 'h1 valB' ],
-    };
+    const expectedContent = [
+      ['h1 valA'],
+      ['h1 valB']
+    ];
 
     const { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -43,10 +44,10 @@ describe('ExtractHtmlContentPlugin', () => {
     stubQuerySelectorAll.withArgs('h2').returns([
     ]);
 
-    const expectedContent = {
-      h1: [ 'h1 valA', 'h1 valB' ],
-      h2: [ '', '' ],
-    };
+    const expectedContent = [
+      [ 'h1 valA', ''],
+      [ 'h1 valB', '']
+    ];
 
     const { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -67,10 +68,11 @@ describe('ExtractHtmlContentPlugin', () => {
       { innerText: 'h2 valC' },
     ]);
 
-    const expectedContent = {
-      h1: [ 'h1 valA', 'h1 valA', 'h1 valC' ],
-      h2: [ 'h2 valA', 'h2 valB', 'h2 valC' ],
-    };
+    const expectedContent = [
+      ['h1 valA', 'h2 valA'],
+      ['h1 valA', 'h2 valB'],
+      ['h1 valC', 'h2 valC']
+    ];
 
     const { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -92,11 +94,10 @@ describe('ExtractHtmlContentPlugin', () => {
     stubQuerySelectorAll.withArgs('h3').returns([
     ]);
 
-    const expectedContent = {
-      h1: [ 'h1 valA', 'h1 valB' ],
-      h2: [ 'h2 valA', 'h2 valB' ],
-      h3: [ '', '' ],
-    };
+    const expectedContent = [
+      ['h1 valA', 'h2 valA', ''],
+      ['h1 valB', 'h2 valB', ''],
+    ];
 
     const { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -113,11 +114,11 @@ describe('ExtractHtmlContentPlugin', () => {
       { querySelectorAll: selector => (selector === 'h1' ? [] : [ { innerText: `${selector} valC` } ]) },
     ]);
 
-    const expectedContent = {
-      '[class|="top"] h1': [ 'h1 valA', 'h1 valB', '' ],
-      '[class|="top"] h2': [ 'h2 valA', '', 'h2 valC' ],
-      '[class|="top"] h3': [ '', 'h3 valB', 'h3 valC' ],
-    };
+    const expectedContent = [
+      ['h1 valA', 'h2 valA', ''],
+      ['h1 valB', '', 'h3 valB'],
+      ['', 'h2 valC', 'h3 valC']
+    ];
 
     const { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -134,11 +135,10 @@ describe('ExtractHtmlContentPlugin', () => {
       { querySelectorAll: selector => (selector === 'h1' ? [] : [ { innerText: `${selector} valC` } ]) },
     ]);
 
-    const expectedContent = {
-      '[class|="top"] h1': [ 'h1 valB', '' ],
-      '[class|="top"] h2': [ '', 'h2 valC' ],
-      '[class|="top"] h3': [ 'h3 valB', 'h3 valC' ],
-    };
+    const expectedContent = [
+      ['h1 valB', '', 'h3 valB'],
+      ['', 'h2 valC', 'h3 valC' ]
+    ];
 
     const { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -163,11 +163,11 @@ describe('ExtractHtmlContentPlugin', () => {
       { innerText: 'h3 valB' },
     ]);
 
-    let expectedContent = {
-      h1: [ 'h1 valA', 'h1 valA', 'h1 valA' ],
-      h2: [ 'h2 valA', 'h2 valB', 'h2 valC' ],
-      h3: [ 'h3 valA', 'h3 valB', 'h3 valB' ],
-    };
+    let expectedContent = [
+      ['h1 valA', 'h2 valA', 'h3 valA'],
+      ['h1 valA', 'h2 valB', 'h3 valB'],
+      ['h1 valA', 'h2 valC', 'h3 valB']
+    ];
 
     let { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -193,11 +193,11 @@ describe('ExtractHtmlContentPlugin', () => {
       { innerText: 'h3 valD' },
     ]);
 
-    expectedContent = {
-      h1: [ 'h1 valD', 'h1 valD' ],
-      h2: [ 'h2 valD', 'h2 valD' ],
-      h3: [ 'h3 valD', 'h3 valD' ],
-    };
+    expectedContent = [
+      [ 'h1 valD', 'h2 valB', 'h3 valB' ],
+      [ 'h1 valD', 'h2 valC', 'h3 valD' ],
+      [ 'h1 valD', 'h2 valD', 'h3 valD' ]
+    ];
 
     ({ content } = plugin.apply());
     assert.deepEqual(content, expectedContent);
@@ -220,11 +220,10 @@ describe('ExtractHtmlContentPlugin', () => {
     stubQuerySelectorAll.withArgs('h3').returns([
     ]);
 
-    let expectedContent = {
-      h1: [ 'h1 valA', 'h1 valB' ],
-      h2: [ 'h2 valA', 'h2 valB' ],
-      h3: [ '', '' ],
-    };
+    let expectedContent = [
+      ['h1 valA', 'h2 valA', ''],
+      ['h1 valB', 'h2 valB', ''],
+    ]
 
     let { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -241,14 +240,13 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     stubQuerySelectorAll.withArgs('h3').returns([
+      { innerText: '' },
       { innerText: 'h3 valC' },
     ]);
 
-    expectedContent = {
-      h1: [ 'h1 valC' ],
-      h2: [ 'h2 valC' ],
-      h3: [ 'h3 valC' ],
-    };
+    expectedContent = [
+      ['h1 valC', 'h2 valC', 'h3 valC']
+    ];
 
     ({ content } = plugin.apply());
     assert.deepEqual(content, expectedContent);

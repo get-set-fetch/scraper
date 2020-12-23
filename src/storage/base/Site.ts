@@ -1,6 +1,6 @@
 import Entity, { IEntity } from './Entity';
 import Plugin, { IPluginOpts } from '../../plugins/Plugin';
-import Resource, { IResourceContent } from './Resource';
+import Resource from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 
 export default abstract class Site extends Entity {

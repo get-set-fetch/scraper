@@ -1,9 +1,5 @@
 import Entity, { IEntity } from './Entity';
 
-export interface IResourceContent {
-  [key: string]: string[]
-}
-
 export interface IResourceParent {
   linkText?: string;
   imgAlt?: string;
@@ -21,10 +17,9 @@ export default abstract class Resource extends Entity {
   scrapeInProgress: boolean;
 
   contentType: string;
-  content: IResourceContent;
+  content: string[][];
   blob: Blob;
 
-  // stored as json string, initialized as IResourceParent[]
   parent: IResourceParent;
 
   // not stored, populated by the ExtractUrlsPlugin and saved as new resources by the InsertResourcesPlugin

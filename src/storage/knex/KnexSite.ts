@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { QueryBuilder } from 'knex';
-import Resource, { IResourceContent } from '../base/Resource';
+import Resource from '../base/Resource';
 import Site from '../base/Site';
 import KnexResource from './KnexResource';
 import KnexStorage from './KnexStorage';
