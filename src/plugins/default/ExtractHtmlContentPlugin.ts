@@ -48,8 +48,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   test(site: Site, resource: Resource) {
-    // only extract content of a currently crawled resource
-    if (!resource || !resource.scrapeInProgress) return false;
+    if (!resource) return false;
 
     return (/html/i).test(resource.contentType);
   }
