@@ -46,9 +46,11 @@ export default class ExtractUrlsPlugin extends Plugin {
   }
 
   opts: SchemaType<typeof ExtractUrlsPlugin.schema>;
+  prevUrls: Set<string>; // in case of dynamic resource, urls already added
 
   constructor(opts: SchemaType<typeof ExtractUrlsPlugin.schema> = {}) {
     super(opts);
+    this.prevUrls = new Set<string>();
   }
 
   test(site: Site, resource: Resource) {
@@ -67,10 +69,10 @@ export default class ExtractUrlsPlugin extends Plugin {
   }
 
   apply(site: Site, resource: Resource) {
-    const resourcesToAdd: Partial<Resource>[] = this.extractResources(resource);
-    const result = this.diffAndMergeResult({ resourcesToAdd });
+    const allResourcesToAdd: Partial<Resource>[] = this.extractResources(resource);
+    const resourcesToAdd = this.diffAndMerge(allResourcesToAdd);
 
-    return result;
+    return { resourcesToAdd };
   }
 
   extractResources(resource): Partial<Resource>[] {
@@ -159,5 +161,16 @@ export default class ExtractUrlsPlugin extends Plugin {
     }
 
     return true;
+  }
+
+  diffAndMerge(resourcesToAdd: Partial<Resource>[]) {
+    return resourcesToAdd.filter(resource => {
+      if (!this.prevUrls.has(resource.url)) {
+        this.prevUrls.add(resource.url);
+        return true;
+      }
+
+      return false;
+    });
   }
 }

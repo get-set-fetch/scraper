@@ -3,10 +3,6 @@ import Plugin from '../Plugin';
 import Site from '../../storage/base/Site';
 import Resource from '../../storage/base/Resource';
 
-type ContentType = {
-  [key: string]: string[];
-}
-
 export default class ExtractHtmlContentPlugin extends Plugin {
   static get schema() {
     return {
@@ -43,9 +39,12 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   opts: SchemaType<typeof ExtractHtmlContentPlugin.schema>;
+  content: Set<string>; // in case of dynamic resource, content already scraped
 
   constructor(opts:SchemaType<typeof ExtractHtmlContentPlugin.schema> = {}) {
     super(opts);
+
+    this.content = new Set<string>();
   }
 
   test(site: Site, resource: Resource) {
@@ -56,19 +55,19 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   apply() {
-    const content = this.extractContent();
-    const result = this.diffAndMergeResult({ content });
-    return result;
+    const currentContent = this.extractContent();
+    const content = this.diffAndMerge(currentContent);
+    return { content };
   }
 
-  extractContent() {
-    let content: ContentType;
+  extractContent():string[][] {
+    let content: string[][];
 
-    // only makes sense for more than one selector and only if selectorBase returns multiple elements
+    // only makes sense for more than one selector and only if selectorBase returns valid elements
     let selectorBase = null;
     if (this.opts.selectorPairs.length > 1) {
       const potentialSelectorBase = this.getSelectorBase(this.opts.selectorPairs);
-      if (potentialSelectorBase && Array.from(document.querySelectorAll(potentialSelectorBase)).length > 1) {
+      if (potentialSelectorBase && Array.from(document.querySelectorAll(potentialSelectorBase)).length > 0) {
         selectorBase = potentialSelectorBase;
       }
     }
@@ -79,87 +78,63 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     */
     if (selectorBase) {
       const suffixSelectors = this.opts.selectorPairs.map(selectorPair => selectorPair.selector.replace(selectorBase, '').trim());
-      content = Array.from(document.querySelectorAll(selectorBase)).reduce<ContentType>(
-        (result, baseElm) => {
-          // scrape content for the current selectorBase "row"
-          const suffixResult:ContentType = {};
+      content = Array.from(document.querySelectorAll(selectorBase))
+        // scrape content for the current selectorBase "row"
+        .map((baseElm: HTMLElement) => {
+          const suffixRowResult:string[] = [];
           for (let i = 0; i < suffixSelectors.length; i += 1) {
-            const { selector, property } = this.opts.selectorPairs[i];
             const suffixSelector = suffixSelectors[i];
+            const { property } = this.opts.selectorPairs[i];
 
-            suffixResult[selector] = Array.from(baseElm.querySelectorAll(suffixSelector))
-              .map(elm => this.getContent((elm as HTMLElement), property))
-              .filter(val => val);
+            suffixRowResult.push(
+              Array.from(baseElm.querySelectorAll(suffixSelector))
+                .map(elm => this.getContent((elm as HTMLElement), property))
+                .filter(val => val)
+                .join(','),
+            );
           }
 
           // scraped content row is valid, at least one column contains a non-empty scraped value
-          const validScrapedRow = this.opts.selectorPairs.find(({ selector }) => {
-            const rowEntry = suffixResult[selector];
-            return rowEntry.length > 0;
-          });
+          const validRowResult = suffixRowResult.find(colEntry => colEntry.length > 0);
 
           // add scraped content row to agg result
-          if (validScrapedRow) {
-            for (let i = 0; i < this.opts.selectorPairs.length; i += 1) {
-              const { selector } = this.opts.selectorPairs[i];
-
-              // eslint-disable-next-line no-param-reassign
-              if (!result[selector]) result[selector] = [];
-
-              result[selector].push(suffixResult[selector].join(','));
-            }
+          if (validRowResult) {
+            return suffixRowResult;
           }
 
-          return result;
-        },
-        {},
-      );
+          return null;
+        })
+        // filter out rows containing no content
+        .filter(row => row);
     }
     // no common base detected
     else {
-      content = this.opts.selectorPairs.reduce<ContentType>(
-        (result, selectorPair) => Object.assign(
-          result,
-          {
-            [selectorPair.selector]: Array.from(
-              document.querySelectorAll(selectorPair.selector),
-            ).map(elm => this.getContent(elm as HTMLElement, selectorPair.property)),
-          },
-        ),
-        {},
+      const contentBySelector: string[][] = this.opts.selectorPairs.map(
+        selectorPair => Array
+          .from(document.querySelectorAll(selectorPair.selector))
+          .map(elm => this.getContent(elm as HTMLElement, selectorPair.property)),
       );
+
+      // make all selector results of equal length
+      const maxLength = Math.max(...contentBySelector.map(result => result.length));
+      for (let i = 0; i < contentBySelector.length; i += 1) {
+        const selectorContent = contentBySelector[i];
+        if (selectorContent.length < maxLength) {
+          const lastVal = selectorContent.length > 0 ? selectorContent[selectorContent.length - 1] : '';
+          selectorContent.splice(selectorContent.length, 0, ...Array(maxLength - selectorContent.length).fill(0).map(() => lastVal));
+          contentBySelector[i] = selectorContent;
+        }
+      }
+
+      // transform contentBySelector(each row contains one querySelector result) into content (each row contains one element from each querySelector result)
+      content = Array(maxLength).fill(0).map((val, idx) => {
+        const rowContent: string[] = [];
+        for (let i = 0; i < contentBySelector.length; i += 1) {
+          rowContent.push(contentBySelector[i][idx]);
+        }
+        return rowContent;
+      });
     }
-
-    /*
-    selector array values should be grouped by common dom parent, but a versatile way to do it has yet to be implemented
-    (lots of use cases to be covered)
-    simple example:
-        selectors: h1\nh2
-        h1: a1, a2
-        h2: b2
-        dom:
-          <div>
-            <h1>a1</h1>
-          </div>
-          <div>
-            <h1>a2</h1>
-            <h2>b2</h2>
-          </div>
-
-    ideal result:
-        h1: a1, a2
-        h2: '', b2
-    resulting in csv entries (further down the chain):
-        a1, ''
-        a2, b2
-
-    current implementation result
-        h1: a1, a2
-        h2: b2,
-    resulting in csv entries (further down the chain):
-        a1, b2
-        a2, ''
-    */
 
     return content;
   }
@@ -180,6 +155,22 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   getContent(elm: HTMLElement, prop: string):string {
-    return elm[prop] || elm.getAttribute(prop);
+    return elm[prop] !== undefined ? elm[prop] : elm.getAttribute(prop);
+  }
+
+  getContentKeys() {
+    return this.opts.selectorPairs.map(selectorPair => selectorPair.label || selectorPair.selector);
+  }
+
+  diffAndMerge(currentContent: string[][]) {
+    return currentContent.filter(contentRow => {
+      const joinedContent = contentRow.join(',');
+      if (!this.content.has(joinedContent)) {
+        this.content.add(joinedContent);
+        return true;
+      }
+
+      return false;
+    });
   }
 }
