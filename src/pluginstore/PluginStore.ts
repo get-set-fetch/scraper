@@ -56,6 +56,9 @@ export default class PluginStore {
   }
 
   static get(name: string) {
+    if (!PluginStore.store[name]) {
+      PluginStore.logger.error('Plugin %s not registered', name);
+    }
     return PluginStore.store[name];
   }
 
