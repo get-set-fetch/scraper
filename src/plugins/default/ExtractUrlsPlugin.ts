@@ -57,8 +57,8 @@ export default class ExtractUrlsPlugin extends Plugin {
     if (!resource) return false;
 
     // don't extract new resources from non-parsable pages
-    const validMediaType = (/html/i).test(resource.contentType);
-    if (!validMediaType) return false;
+    const validContentType = (/html/i).test(resource.contentType);
+    if (!validContentType) return false;
 
     // don't extract new resources if max depth has been reached
     const validMaxDepth = this.opts.maxDepth === -1 ? true : resource.depth < this.opts.maxDepth;
