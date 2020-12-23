@@ -3,6 +3,7 @@ import Plugin from '../Plugin';
 import Site from '../../storage/base/Site';
 import Resource from '../../storage/base/Resource';
 import BrowserClient from '../../browserclient/BrowserClient';
+import { waitForDomStability } from '../utils';
 
 export default class FetchPlugin extends Plugin {
   static get schema() {
@@ -79,8 +80,11 @@ export default class FetchPlugin extends Plugin {
     // to do add response status handling, 4xx, 5xx, for now assume it's 200
     const contentType:string = await client.evaluate(() => document.contentType);
 
-    if (/html/.test(contentType) && this.opts.stabilityTimeout > 0) {
-      await client.evaluate(this.waitForDomStability, this.opts.stabilityTimeout, this.opts.maxStabilityWaitingTime);
+    if (/html/.test(contentType) && this.opts.stabilityCheck > 0) {
+      const domIsStable = await client.evaluate(waitForDomStability, this.opts.stabilityCheck, this.opts.stabilityTimeout);
+      if (!domIsStable) {
+        throw new Error(`DOM not stable after stabilityTimeout of ${this.opts.stabilityTimeout}`);
+      }
     }
 
     // in case of redirects also return the updated resource url
@@ -101,42 +105,5 @@ export default class FetchPlugin extends Plugin {
     // extension found, test it against most probable extensions of html compatible mime types
     const ext = extensionMatch[1];
     return /htm|php/.test(ext);
-  }
-
-  waitForDomStability(timeout: number, maxWaitingTime: number):Promise<void> {
-    return new Promise(resolve => {
-      const startTime = Date.now();
-
-      const waitResolve = observer => {
-        observer.disconnect();
-        resolve();
-      };
-
-      let timeoutId;
-      const observer = new MutationObserver((mutationList, observer) => {
-        for (let i = 0; i < mutationList.length; i += 1) {
-          // we only care if new nodes have been added
-          if (mutationList[i].type === 'childList') {
-            /*
-            we've waited for stability to be reached long enough,
-            don't reset the timer again and allow waitForDomStability to resolve
-            */
-            if (maxWaitingTime > 0 && Date.now() - startTime > maxWaitingTime) {
-              return;
-            }
-
-            // restart the countdown timer
-            window.clearTimeout(timeoutId);
-            timeoutId = window.setTimeout(waitResolve, timeout, observer);
-            break;
-          }
-        }
-      });
-
-      timeoutId = setTimeout(waitResolve, timeout, observer);
-
-      // start observing document.body
-      observer.observe(document.body, { attributes: true, childList: true, subtree: true });
-    });
   }
 }
