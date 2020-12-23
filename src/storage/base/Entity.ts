@@ -23,7 +23,7 @@ export default abstract class Entity {
     return this.dbCols.reduce(
       (obj, dbCol) => {
         const stringifyObj = this[dbCol] !== null
-        && typeof this[dbCol] === 'object'
+        && (typeof this[dbCol] === 'object' || Array.isArray(this[dbCol]))
         && !(this[dbCol] instanceof Date);
 
         const dbVal = stringifyObj ? JSON.stringify(this[dbCol]) : this[dbCol];

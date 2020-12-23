@@ -71,43 +71,31 @@ export default class Scraper {
       return;
     }
 
-    const domWritePluginsPresent = this.site.plugins.some(
-      plugin => plugin.opts && plugin.opts.domWrite,
-    );
+    /*
+    scrapeResource always starts by retrieving a (static) resource from db
+    in case of dynamic actions, each valid dynamic action found will create a dynamic resource
+    scrapeResource will be triggered again with the newly created dynamic resource
+    only a single dynamic action (from a single plugin) can be triggered in a scrapeResource call
 
-    let staticResource:Resource = null;
-    let dynamicResource:Resource = null;
+    when scrapeResource returns null => there are no more resources to be scraped in db, stop scraping
+    */
+    let resource: Resource;
     do {
-      /*
-      a null resource will result in selection of a new resource from the db (ex: SelectResourcePlugin)
-      an existing resource can result in a new resource being generated in case of dynamic actions (ex: ScrollPlugin, ClickPlugin)
-
-      after applying all the plugins, if the returned resource is null:
-        - there are no resources to crawl from the db
-        - there are no more dynamic actions to take
-      => if both conditions are met, crawl is stopped
-      */
-
-      // retrieve static resource, opening its url in a new browser tab
-      staticResource = await this.scrapeResource(this.site);
-
-      if (staticResource && domWritePluginsPresent) {
-        do {
-          // retrieve dynamic resource, use the current tab dom state to further scroll, click, etc..
-          dynamicResource = await this.scrapeResource(this.site, staticResource);
-        }
-        while (dynamicResource);
-      }
+      resource = await this.scrapeResource(this.site);
     }
-    while (staticResource);
+    while (resource);
   }
 
-  async scrapeResource(site: Site, resource: Resource = null):Promise<Resource> {
+  async scrapeResource(site: Site, resource: Resource = null, triggerActions: string[] = null):Promise<Resource> {
+    // dynamic resource, a resource that was modified by a dynamic action: scroll, click, ..
+    if (triggerActions) {
+      this.logger.info('Started re-scraping a dynamic resource from site %s, url %s, dynamic action %s', site.name, resource.url, triggerActions);
+    }
+    else {
+      this.logger.info('Started scraping a new resource from site %s', site.name);
+    }
+
     let pluginIdx: number;
-    let resourceFound = false;
-
-    this.logger.info('Started scraping a new resource from site %s', site.name);
-
     try {
       /*
       will execute the plugins in the order they are defined
@@ -118,48 +106,21 @@ export default class Scraper {
 
         /*
         a plugin result can represent:
-        - a new static resource
-          - IdbResource from the db not yet crawled (ex: SelectResourcePlugin)
-        - a new dynamic resource (ex: ScrollPlugin, ClickPlugin)
-          - obj containing an "actions" key
+        - a new static resource: Resource from the db not yet crawled (ex: SelectResourcePlugin)
         - additional data/content to be merged with the current resource (ex: ExtractUrlsPlugin, ExtractHtmlContentPlugin, ...)
-          - generic object
         */
         this.logger.debug(result || undefined, 'Plugin result');
 
         // current plugin did not returned a result, move on to the next one
-        // eslint-disable-next-line no-continue
         if (!result) continue;
 
         // a new static resource has been selected for scraping
         if (result instanceof Resource) {
           resource = result;
-          resourceFound = true;
         }
-        /*
-        // a new dynamic resource has been generated, it will be crawled right away by the next plugins
-        else if (result.actions) {
-          resource = site.createResource(
-            Object.assign(
-              result,
-              {
-                siteId: resource.siteId,
-                url: resource.url,
-                mediaType: resource.contentType,
-                depth: resource.depth,
-                scrapeInProgress: true,
-              },
-            ),
-          );
-          resourceFound = true;
-        }
-        */
         // new content has been generated to be merged wih the current resource
         else {
-          // console.log(`result merging ${JSON.stringify(result)}`);
           Object.assign(resource, result);
-          // console.log(`new resource ${JSON.stringify(resource)}`);
-          // this.mergeResourceResult(resource, result);
         }
       }
 
@@ -198,7 +159,30 @@ export default class Scraper {
       }
     }
 
-    return resourceFound ? resource : null;
+    /*
+    resource is a dynamic one, successfully modified by a dynamic action: scroll, click, ..
+    scrape the newly generated content by re-triggering the scrape plugins
+    */
+    if (
+      resource
+      && resource.actions
+      && resource.actions.length > 0
+      && resource.actions.join(':') !== (triggerActions ? triggerActions.join(':') : null)
+    ) {
+      const dynamicResource:Resource = (
+        ({ url, depth, contentType, parent }) => site.createResource({ url, depth, contentType, parent })
+      )(resource);
+      return this.scrapeResource(site, dynamicResource);
+    }
+
+    /*
+    scraping of the current resource is complete
+    resource can be:
+    - null (no more resources to scrap)
+    - static
+    - dynamic with no more dynamic actions available
+    */
+    return resource;
   }
 
   async executePlugin(site: Site, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {

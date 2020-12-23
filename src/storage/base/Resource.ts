@@ -56,10 +56,14 @@ export default abstract class Resource extends Entity {
     if (typeof kwArgs.parent === 'string') {
       this.parent = JSON.parse(kwArgs.parent);
     }
+
+    if (typeof kwArgs.actions === 'string') {
+      this.actions = JSON.parse(kwArgs.actions);
+    }
   }
 
   get dbCols() {
-    return [ 'id', 'siteId', 'url', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'blob', 'parent' ];
+    return [ 'id', 'siteId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'blob', 'parent' ];
   }
 }
 

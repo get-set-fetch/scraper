@@ -27,14 +27,17 @@ export default class KnexResource extends Resource {
         if (KnexStorage.capabilities.jsonb) {
           builder.jsonb('content');
           builder.jsonb('parent');
+          builder.jsonb('actions');
         }
         else if (KnexStorage.capabilities.json) {
           builder.json('content');
           builder.json('parent');
+          builder.json('actions');
         }
         else {
           builder.string('content');
           builder.string('parent');
+          builder.string('actions');
         }
 
         builder.binary('blob');
