@@ -54,8 +54,7 @@ export default class ExtractUrlsPlugin extends Plugin {
   }
 
   test(site: Site, resource: Resource) {
-    // only extract new urls of a currently crawled resource
-    if (!resource || !resource.scrapeInProgress) return false;
+    if (!resource) return false;
 
     // don't extract new resources from non-parsable pages
     const validMediaType = (/html/i).test(resource.contentType);

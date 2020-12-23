@@ -20,9 +20,9 @@ describe('InsertResourcesPlugin', () => {
 
   it('test conditions', () => {
     plugin = new InsertResourcesPlugin();
-    assert.isFalse(plugin.test(site, <Resource>{}));
-    assert.isFalse(plugin.test(site, <Resource>{ resourcesToAdd: [ { url: 'http://a.com' } ] }));
-    assert.isTrue(plugin.test(site, <Resource>{ resourcesToAdd: [ { url: 'http://a.com' } ], scrapeInProgress: true }));
+    assert.isFalse(plugin.test(site, null));
+    assert.isFalse(plugin.test(site, <Resource>{ resourcesToAdd: [ ] }));
+    assert.isTrue(plugin.test(site, <Resource>{ resourcesToAdd: [ { url: 'http://a.com' } ] }));
   });
 
   it('fully save new resources, maxResources undefined', async () => {

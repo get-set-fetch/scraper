@@ -8,7 +8,7 @@ describe('UpsertResourcePlugin', () => {
 
   it('test conditions', () => {
     plugin = new UpsertResourcePlugin();
-    assert.isFalse(plugin.test(site, <Resource>{}));
-    assert.isTrue(plugin.test(site, <Resource>{ scrapeInProgress: true }));
+    assert.isFalse(plugin.test(site, null));
+    assert.isTrue(plugin.test(site, <Resource>{}));
   });
 });

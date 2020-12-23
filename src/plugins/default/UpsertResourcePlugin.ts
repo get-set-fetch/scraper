@@ -15,8 +15,7 @@ export default class UpsertResourcePlugin extends Plugin {
   }
 
   test(site: Site, resource: Resource) {
-    // only update a currently crawled resource
-    return !!(resource && resource.scrapeInProgress === true);
+    return !!(resource);
   }
 
   async apply(site: Site, resource: Resource) {

@@ -21,10 +21,9 @@ describe('ExtractUrlsPlugin', () => {
 
   it('test conditions', () => {
     plugin = new ExtractUrlsPlugin({ selectorPairs: [] });
-    assert.isFalse(plugin.test(site, <Resource>{ contentType: 'text/html' }));
-    assert.isTrue(plugin.test(site, <Resource>{ contentType: 'text/html', scrapeInProgress: true }));
+    assert.isFalse(plugin.test(site, null));
+    assert.isTrue(plugin.test(site, <Resource>{ contentType: 'text/html' }));
     assert.isFalse(plugin.test(site, <Resource>{ contentType: 'text/plain' }));
-    assert.isFalse(plugin.test(site, <Resource>{ contentType: 'text/plain', scrapeInProgress: true }));
   });
 
   it('extract unique urls - default options', () => {

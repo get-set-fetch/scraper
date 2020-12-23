@@ -31,8 +31,7 @@ export default class InsertResourcesPlugin extends Plugin {
   }
 
   test(site: Site, resource: Resource) {
-    // only save new urls of a currently crawled resource
-    if (!resource || !resource.scrapeInProgress) return false;
+    if (!resource) return false;
 
     // only save new urls if there's something to save
     const newResourcesPresent = resource.resourcesToAdd && resource.resourcesToAdd.length > 0;
