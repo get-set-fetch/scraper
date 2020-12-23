@@ -50,6 +50,9 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   test(site: Site, resource: Resource) {
     if (!resource) return false;
 
+    const selectorsPresent = this.opts.selectorPairs && this.opts.selectorPairs.length > 0;
+    if (!selectorsPresent) return false;
+
     return (/html/i).test(resource.contentType);
   }
 
