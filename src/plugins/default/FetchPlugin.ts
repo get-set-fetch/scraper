@@ -12,13 +12,13 @@ export default class FetchPlugin extends Plugin {
       title: 'Fetch Plugin',
       description: 'depending on resource type (binary, html), either downloads or opens in the scraping tab the resource url.',
       properties: {
-        stabilityTimeout: {
+        stabilityCheck: {
           type: 'integer',
           default: 0,
           title: 'Stability Timeout',
           description: 'Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Only applies to html resources. Useful for bypassing preloader content.',
         },
-        maxStabilityWaitingTime: {
+        stabilityTimeout: {
           type: 'integer',
           default: 0,
           title: 'Max Stability Waiting Time',
