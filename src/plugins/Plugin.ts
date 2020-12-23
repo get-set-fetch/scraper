@@ -12,6 +12,11 @@ export interface IPluginOpts {
   domRead?: boolean;
   domWrite?: boolean;
   [key: string]: any;
+
+  // position options within a plugin list
+  before?: string;
+  replace?: string;
+  after?: string;
 }
 
 export default abstract class Plugin {
