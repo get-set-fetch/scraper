@@ -21,6 +21,9 @@ export default class ExtractHtmlContentPlugin extends Plugin {
           items: {
             type: 'object',
             properties: {
+              label: {
+                type: 'string',
+              },
               selector: {
                 type: 'string',
               },
