@@ -1,11 +1,25 @@
+export enum DomStabilityStatus {
+  Stable,
+  Unstable,
+  Unchanged
+}
+
 /* eslint-disable import/prefer-default-export */
-function waitForDomStability(stabilityCheck: number, stabilityTimeout: number):Promise<boolean> {
+function waitForDomStability(stabilityCheck: number, stabilityTimeout: number):Promise<DomStabilityStatus> {
   return new Promise(resolve => {
     let stabilityCheckId:number;
+    let domChanged = false;
 
-    const waitResolve = observer => {
-      observer.disconnect();
-      resolve(true);
+    const waitStableResolve = observer => {
+      // dom has changed and is stable
+      if (domChanged) {
+        observer.disconnect();
+        resolve(DomStabilityStatus.Stable);
+      }
+      // re-start stability check countdown
+      else {
+        stabilityCheckId = window.setTimeout(waitStableResolve, stabilityCheck, observer);
+      }
     };
 
     const observer = new MutationObserver((mutationList, observer) => {
@@ -13,15 +27,16 @@ function waitForDomStability(stabilityCheck: number, stabilityTimeout: number):P
         // we only care if new nodes have been added
         if (mutationList[i].type === 'childList') {
           // restart the stabilityCheck timer
+          domChanged = true;
           window.clearTimeout(stabilityCheckId);
-          stabilityCheckId = window.setTimeout(waitResolve, stabilityCheck, observer);
+          stabilityCheckId = window.setTimeout(waitStableResolve, stabilityCheck, observer);
           break;
         }
       }
     });
 
     // start stability check countdown
-    stabilityCheckId = window.setTimeout(waitResolve, stabilityCheck, observer);
+    stabilityCheckId = window.setTimeout(waitStableResolve, stabilityCheck, observer);
 
     // start observing document.body
     observer.observe(document.body, { attributes: true, childList: true, subtree: true });
@@ -33,7 +48,7 @@ function waitForDomStability(stabilityCheck: number, stabilityTimeout: number):P
         window.clearTimeout(stabilityCheckId);
 
         observer.disconnect();
-        resolve(false);
+        resolve(domChanged ? DomStabilityStatus.Unstable : DomStabilityStatus.Unchanged);
       },
       stabilityTimeout,
     );
