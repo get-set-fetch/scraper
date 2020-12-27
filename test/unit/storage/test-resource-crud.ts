@@ -27,6 +27,7 @@ export default function crudResource(storage: Storage) {
         content: null,
         contentType: null,
         parent: null,
+        actions: null,
       });
     });
 

@@ -93,10 +93,10 @@ export default class Scraper {
     while (resource);
   }
 
-  async scrapeResource(site: Site, resource: Resource = null, triggerActions: string[] = null):Promise<Resource> {
+  async scrapeResource(site: Site, resource: Resource = null):Promise<Resource> {
     // dynamic resource, a resource that was modified by a dynamic action: scroll, click, ..
-    if (triggerActions) {
-      this.logger.info('Started re-scraping a dynamic resource from site %s, url %s, dynamic action %s', site.name, resource.url, triggerActions);
+    if (resource && resource.actions) {
+      this.logger.info('Started re-scraping a dynamic resource from site %s, url %s, dynamic action %s', site.name, resource.url, resource.actions);
     }
     else {
       this.logger.info('Started scraping a new resource from site %s', site.name);
@@ -174,10 +174,9 @@ export default class Scraper {
       resource
       && resource.actions
       && resource.actions.length > 0
-      && resource.actions.join(':') !== (triggerActions ? triggerActions.join(':') : null)
     ) {
       const dynamicResource:Resource = (
-        ({ url, depth, contentType, parent }) => site.createResource({ url, depth, contentType, parent })
+        ({ url, depth, contentType, parent, actions }) => site.createResource({ url, depth, contentType, parent, actions })
       )(resource);
       return this.scrapeResource(site, dynamicResource);
     }

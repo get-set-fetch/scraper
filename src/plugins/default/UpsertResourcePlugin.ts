@@ -28,6 +28,12 @@ export default class UpsertResourcePlugin extends Plugin {
       - save the initial url under a new resource to avoid future redirects on the same url
     */
     await this.addRedirectOriginResource(site, resource.redirectOrigin);
+
+    /*
+    after a resource is updated, remove its dynamic actions
+    this allows for other dynamic plugins to be triggered
+    */
+    return { actions: null };
   }
 
   async saveResource(resource: Resource) {
