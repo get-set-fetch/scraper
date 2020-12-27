@@ -57,9 +57,14 @@ export default class ScrollPlugin extends Plugin {
   }
 
   test(site: Site, resource: Resource) {
+    if (!resource) return false;
+
     // don't attempt to scroll non-html resources
     const validContentType = (/html/i).test(resource.contentType);
     if (!validContentType) return false;
+
+    // if a dynamic action was already performed against the resource, don't perform another one
+    if (resource.actions) return false;
 
     // don't exceed max allowed scroll actions
     const scrollExceeded = this.opts.maxActions >= 0 ? this.actionNo >= this.opts.maxActions : false;
