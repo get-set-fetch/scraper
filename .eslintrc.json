@@ -14,7 +14,7 @@
       "modules": true
     },
     "useJSXTextNode": true,
-    "project": "./tsconfig.json"
+    "project": ["./tsconfig.json", "./test/tsconfig.test.json"]
   },
   "settings": {
     "import/resolver": {

@@ -9,5 +9,8 @@
       "allowJs": true,
       "newLine": "LF",
   },
+  "include": [
+    "../test"
+  ],
   
 }
