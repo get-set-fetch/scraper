@@ -1,0 +1,50 @@
+{
+  "url": "https://.com/.html",
+  "scenario": "static-content",
+  "pluginOpts": [
+    {
+      "name": "ExtractHtmlContentPlugin",
+      "selectorPairs": [
+        {
+          "label": "",
+          "selector": "",
+          "property": "innerText"
+        }
+      ],
+      "domRead": true
+    },
+    {
+      "name": "ExtractUrlsPlugin",
+      "selectorPairs": [
+        { 
+          "urlSelector": "a",
+          "titleSelector": ""
+        }
+      ],
+      "maxDepth": -1
+    },
+    {
+      "name": "FetchPlugin",
+      "stabilityCheck": 0,
+      "stabilityTimeout": 0
+    },
+    {
+      "name": "InsertResourcesPlugin",
+      "maxResources": -1
+    },
+    {
+      "name": "ScrollPlugin",
+      "domWrite": true,
+      "delay": 1000,
+      "maxActions": -1
+    },
+    {
+      "name": "SelectResourcePlugin",
+      "frequency": -1,
+      "delay": 1000
+    },
+    {
+      "name": "UpsertResourcePlugin"
+    }
+  ]
+}
