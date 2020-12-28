@@ -50,6 +50,7 @@ export default function integrationSuite(storage: Storage) {
 
     afterEach(async () => {
       await Site.delAll();
+      await browserClient.closePage();
     });
 
     after(async () => {
