@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { createSandbox, SinonSandbox, SinonStubbedInstance } from 'sinon';
+import { createSandbox, SinonSandbox } from 'sinon';
 import ScrollPlugin from '../../../src/plugins/default/ScrollPlugin';
 import * as utils from '../../../src/plugins/utils';
 import Resource from '../../../src/storage/base/Resource';
@@ -21,8 +21,8 @@ describe('ScrollPlugin', () => {
   it('test conditions', () => {
     plugin = new ScrollPlugin();
     assert.isFalse(plugin.test(site, null));
-    assert.isFalse(plugin.test(site, <Resource>{actions: ["clickA"]}));
-    assert.isTrue(plugin.test(site, <Resource>{contentType: "text/html"}));
+    assert.isFalse(plugin.test(site, <Resource>{ actions: [ 'clickA' ] }));
+    assert.isTrue(plugin.test(site, <Resource>{ contentType: 'text/html' }));
   });
 
   it('apply DOM unchanged', async () => {
@@ -31,7 +31,7 @@ describe('ScrollPlugin', () => {
     stubWaitForStability.returns(new Promise(resolve => resolve(utils.DomStabilityStatus.Unchanged)));
 
     const actualResult = await plugin.apply();
-    assert.isNull(actualResult);    
+    assert.isNull(actualResult);
   });
 
   it('apply DOM changed, stable', async () => {
@@ -40,8 +40,8 @@ describe('ScrollPlugin', () => {
     stubWaitForStability.returns(new Promise(resolve => resolve(utils.DomStabilityStatus.Stable)));
 
     const actualResult = await plugin.apply();
-    const expectedResult = {actions: ["scroll#1"]}
-    assert.deepEqual(actualResult, expectedResult);    
+    const expectedResult = { actions: [ 'scroll#1' ] };
+    assert.deepEqual(actualResult, expectedResult);
   });
 
   it('apply DOM changed, unstable', async () => {
@@ -57,6 +57,6 @@ describe('ScrollPlugin', () => {
       actualErr = err;
     }
 
-    assert.strictEqual(actualErr.message, `DOM not stable after stabilityTimeout of ${plugin.opts.stabilityTimeout}`)
+    assert.strictEqual(actualErr.message, `DOM not stable after stabilityTimeout of ${plugin.opts.stabilityTimeout}`);
   });
 });

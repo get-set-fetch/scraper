@@ -25,8 +25,8 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     const expectedContent = [
-      ['h1 valA'],
-      ['h1 valB']
+      [ 'h1 valA' ],
+      [ 'h1 valB' ],
     ];
 
     const { content } = plugin.apply();
@@ -45,8 +45,8 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     const expectedContent = [
-      [ 'h1 valA', ''],
-      [ 'h1 valB', '']
+      [ 'h1 valA', '' ],
+      [ 'h1 valB', '' ],
     ];
 
     const { content } = plugin.apply();
@@ -69,9 +69,9 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     const expectedContent = [
-      ['h1 valA', 'h2 valA'],
-      ['h1 valA', 'h2 valB'],
-      ['h1 valC', 'h2 valC']
+      [ 'h1 valA', 'h2 valA' ],
+      [ 'h1 valA', 'h2 valB' ],
+      [ 'h1 valC', 'h2 valC' ],
     ];
 
     const { content } = plugin.apply();
@@ -95,8 +95,8 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     const expectedContent = [
-      ['h1 valA', 'h2 valA', ''],
-      ['h1 valB', 'h2 valB', ''],
+      [ 'h1 valA', 'h2 valA', '' ],
+      [ 'h1 valB', 'h2 valB', '' ],
     ];
 
     const { content } = plugin.apply();
@@ -115,9 +115,9 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     const expectedContent = [
-      ['h1 valA', 'h2 valA', ''],
-      ['h1 valB', '', 'h3 valB'],
-      ['', 'h2 valC', 'h3 valC']
+      [ 'h1 valA', 'h2 valA', '' ],
+      [ 'h1 valB', '', 'h3 valB' ],
+      [ '', 'h2 valC', 'h3 valC' ],
     ];
 
     const { content } = plugin.apply();
@@ -136,8 +136,8 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     const expectedContent = [
-      ['h1 valB', '', 'h3 valB'],
-      ['', 'h2 valC', 'h3 valC' ]
+      [ 'h1 valB', '', 'h3 valB' ],
+      [ '', 'h2 valC', 'h3 valC' ],
     ];
 
     const { content } = plugin.apply();
@@ -164,9 +164,9 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     let expectedContent = [
-      ['h1 valA', 'h2 valA', 'h3 valA'],
-      ['h1 valA', 'h2 valB', 'h3 valB'],
-      ['h1 valA', 'h2 valC', 'h3 valB']
+      [ 'h1 valA', 'h2 valA', 'h3 valA' ],
+      [ 'h1 valA', 'h2 valB', 'h3 valB' ],
+      [ 'h1 valA', 'h2 valC', 'h3 valB' ],
     ];
 
     let { content } = plugin.apply();
@@ -196,7 +196,7 @@ describe('ExtractHtmlContentPlugin', () => {
     expectedContent = [
       [ 'h1 valD', 'h2 valB', 'h3 valB' ],
       [ 'h1 valD', 'h2 valC', 'h3 valD' ],
-      [ 'h1 valD', 'h2 valD', 'h3 valD' ]
+      [ 'h1 valD', 'h2 valD', 'h3 valD' ],
     ];
 
     ({ content } = plugin.apply());
@@ -221,9 +221,9 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     let expectedContent = [
-      ['h1 valA', 'h2 valA', ''],
-      ['h1 valB', 'h2 valB', ''],
-    ]
+      [ 'h1 valA', 'h2 valA', '' ],
+      [ 'h1 valB', 'h2 valB', '' ],
+    ];
 
     let { content } = plugin.apply();
     assert.deepEqual(content, expectedContent);
@@ -245,7 +245,7 @@ describe('ExtractHtmlContentPlugin', () => {
     ]);
 
     expectedContent = [
-      ['h1 valC', 'h2 valC', 'h3 valC']
+      [ 'h1 valC', 'h2 valC', 'h3 valC' ],
     ];
 
     ({ content } = plugin.apply());

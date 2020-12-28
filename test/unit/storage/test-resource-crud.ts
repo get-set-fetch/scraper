@@ -46,22 +46,23 @@ export default function crudResource(storage: Storage) {
 
     it(`${storage.config.client} resource getPagedContent`, async () => {
       await Resource.delAll();
-      for (let i = 1; i < 4; i+=1) {
-        const resource = new Resource({siteId: 1, url: `urlA${i}`, content: [[`title${i}`]] })
+      for (let i = 1; i < 4; i += 1) {
+        const resource = new Resource({ siteId: 1, url: `urlA${i}`, content: [ [ `title${i}` ] ] });
+        // eslint-disable-next-line no-await-in-loop
         await resource.save();
       }
 
       const page1Resources = await Resource.getPagedContent(1, 0, 2);
       const page1Urls = page1Resources.map(resource => resource.url);
       const page1Content = page1Resources.map(resource => resource.content);
-      assert.sameMembers(page1Urls, ["urlA1", "urlA2"]);
-      assert.sameDeepMembers(page1Content, [ [['title1']],  [['title2']] ])
+      assert.sameMembers(page1Urls, [ 'urlA1', 'urlA2' ]);
+      assert.sameDeepMembers(page1Content, [ [ [ 'title1' ] ], [ [ 'title2' ] ] ]);
 
       const page2Resources = await Resource.getPagedContent(1, 2, 2);
       const page2Urls = page2Resources.map(resource => resource.url);
       const page2Content = page2Resources.map(resource => resource.content);
-      assert.sameMembers(page2Urls, ["urlA3"]);
-      assert.sameDeepMembers(page2Content, [ [['title3']] ])
+      assert.sameMembers(page2Urls, [ 'urlA3' ]);
+      assert.sameDeepMembers(page2Content, [ [ [ 'title3' ] ] ]);
     });
 
     it(`${storage.config.client} resource update`, async () => {
