@@ -20,9 +20,12 @@ export default abstract class Entity {
   }
 
   toJSON() {
+    const TypedArray = Object.getPrototypeOf(Uint8Array);
+
     return this.dbCols.reduce(
       (obj, dbCol) => {
         const stringifyObj = this[dbCol] !== null
+        && !(this[dbCol] instanceof TypedArray)
         && (typeof this[dbCol] === 'object' || Array.isArray(this[dbCol]))
         && !(this[dbCol] instanceof Date);
 

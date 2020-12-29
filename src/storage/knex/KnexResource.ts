@@ -40,7 +40,7 @@ export default class KnexResource extends Resource {
           builder.string('actions');
         }
 
-        builder.binary('blob');
+        builder.binary('data');
       },
     );
   }

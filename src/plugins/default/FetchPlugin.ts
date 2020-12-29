@@ -51,19 +51,27 @@ export default class FetchPlugin extends Plugin {
       return this.openInTab(site, resource, client);
     }
 
-    // url appears to be a non html mime type, download it and store it as blob
+    /*
+    url appears to be a non html mime type,
+    download it and store it as Uint8Array compatible with both nodejs and browser env
+    */
     return this.fetch(resource, client);
   }
 
   // fetch resource via builtin fetch
-  fetch(resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
-    return client.evaluate(
+  async fetch(resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
+    const serializedBlob:{binaryString: string, contentType: string} = await client.evaluate(
       (url: string) => new Promise(async (resolve, reject) => {
         try {
           const response = await fetch(url, { method: 'GET', credentials: 'include' });
           if (response.blob) {
             const blob = await response.blob();
-            resolve({ blob, contentType: blob.type });
+            const reader = new FileReader();
+            reader.readAsBinaryString(blob);
+            reader.onload = () => resolve({ binaryString: reader.result, contentType: blob.type });
+            reader.onerror = () => {
+              throw Error('error reading binary string');
+            };
           }
         }
         catch (err) {
@@ -72,6 +80,11 @@ export default class FetchPlugin extends Plugin {
       }),
       resource.url,
     );
+
+    return {
+      data: Buffer.from(serializedBlob.binaryString, 'binary'),
+      contentType: serializedBlob.contentType,
+    };
   }
 
   async openInTab(site: Site, resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {

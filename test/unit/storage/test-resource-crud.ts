@@ -23,7 +23,7 @@ export default function crudResource(storage: Storage) {
 
       // saving the resources, adds the missing fields as null, add that to expected resource
       Object.assign(expectedResource, {
-        blob: null,
+        data: null,
         content: null,
         contentType: null,
         parent: null,

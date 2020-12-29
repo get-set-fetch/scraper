@@ -18,7 +18,7 @@ export default abstract class Resource extends Entity {
 
   contentType: string;
   content: string[][];
-  blob: Blob;
+  data: Uint8Array;
 
   parent: IResourceParent;
 
@@ -58,7 +58,7 @@ export default abstract class Resource extends Entity {
   }
 
   get dbCols() {
-    return [ 'id', 'siteId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'blob', 'parent' ];
+    return [ 'id', 'siteId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'data', 'parent' ];
   }
 }
 
