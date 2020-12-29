@@ -62,10 +62,21 @@ export default abstract class Resource extends Entity {
   }
 }
 
+export type ResourceQuery = {
+  offset: number;
+  limit: number;
+  where: {
+    siteId: number;
+    [prop: string]: string|number;
+  },
+  whereNotNull: string[],
+  cols: string[];
+}
+
 export interface IStaticResource extends IEntity {
   new(kwArgs: Partial<Resource>): Resource;
   getResource(siteId:number, url: string):Promise<Resource>;
-  getPagedContent(siteId: number, offset:number, limit: number):Promise<Partial<Resource>[]>;
+  getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
   getAll(siteId: number):Promise<any[]>;
   getResourceToCrawl(siteId:number):Promise<Resource>;
 }

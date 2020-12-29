@@ -1,5 +1,5 @@
 import { QueryBuilder } from 'knex';
-import Resource from '../base/Resource';
+import Resource, { ResourceQuery } from '../base/Resource';
 import KnexStorage from './KnexStorage';
 
 export default class KnexResource extends Resource {
@@ -50,12 +50,32 @@ export default class KnexResource extends Resource {
     return rawResource ? new KnexResource(rawResource) : undefined;
   }
 
-  static async getPagedContent(siteId: number, offset: number, limit: number):Promise<Partial<Resource>[]> {
-    const rawResources:any[] = await KnexResource.builder.select('url', 'content').where({ siteId }).offset(offset).limit(limit);
+  static async getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]> {
+    const { cols, where, whereNotNull, offset, limit } = query;
+
+    let queryBuilder = KnexResource.builder.select(cols || [ 'url', 'content' ]).where(where);
+    if (offset !== undefined) {
+      queryBuilder = queryBuilder.offset(offset);
+    }
+    if (limit !== undefined) {
+      queryBuilder = queryBuilder.limit(limit);
+    }
+    if (whereNotNull) {
+      whereNotNull.forEach(notNullCol => {
+        queryBuilder = queryBuilder.whereNotNull(notNullCol);
+      });
+    }
+
+    const rawResources:any[] = await queryBuilder;
 
     // json value returned as string not obj, parse the content string into proper json obj
     if (rawResources.length > 0 && typeof rawResources[0].content === 'string') {
       return rawResources.map(rawResource => Object.assign(rawResource, { content: JSON.parse(rawResource.content) }));
+    }
+
+    // json value returned as string not obj, parse the parent string into proper json obj
+    if (rawResources.length > 0 && typeof rawResources[0].parent === 'string') {
+      return rawResources.map(rawResource => Object.assign(rawResource, { parent: JSON.parse(rawResource.parent) }));
     }
 
     // no conversion required

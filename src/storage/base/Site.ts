@@ -1,6 +1,6 @@
 import Entity, { IEntity } from './Entity';
 import Plugin, { IPluginOpts } from '../../plugins/Plugin';
-import Resource from './Resource';
+import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 
 export default abstract class Site extends Entity {
@@ -40,7 +40,7 @@ export default abstract class Site extends Entity {
 
   abstract getResources():Promise<Resource[]>;
 
-  abstract getPagedContent(offset:number, limit: number):Promise<Partial<Resource>[]>;
+  abstract getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
 
   abstract saveResources(resources: Partial<Resource>[]):Promise<void>;
 

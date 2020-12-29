@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { QueryBuilder } from 'knex';
-import Resource from '../base/Resource';
+import Resource, { ResourceQuery } from '../base/Resource';
 import Site from '../base/Site';
 import KnexResource from './KnexResource';
 import KnexStorage from './KnexStorage';
@@ -88,8 +88,10 @@ export default class KnexSite extends Site {
     return rawResources.map(rawResource => new KnexResource(rawResource));
   }
 
-  async getPagedContent(offset: number, limit: number):Promise<Partial<Resource>[]> {
-    return KnexResource.getPagedContent(this.id, offset, limit);
+  async getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]> {
+    // eslint-disable-next-line no-param-reassign
+    query.where = { ...query.where, siteId: this.id };
+    return KnexResource.getPagedResources(query);
   }
 
   getResourceToCrawl() {
