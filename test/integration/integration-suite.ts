@@ -1,3 +1,4 @@
+import { unlinkSync } from 'fs';
 import { GsfServer, ScrapingSuite } from 'get-set-fetch-test-utils';
 import { IScrapingTest } from 'get-set-fetch-test-utils/lib/scraping-suite/ScrapingSuite';
 import BrowserClient from '../../src/browserclient/BrowserClient';
@@ -80,8 +81,20 @@ export default function integrationSuite(storage: Storage) {
         // compare results
         const resources = await site.getResources();
         // console.log(JSON.stringify(resources));
-
         ScrapingSuite.checkResources(resources, test.resources);
+
+        // check archive for binary scraping
+        if (test.archiveEntries) {
+          // generate archive
+          const archivePath = `./test/tmp/${test.title}.zip`;
+          await scraper.export(archivePath, { type: 'zip' });
+
+          // test it
+          await ScrapingSuite.checkArchiveEntries(archivePath, test.archiveEntries);
+
+          // delete it
+          unlinkSync(archivePath);
+        }
       });
     });
   });

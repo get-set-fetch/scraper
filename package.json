@@ -24,6 +24,7 @@
   "devDependencies": {
     "@types/chai": "^4.2.13",
     "@types/json-schema": "^7.0.6",
+    "@types/jszip": "^3.4.1",
     "@types/mocha": "^8.0.3",
     "@types/node": "^14.11.8",
     "@types/pako": "^1.0.1",
@@ -56,6 +57,7 @@
   "dependencies": {
     "@rollup/plugin-typescript": "^8.1.0",
     "immutable": "^4.0.0-rc.12",
+    "jszip": "^3.5.0",
     "pako": "^2.0.2",
     "pino": "^6.8.0",
     "puppeteer": "^5.3.1",

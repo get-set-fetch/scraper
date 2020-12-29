@@ -10,8 +10,9 @@ import PluginStore from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
 import Storage from '../storage/base/Storage';
 import { scenarios, mergePluginOpts } from '../scenarios/scenarios';
-import CsvExporter from '../export/CsvExporter';
 import Exporter, { ExportOptions } from '../export/Exporter';
+import CsvExporter from '../export/CsvExporter';
+import ZipExporter from '../export/ZipExporter';
 
 /*
 scraper is:
@@ -270,6 +271,9 @@ export default class Scraper {
     switch (opts.type) {
       case 'csv':
         exporter = new CsvExporter(this.site, filepath, opts);
+        break;
+      case 'zip':
+        exporter = new ZipExporter(this.site, filepath, opts);
         break;
       default:
         this.logger.error(`unsupported export type ${opts.type}`);
