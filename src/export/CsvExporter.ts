@@ -1,11 +1,23 @@
 import fs from 'fs';
 import Resource from '../storage/base/Resource';
-import Exporter from './Exporter';
+import Exporter, { ExportOptions } from './Exporter';
 
+export type CsvExportOptions = ExportOptions & {
+  type: 'csv',
+  cols?: string[];
+  fieldSeparator?: string;
+  lineSeparator?: string;
+  pageLimit?: number;
+}
 export default class CsvExporter extends Exporter {
+  opts: CsvExportOptions;
+
   async export() {
     const { lineSeparator, fieldSeparator, pageLimit } = this.opts;
     let pageOffset = 0;
+
+    let resources = await this.site.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
+    if (resources.length === 0) throw new Error('No csv content to export.');
 
     const wstream = fs.createWriteStream(this.filepath);
 
@@ -13,7 +25,6 @@ export default class CsvExporter extends Exporter {
     wstream.write([ 'url', ...this.getContentKeys() ].join(fieldSeparator));
 
     // write csv body
-    let resources = await this.site.getPagedContent(pageOffset, pageLimit);
     while (resources && resources.length > 0) {
       resources.forEach(resource => {
         wstream.write(lineSeparator);
@@ -23,7 +34,7 @@ export default class CsvExporter extends Exporter {
 
       pageOffset += pageLimit;
       // eslint-disable-next-line no-await-in-loop
-      resources = await this.site.getPagedContent(pageOffset, pageLimit);
+      resources = await this.site.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
     }
 
     wstream.close();
@@ -61,5 +72,15 @@ export default class CsvExporter extends Exporter {
 
     const quotedVal = contentVal.replace(/"/g, '""');
     return `"${quotedVal}"`;
+  }
+
+  getDefaultOptions():CsvExportOptions {
+    return {
+      type: 'csv',
+      fieldSeparator: ',',
+      lineSeparator: '\n',
+      cols: [ 'url', 'content' ],
+      pageLimit: 100,
+    };
   }
 }

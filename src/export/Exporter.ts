@@ -1,10 +1,7 @@
 import Site from '../storage/base/Site';
 
 export type ExportOptions = {
-  cols: string[];
-  fieldSeparator: string;
-  lineSeparator: string;
-  pageLimit: number;
+  type: 'csv'|'zip';
 }
 
 export default abstract class Exporter {
@@ -13,18 +10,13 @@ export default abstract class Exporter {
   opts: ExportOptions;
 
   constructor(site:Site, filepath: string, opts: Partial<ExportOptions> = {}) {
-    const defaultOpts:ExportOptions = {
-      fieldSeparator: ',',
-      lineSeparator: '\n',
-      cols: [ 'url', 'content' ],
-      pageLimit: 100,
-    };
-    const mergedOpts = Object.assign(defaultOpts, opts);
+    const mergedOpts = Object.assign(this.getDefaultOptions(), opts);
 
     this.opts = mergedOpts;
     this.filepath = filepath;
     this.site = site;
   }
 
+  abstract getDefaultOptions():ExportOptions;
   abstract export():Promise<void>;
 }

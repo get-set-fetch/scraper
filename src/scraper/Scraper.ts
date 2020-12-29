@@ -259,15 +259,21 @@ export default class Scraper {
     return result;
   }
 
-  async export(type: 'csv', filepath: string, opts: ExportOptions):Promise<void> {
+  async export(filepath: string, opts: ExportOptions):Promise<void> {
     let exporter: Exporter;
-    if (type === 'csv') {
-      exporter = new CsvExporter(this.site, filepath, opts);
+
+    if (!(opts && opts.type)) {
+      this.logger.error('specify an export type');
+      return;
     }
 
-    if (!exporter) {
-      this.logger.error(`unsupported export type ${type}`);
-      return;
+    switch (opts.type) {
+      case 'csv':
+        exporter = new CsvExporter(this.site, filepath, opts);
+        break;
+      default:
+        this.logger.error(`unsupported export type ${opts.type}`);
+        return;
     }
 
     await exporter.export();
