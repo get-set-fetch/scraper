@@ -34,11 +34,11 @@ describe('CsvExporter', () => {
 
   it('array values - single selector', async () => {
     site.plugins = [ { getContentKeys: () => [ 'colA' ] } ];
-    site.getPagedContent.onCall(0).returns([
+    site.getPagedResources.onCall(0).returns([
       { url: 'urlA', content: [ [ 'A1 content' ], [ 'A2 content' ] ] },
       { url: 'urlB', content: [ [ 'A3 content' ] ] },
     ]);
-    site.getPagedContent.onCall(1).returns([]);
+    site.getPagedResources.onCall(1).returns([]);
     await exporter.export();
 
     const expectedContent = `url,colA
@@ -52,11 +52,11 @@ describe('CsvExporter', () => {
 
   it('array values - multiple selectors', async () => {
     site.plugins = [ { getContentKeys: () => [ 'colA', 'colB' ] } ];
-    site.getPagedContent.onCall(0).returns([
+    site.getPagedResources.onCall(0).returns([
       { url: 'urlA', content: [ [ 'A1 content', 'B1 content' ], [ 'A2 content', 'B2 content' ] ] },
       { url: 'urlB', content: [ [ 'A3 content', 'B3 content' ] ] },
     ]);
-    site.getPagedContent.onCall(1).returns([]);
+    site.getPagedResources.onCall(1).returns([]);
     await exporter.export();
 
     const expectedContent = `url,colA,colB
