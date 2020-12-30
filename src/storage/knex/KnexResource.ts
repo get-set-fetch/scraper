@@ -1,6 +1,6 @@
 import { QueryBuilder } from 'knex';
 import Resource, { ResourceQuery } from '../base/Resource';
-import KnexStorage from './KnexStorage';
+import KnexStorage, { binaryCol, jsonCol } from './KnexStorage';
 
 export default class KnexResource extends Resource {
   static get builder():QueryBuilder {
@@ -24,23 +24,11 @@ export default class KnexResource extends Resource {
         builder.boolean('scrapeInProgress');
         builder.string('contentType');
 
-        if (KnexStorage.capabilities.jsonb) {
-          builder.jsonb('content');
-          builder.jsonb('parent');
-          builder.jsonb('actions');
-        }
-        else if (KnexStorage.capabilities.json) {
-          builder.json('content');
-          builder.json('parent');
-          builder.json('actions');
-        }
-        else {
-          builder.string('content');
-          builder.string('parent');
-          builder.string('actions');
-        }
+        jsonCol(builder, 'content');
+        jsonCol(builder, 'parent');
+        jsonCol(builder, 'actions');
 
-        builder.binary('data');
+        binaryCol(builder, 'data');
       },
     );
   }

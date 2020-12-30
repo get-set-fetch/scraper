@@ -5,13 +5,9 @@ import KnexResource from './KnexResource';
 import KnexSite from './KnexSite';
 
 export type CapabilitiesType = {
-  jsonb: boolean;
-  json: boolean;
   returning: boolean;
   int8String: boolean;
-  uint8Array: boolean;
 }
-
 export default class KnexStorage extends Storage {
   static knex: Knex;
 
@@ -32,55 +28,48 @@ export default class KnexStorage extends Storage {
     this.isConnected = false;
   }
 
-  static get capabilities():CapabilitiesType {
+  static get client():string {
     if (!KnexStorage.knex) {
       throw new Error('connect to db first');
     }
 
     const { config } = KnexStorage.knex.client;
+    return config.client;
+  }
 
-    /*
-    json columns not supported in sqlite, don't rely on functions from json1 extension [1]
-    that may or may not be embedded in the sqlite db being used
-    manually invoke JSON.strigify, JSON.parse on the target column
-    [1] - https://www.sqlite.org/json1.html
-    */
-    const json = config.client !== 'sqlite3';
+  static get capabilities():CapabilitiesType {
+    if (!KnexStorage.knex) {
+      throw new Error('connect to db first');
+    }
 
-    // only postgres supports jsonb
-    const jsonb = config.client === 'pg';
+    const { client } = KnexStorage;
 
     // only postgres needs returning on insert statements to retrieve newly inserted data
-    const returning = config.client === 'pg';
+    const returning = client === 'pg';
 
     /*
     only postgres returns 64-bit integers (int8) from queries like count(*)
     javascript doesn't support 64-bit integers so postgres returns them as string
     */
-    const int8String = config.client === 'pg';
-
-    // mysql doesn't insert Uint8Array as binary, needs to be converted to Buffer first
-    const uint8Array = config.client !== 'mysql';
+    const int8String = client === 'pg';
 
     return {
-      json,
-      jsonb,
       returning,
       int8String,
-      uint8Array,
     };
   }
 
   static toJSON(entity:Entity) {
     const { dbCols } = entity;
-    const { uint8Array } = KnexStorage.capabilities;
+    const { client } = KnexStorage;
 
     const obj = {};
     dbCols.forEach(dbCol => {
       let dbVal = entity[dbCol];
 
       if (dbVal instanceof Object.getPrototypeOf(Uint8Array)) {
-        if (!uint8Array) {
+        // mysql doesn't insert Uint8Array as binary, needs to be converted to Buffer first
+        if (client === 'mysql') {
           dbVal = Buffer.from(dbVal);
         }
       }
@@ -106,5 +95,36 @@ export default class KnexStorage extends Storage {
 
   get Site() {
     return KnexSite;
+  }
+}
+
+export function binaryCol(builder:Knex.CreateTableBuilder, colName: string):void {
+  // mysql driver creates a BLOB column with just 64KB for knex.binary, override it
+  if (KnexStorage.client === 'mysql') {
+    builder.specificType(colName, 'MEDIUMBLOB');
+  }
+  else {
+    builder.binary(colName);
+  }
+}
+
+export function jsonCol(builder:Knex.CreateTableBuilder, colName: string):void {
+  const { client } = KnexStorage;
+
+  // only postgres supports jsonb
+  if (client === 'pg') {
+    builder.jsonb(colName);
+  }
+  /*
+  json columns not supported in sqlite, don't rely on functions from json1 extension [1]
+  that may or may not be embedded in the sqlite db being used
+  manually invoke JSON.strigify, JSON.parse on the target column
+  [1] - https://www.sqlite.org/json1.html
+  */
+  else if (client !== 'sqlite3') {
+    builder.json(colName);
+  }
+  else {
+    builder.string(colName);
   }
 }

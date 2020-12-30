@@ -3,7 +3,7 @@ import { QueryBuilder } from 'knex';
 import Resource, { ResourceQuery } from '../base/Resource';
 import Site from '../base/Site';
 import KnexResource from './KnexResource';
-import KnexStorage from './KnexStorage';
+import KnexStorage, { jsonCol } from './KnexStorage';
 
 export default class KnexSite extends Site {
   static get builder():QueryBuilder {
@@ -23,15 +23,7 @@ export default class KnexSite extends Site {
         builder.string('name');
         builder.string('url');
 
-        if (KnexStorage.capabilities.jsonb) {
-          builder.jsonb('pluginOpts');
-        }
-        else if (KnexStorage.capabilities.json) {
-          builder.json('pluginOpts');
-        }
-        else {
-          builder.string('pluginOpts');
-        }
+        jsonCol(builder, 'pluginOpts');
       },
     );
   }
