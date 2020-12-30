@@ -1,4 +1,4 @@
-import Entity, { IEntity } from './Entity';
+import Entity, { IStaticEntity } from './Entity';
 
 export interface IResourceParent {
   linkText?: string;
@@ -73,7 +73,7 @@ export type ResourceQuery = {
   cols: string[];
 }
 
-export interface IStaticResource extends IEntity {
+export interface IStaticResource extends IStaticEntity {
   new(kwArgs: Partial<Resource>): Resource;
   getResource(siteId:number, url: string):Promise<Resource>;
   getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;

@@ -1,4 +1,4 @@
-import Entity, { IEntity } from './Entity';
+import Entity, { IStaticEntity } from './Entity';
 import Plugin, { IPluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
@@ -57,7 +57,7 @@ export default abstract class Site extends Entity {
   }
 }
 
-export interface IStaticSite extends IEntity {
+export interface IStaticSite extends IStaticEntity {
   new(kwArgs: Partial<Site>): Site;
   get(nameOrId: string | number):Promise<Site>;
   getAll():Promise<any[]>;

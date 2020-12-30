@@ -136,6 +136,10 @@ export default class KnexResource extends Resource {
     return KnexResource.builder.where('id', this.id).del();
   }
 
+  toJSON() {
+    return KnexStorage.toJSON(this);
+  }
+
   get capabilities() {
     return KnexStorage.capabilities;
   }

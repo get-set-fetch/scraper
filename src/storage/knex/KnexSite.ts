@@ -111,6 +111,10 @@ export default class KnexSite extends Site {
     }
   }
 
+  toJSON() {
+    return KnexStorage.toJSON(this);
+  }
+
   get capabilities() {
     return KnexStorage.capabilities;
   }

@@ -1,8 +1,16 @@
 import Knex from 'knex';
-import { CapabilitiesType } from '../base/Entity';
+import Entity from '../base/Entity';
 import Storage from '../base/Storage';
 import KnexResource from './KnexResource';
 import KnexSite from './KnexSite';
+
+export type CapabilitiesType = {
+  jsonb: boolean;
+  json: boolean;
+  returning: boolean;
+  int8String: boolean;
+  uint8Array: boolean;
+}
 
 export default class KnexStorage extends Storage {
   static knex: Knex;
@@ -51,12 +59,45 @@ export default class KnexStorage extends Storage {
     */
     const int8String = config.client === 'pg';
 
+    // mysql doesn't insert Uint8Array as binary, needs to be converted to Buffer first
+    const uint8Array = config.client !== 'mysql';
+
     return {
       json,
       jsonb,
       returning,
       int8String,
+      uint8Array,
     };
+  }
+
+  static toJSON(entity:Entity) {
+    const { dbCols } = entity;
+    const { uint8Array } = KnexStorage.capabilities;
+
+    const obj = {};
+    dbCols.forEach(dbCol => {
+      let dbVal = entity[dbCol];
+
+      if (dbVal instanceof Object.getPrototypeOf(Uint8Array)) {
+        if (!uint8Array) {
+          dbVal = Buffer.from(dbVal);
+        }
+      }
+      else if (
+        dbVal !== null
+        && (typeof dbVal === 'object' || Array.isArray(dbVal))
+        && !(dbVal instanceof Date)
+      ) {
+        dbVal = JSON.stringify(dbVal);
+      }
+
+      if (dbVal !== undefined) {
+        obj[dbCol] = dbVal;
+      }
+    });
+
+    return obj;
   }
 
   get Resource() {
