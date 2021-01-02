@@ -12,7 +12,7 @@ export interface IStoreEntry {
 }
 export default class PluginStore {
   static logger = getLogger('PluginStore');
-  static store: {[key: string]: IStoreEntry} = {};
+  static store:Map<string, IStoreEntry> = new Map<string, IStoreEntry>();
 
   static init():Promise<void> {
     return PluginStore.add(join(__dirname, '..', 'plugins', 'default'));
@@ -46,9 +46,9 @@ export default class PluginStore {
         bundle = await PluginStore.buildBundle(filepath);
       }
 
-      PluginStore.store[instance.constructor.name] = {
+      PluginStore.store.set(instance.constructor.name, {
         filepath, bundle, Cls,
-      };
+      });
     }
     catch (err) {
       PluginStore.logger.error(err, 'Could not add filepath %s', filepath);
@@ -56,10 +56,10 @@ export default class PluginStore {
   }
 
   static get(name: string) {
-    if (!PluginStore.store[name]) {
+    if (!PluginStore.store.has(name)) {
       PluginStore.logger.error('Plugin %s not registered', name);
     }
-    return PluginStore.store[name];
+    return PluginStore.store.get(name);
   }
 
   static async buildBundle(filepath: string) {
