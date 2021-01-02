@@ -32,6 +32,11 @@ export default class Scraper {
   }
 
   async preScrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]):Promise<Site> {
+    if (PluginStore.store.size === 0) {
+      await PluginStore.init();
+      this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
+    }
+
     if (!this.storage.isConnected) {
       await this.storage.connect();
     }

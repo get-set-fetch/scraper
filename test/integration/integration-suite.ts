@@ -43,9 +43,6 @@ export default function integrationSuite(storage: Storage) {
 
       // init storage
       ({ Site } = await storage.connect());
-
-      // init plugin store
-      await PluginStore.init();
     });
 
     afterEach(async () => {
