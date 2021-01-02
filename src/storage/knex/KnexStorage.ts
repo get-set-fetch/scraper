@@ -17,6 +17,18 @@ export default class KnexStorage extends Storage {
   Site: IStaticSite & typeof KnexSite;
   Resource: IStaticResource & typeof KnexResource;
 
+  constructor(config?) {
+    // if no config present, use in memory sqlite
+    super(config || {
+      client: 'sqlite3',
+      useNullAsDefault: true,
+      connection: {
+        filename: ':memory:',
+      },
+      debug: false,
+    });
+  }
+
   async connect() {
     this.knex = Knex(this.config);
 
