@@ -8,8 +8,7 @@ export default function crudSite(storage: Storage) {
     let expectedSite: Site;
 
     before(async () => {
-      await storage.connect();
-      ({ Site } = storage);
+      ({ Site } = await storage.connect());
     });
 
     beforeEach(async () => {

@@ -8,8 +8,7 @@ export default function crudResource(storage: Storage) {
     let expectedResource: Resource;
 
     before(async () => {
-      await storage.connect();
-      Resource = storage.Resource;
+      ({ Resource } = await storage.connect());
     });
 
     beforeEach(async () => {

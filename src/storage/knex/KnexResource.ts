@@ -1,15 +1,17 @@
-import { QueryBuilder } from 'knex';
 import Resource, { ResourceQuery } from '../base/Resource';
-import KnexStorage, { binaryCol, jsonCol } from './KnexStorage';
+import KnexStorage from './KnexStorage';
 
 export default class KnexResource extends Resource {
-  static get builder():QueryBuilder {
-    return KnexStorage.knex('resources');
+  static storage:KnexStorage;
+
+  static get builder() {
+    return this.storage.knex('resources');
   }
 
-  static async init():Promise<void> {
-    const schemaBuilder = KnexStorage.knex.schema;
+  static async init(storage: KnexStorage):Promise<void> {
+    this.storage = storage;
 
+    const schemaBuilder = storage.knex.schema;
     const tablePresent = await schemaBuilder.hasTable('resources');
     if (tablePresent) return;
 
@@ -24,24 +26,24 @@ export default class KnexResource extends Resource {
         builder.boolean('scrapeInProgress');
         builder.string('contentType');
 
-        jsonCol(builder, 'content');
-        jsonCol(builder, 'parent');
-        jsonCol(builder, 'actions');
+        this.storage.jsonCol(builder, 'content');
+        this.storage.jsonCol(builder, 'parent');
+        this.storage.jsonCol(builder, 'actions');
 
-        binaryCol(builder, 'data');
+        this.storage.binaryCol(builder, 'data');
       },
     );
   }
 
   static async get(resourceId:number):Promise<Resource> {
-    const rawResource = await KnexResource.builder.where({ id: resourceId }).first();
-    return rawResource ? new KnexResource(rawResource) : undefined;
+    const rawResource = await this.builder.where({ id: resourceId }).first();
+    return rawResource ? new this.storage.Resource(rawResource) : undefined;
   }
 
   static async getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]> {
     const { cols, where, whereNotNull, offset, limit } = query;
 
-    let queryBuilder = KnexResource.builder.select(cols || [ 'url', 'content' ]).where(where);
+    let queryBuilder = this.builder.select(cols || [ 'url', 'content' ]).where(where);
     if (offset !== undefined) {
       queryBuilder = queryBuilder.offset(offset);
     }
@@ -71,45 +73,49 @@ export default class KnexResource extends Resource {
   }
 
   static getAll(siteId: number) {
-    return KnexResource.builder.where({ siteId });
+    return this.builder.where({ siteId });
   }
 
   static async getResource(siteId:number, url: string):Promise<Resource> {
-    const rawResource = await KnexResource.builder.where({ siteId, url }).first();
-    return rawResource ? new KnexResource(rawResource) : undefined;
+    const rawResource = await this.builder.where({ siteId, url }).first();
+    return rawResource ? new this.storage.Resource(rawResource) : undefined;
   }
 
   static delAll():Promise<void> {
-    return KnexResource.builder.del();
+    return this.builder.del();
   }
 
   // find a resource to crawl and set its scrapeInProgress flag
-  static async getResourceToCrawl(siteId:number):Promise<KnexResource> {
-    let resource:KnexResource = null;
+  static async getResourceToCrawl(siteId:number):Promise<Resource> {
+    let resource:Resource = null;
 
-    await KnexStorage.knex.transaction(async trx => {
+    await this.storage.knex.transaction(async trx => {
       // block SELECT FOR UPDATE execution of other concurrent transactions till the current one issues a COMMIT
-      const rawResource = await KnexResource.builder
+      const rawResource = await this.builder
         .transacting(trx).forUpdate()
         // try to find a resource matching {siteId, scrapeInProgress : false, scrapedAt: undefined}
         .where({ siteId, scrapeInProgress: false, scrapedAt: null })
         .first();
 
       if (rawResource) {
-        resource = new KnexResource(rawResource);
+        resource = new this.storage.Resource(rawResource);
         resource.scrapeInProgress = true;
-        await KnexResource.builder.transacting(trx).where('id', resource.id).update('scrapeInProgress', true);
+        await this.builder.transacting(trx).where('id', resource.id).update('scrapeInProgress', true);
       }
     });
 
     return resource;
   }
 
+  get Constructor():typeof KnexResource {
+    return (<typeof KnexResource> this.constructor);
+  }
+
   async save():Promise<number> {
     const result:number[] = await (
-      this.capabilities.returning
-        ? KnexResource.builder.insert(this.toJSON()).returning('id')
-        : KnexResource.builder.insert(this.toJSON())
+      this.Constructor.storage.capabilities.returning
+        ? this.Constructor.builder.insert(this.toJSON()).returning('id')
+        : this.Constructor.builder.insert(this.toJSON())
     );
     [ this.id ] = result;
 
@@ -117,18 +123,14 @@ export default class KnexResource extends Resource {
   }
 
   update():Promise<void> {
-    return KnexResource.builder.where('id', this.id).update(this.toJSON());
+    return this.Constructor.builder.where('id', this.id).update(this.toJSON());
   }
 
   del() {
-    return KnexResource.builder.where('id', this.id).del();
+    return this.Constructor.builder.where('id', this.id).del();
   }
 
   toJSON() {
-    return KnexStorage.toJSON(this);
-  }
-
-  get capabilities() {
-    return KnexStorage.capabilities;
+    return this.Constructor.storage.toJSON(this);
   }
 }

@@ -42,8 +42,7 @@ export default function integrationSuite(storage: Storage) {
       await browserClient.launch();
 
       // init storage
-      await storage.connect();
-      ({ Site } = storage);
+      ({ Site } = await storage.connect());
 
       // init plugin store
       await PluginStore.init();

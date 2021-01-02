@@ -1,18 +1,22 @@
-import { IStaticResource } from './Resource';
-import { IStaticSite } from './Site';
+import Resource, { IStaticResource } from './Resource';
+import Site, { IStaticSite } from './Site';
 
 export default abstract class Storage {
   config;
   isConnected:boolean;
+
+  Site: IStaticSite & typeof Site;
+  Resource: IStaticResource & typeof Resource;
 
   constructor(config) {
     this.config = config;
     this.isConnected = false;
   }
 
-  abstract connect():Promise<void>;
-  abstract close():Promise<void>;
+  abstract connect():Promise<{
+    Site: IStaticSite & typeof Site,
+    Resource: IStaticResource & typeof Resource
+  }>;
 
-  abstract get Resource(): IStaticResource;
-  abstract get Site(): IStaticSite;
+  abstract close():Promise<void>;
 }

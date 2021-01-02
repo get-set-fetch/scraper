@@ -15,6 +15,7 @@ describe('Scraper', () => {
   beforeEach(() => {
     sandbox = createSandbox();
     storage = sandbox.createStubInstance(KnexStorage);
+    storage.Site = KnexSite;
     browserClient = sandbox.createStubInstance(PuppeteerClient);
     scraper = new Scraper(storage, browserClient);
   });

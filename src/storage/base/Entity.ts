@@ -1,3 +1,5 @@
+import Storage from './Storage';
+
 export default abstract class Entity {
   abstract save():Promise<number>;
   abstract update():Promise<void>;
@@ -16,7 +18,7 @@ export default abstract class Entity {
 export interface IStaticEntity {
   new(): Entity;
 
-  init():Promise<void>;
+  init(storage: Storage):Promise<void>;
   get(id: number):Promise<Entity>;
   delAll():Promise<void>;
 }
