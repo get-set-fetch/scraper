@@ -108,3 +108,7 @@ dist
 
 # typescript outdir
 .dist
+
+# examples data
+examples/data
+!examples/*.gitignore
