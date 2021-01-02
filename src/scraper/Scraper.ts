@@ -39,6 +39,7 @@ export default class Scraper {
 
     if (!this.storage.isConnected) {
       await this.storage.connect();
+      this.logger.info('Storage connected');
     }
 
     let site;
@@ -50,6 +51,7 @@ export default class Scraper {
         pluginOpts: scenarios[scenario] ? mergePluginOpts(scenarios[scenario].defaultPluginOpts, pluginOpts) : pluginOpts,
       });
       await site.save();
+      this.logger.info(`new Site ${site.name} saved`);
     }
     else {
       site = siteOrUrl;
@@ -119,7 +121,7 @@ export default class Scraper {
 
         /*
         a plugin result can represent:
-        - a new static resource: Resource from the db not yet crawled (ex: SelectResourcePlugin)
+        - a new static resource: Resource from the db not yet scraped (ex: SelectResourcePlugin)
         - additional data/content to be merged with the current resource (ex: ExtractUrlsPlugin, ExtractHtmlContentPlugin, ...)
         */
         this.logger.debug(result || undefined, 'Plugin result');
@@ -142,7 +144,7 @@ export default class Scraper {
         this.logger.info('Resource successfully scraped %s', resource.url);
       }
       else {
-        this.logger.info('No crawlable resource found for site %s', site.name);
+        this.logger.info('No scrapable resource found for site %s', site.name);
       }
     }
     catch (err) {
@@ -154,11 +156,11 @@ export default class Scraper {
 
       /*
       manually update the resource, this resets the scrapeInProgress flag and adds scrapedAt date
-      selecting new resources for crawling takes scrapedAt in consideration (right now only resources with scrapedAt undefined qualify)
-      because of the above behavior, we don't attempt to crawl a resource that throws an error over and over again
+      selecting new resources for scraping takes scrapedAt in consideration (right now only resources with scrapedAt undefined qualify)
+      because of the above behavior, we don't attempt to scrape a resource that throws an error over and over again
 
       in future a possible approach will be just resetting the scrapeInProgress flag
-        - next crawl operation will attempt to crawl it again, but atm this will just retry the same resource over and over again
+        - next scrape operation will attempt to scrape it again, but atm this will just retry the same resource over and over again
         - there is no mechanism to escape the retry loop
       resource.scrapeInProgress = false;
       await resource.update(false);
@@ -166,7 +168,7 @@ export default class Scraper {
       if (resource) {
         /*
         unknown error occured,
-        add scrapedAt field to the current resource so it won't be crawled again, possibly ending in an infinite loop retrying again and again
+        add scrapedAt field to the current resource so it won't be scraped again, possibly ending in an infinite loop retrying again and again
         */
         await resource.update();
       }
@@ -285,6 +287,8 @@ export default class Scraper {
         return;
     }
 
+    this.logger.info(`Exporting as ${opts.type} ...`);
     await exporter.export();
+    this.logger.info(`Exporting as ${opts.type} ... done`);
   }
 }
