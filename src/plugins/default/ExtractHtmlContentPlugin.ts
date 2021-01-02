@@ -83,34 +83,31 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     */
     if (selectorBase) {
       const suffixSelectors = this.opts.selectorPairs.map(selectorPair => selectorPair.selector.replace(selectorBase, '').trim());
-      content = Array.from(document.querySelectorAll(selectorBase))
-        // scrape content for the current selectorBase "row"
-        .map((baseElm: HTMLElement) => {
-          const suffixRowResult:string[] = [];
+      content = Array.from(document.querySelectorAll(selectorBase)).reduce(
+        (rows: string[][], baseElm: HTMLElement) => {
+          const contentBySelector:string[][] = Array(suffixSelectors.length).fill(0).map(() => []);
           for (let i = 0; i < suffixSelectors.length; i += 1) {
             const suffixSelector = suffixSelectors[i];
             const { property } = this.opts.selectorPairs[i];
 
-            suffixRowResult.push(
-              Array.from(baseElm.querySelectorAll(suffixSelector))
-                .map(elm => this.getContent((elm as HTMLElement), property))
-                .filter(val => val)
-                .join(','),
-            );
+            contentBySelector[i] = Array.from(baseElm.querySelectorAll(suffixSelector))
+              .map(elm => this.getContent((elm as HTMLElement), property))
+              .filter(val => val);
           }
 
           // scraped content row is valid, at least one column contains a non-empty scraped value
-          const validRowResult = suffixRowResult.find(colEntry => colEntry.length > 0);
+          const validRowResult = contentBySelector.find(colEntry => colEntry.length > 0);
 
           // add scraped content row to agg result
           if (validRowResult) {
-            return suffixRowResult;
+            const newRows = this.transformToContentRows(contentBySelector);
+            rows.push(...newRows);
           }
 
-          return null;
-        })
-        // filter out rows containing no content
-        .filter(row => row);
+          return rows;
+        },
+        [],
+      );
     }
     // no common base detected
     else {
@@ -120,25 +117,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
           .map(elm => this.getContent(elm as HTMLElement, selectorPair.property)),
       );
 
-      // make all selector results of equal length
-      const maxLength = Math.max(...contentBySelector.map(result => result.length));
-      for (let i = 0; i < contentBySelector.length; i += 1) {
-        const selectorContent = contentBySelector[i];
-        if (selectorContent.length < maxLength) {
-          const lastVal = selectorContent.length > 0 ? selectorContent[selectorContent.length - 1] : '';
-          selectorContent.splice(selectorContent.length, 0, ...Array(maxLength - selectorContent.length).fill(0).map(() => lastVal));
-          contentBySelector[i] = selectorContent;
-        }
-      }
-
-      // transform contentBySelector(each row contains one querySelector result) into content (each row contains one element from each querySelector result)
-      content = Array(maxLength).fill(0).map((val, idx) => {
-        const rowContent: string[] = [];
-        for (let i = 0; i < contentBySelector.length; i += 1) {
-          rowContent.push(contentBySelector[i][idx]);
-        }
-        return rowContent;
-      });
+      content = this.transformToContentRows(contentBySelector);
     }
 
     return content;
@@ -177,5 +156,31 @@ export default class ExtractHtmlContentPlugin extends Plugin {
 
       return false;
     });
+  }
+
+  // transform contentBySelector(each row contains one querySelector result) into content (each row contains one element from each querySelector result)
+  transformToContentRows(contentBySelector:string[][]):string[][] {
+    // make all selector results of equal length
+    const maxLength = Math.max(...contentBySelector.map(result => result.length));
+
+    for (let i = 0; i < contentBySelector.length; i += 1) {
+      const selectorContent = contentBySelector[i];
+      if (selectorContent.length < maxLength) {
+        const lastVal = selectorContent.length > 0 ? selectorContent[selectorContent.length - 1] : '';
+        selectorContent.splice(selectorContent.length, 0, ...Array(maxLength - selectorContent.length).fill(0).map(() => lastVal));
+        // eslint-disable-next-line no-param-reassign
+        contentBySelector[i] = selectorContent;
+      }
+    }
+
+    const content:string[][] = Array(maxLength).fill(0).map((val, idx) => {
+      const rowContent: string[] = [];
+      for (let i = 0; i < contentBySelector.length; i += 1) {
+        rowContent.push(contentBySelector[i][idx]);
+      }
+      return rowContent;
+    });
+
+    return content;
   }
 }

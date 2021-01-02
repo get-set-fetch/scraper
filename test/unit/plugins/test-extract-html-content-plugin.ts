@@ -103,6 +103,37 @@ describe('ExtractHtmlContentPlugin', () => {
     assert.deepEqual(content, expectedContent);
   });
 
+  it('extract html content - multiple selectors, same result length, common base', () => {
+    plugin = new ExtractHtmlContentPlugin(
+      { selectorPairs: [ { selector: '[class|="top"] h1' }, { selector: '[class|="top"] h2' }, { selector: '[class|="top"] h3' } ] },
+    );
+
+    stubQuerySelectorAll.withArgs('[class|="top"]').returns([
+      {
+        querySelectorAll: selector => {
+          switch (selector) {
+            case 'h1':
+              return [ { innerText: 'h1 val1' }, { innerText: 'h1 val2' } ];
+            case 'h2':
+              return [ { innerText: 'h2 val1' }, { innerText: 'h2 val2' } ];
+            case 'h3':
+              return [ { innerText: 'h3 val1' }, { innerText: 'h3 val2' } ];
+            default:
+              return null;
+          }
+        },
+      },
+    ]);
+
+    const expectedContent = [
+      [ 'h1 val1', 'h2 val1', 'h3 val1' ],
+      [ 'h1 val2', 'h2 val2', 'h3 val2' ],
+    ];
+
+    const { content } = plugin.apply();
+    assert.deepEqual(content, expectedContent);
+  });
+
   it('extract html content - multiple selectors, different result length, common base', () => {
     plugin = new ExtractHtmlContentPlugin(
       { selectorPairs: [ { selector: '[class|="top"] h1' }, { selector: '[class|="top"] h2' }, { selector: '[class|="top"] h3' } ] },
