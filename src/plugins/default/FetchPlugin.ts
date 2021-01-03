@@ -48,7 +48,7 @@ export default class FetchPlugin extends Plugin {
   apply(site: Site, resource: Resource, client: BrowserClient) {
     // url appears to be of html mime type, loaded it in a browser tab
     if (this.probableHtmlMimeType(resource.url)) {
-      return this.openInTab(site, resource, client);
+      return this.openInTab(resource, client);
     }
 
     /*
@@ -60,6 +60,16 @@ export default class FetchPlugin extends Plugin {
 
   // fetch resource via builtin fetch
   async fetch(resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
+    /*
+      trying to load a resource from a different domain, CORS is in effect
+      open the external url in a new browser tab
+      only afterwards attempt to fetch it now that we're on the same domain
+      this will request the resource twice, hopefully the 2nd time will be cached ...
+    */
+    if (this.isCorsActive(client.getUrl(), resource.url)) {
+      await this.openInTab(resource, client);
+    }
+
     const serializedBlob:{binaryString: string, contentType: string} = await client.evaluate(
       (url: string) => new Promise(async (resolve, reject) => {
         try {
@@ -87,7 +97,11 @@ export default class FetchPlugin extends Plugin {
     };
   }
 
-  async openInTab(site: Site, resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
+  isCorsActive(originUrl: string, toBeFetchedUrl: string):boolean {
+    return new URL(originUrl).hostname !== new URL(toBeFetchedUrl).hostname;
+  }
+
+  async openInTab(resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
     const response = await client.goto(resource.url, { waitUntil: 'networkidle0' });
 
     // to do add response status handling, 4xx, 5xx, for now assume it's 200

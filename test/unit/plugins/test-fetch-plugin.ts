@@ -24,4 +24,10 @@ describe('FetchPlugin', () => {
 
     assert.isFalse(plugin.probableHtmlMimeType('http://www.a.com/a.png'));
   });
+
+  it('isCorsActive', () => {
+    plugin = new FetchPlugin();
+    assert.isFalse(plugin.isCorsActive('http://sitea.com/index.html', 'http://sitea.com/imgA.png'));
+    assert.isTrue(plugin.isCorsActive('http://sitea.com/index.html', 'http://img.sitea.com/imgA.png'));
+  });// te iubesc
 });

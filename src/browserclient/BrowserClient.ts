@@ -6,4 +6,5 @@ export default abstract class BrowserClient {
   abstract closePage():Promise<void>;
   abstract evaluate(fnc, ...args):Promise<any>;
   abstract goto(url: string, opts):Promise<any>;
+  abstract getUrl():string;
 }

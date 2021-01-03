@@ -21,6 +21,7 @@ export default class PuppeteerClient extends BrowserClient {
   }
 
   async close():Promise<void> {
+    this.page = null;
     await this.browser.close();
     this.isLaunched = false;
   }
@@ -32,6 +33,10 @@ export default class PuppeteerClient extends BrowserClient {
     }
 
     return this.page.goto(url, opts);
+  }
+
+  getUrl() {
+    return this.page.url();
   }
 
   async closePage() {
