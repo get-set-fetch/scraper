@@ -13,12 +13,19 @@ import { scenarios, mergePluginOpts } from '../scenarios/scenarios';
 import Exporter, { ExportOptions } from '../export/Exporter';
 import CsvExporter from '../export/CsvExporter';
 import ZipExporter from '../export/ZipExporter';
+import { decode } from '../confighash/config-hash';
 
 /*
 scraper is:
 - browser agnostic (init browser client outside scraper)
 - storage agnostic (init storage outside scraper)
 */
+
+export type ScrapeOpts = {
+  url: string,
+  scenario: string,
+  pluginOpts: IPluginOpts[]
+}
 export default class Scraper {
   logger = getLogger('Scraper');
 
@@ -31,7 +38,7 @@ export default class Scraper {
     this.browserClient = browserClient;
   }
 
-  async preScrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]):Promise<Site> {
+  async preScrape():Promise<void> {
     if (PluginStore.store.size === 0) {
       await PluginStore.init();
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
@@ -42,38 +49,50 @@ export default class Scraper {
       this.logger.info('Storage connected');
     }
 
-    let site;
-    if (typeof siteOrUrl === 'string') {
+    if (!this.browserClient.isLaunched) {
+      await this.browserClient.launch();
+    }
+  }
+
+  async initSite(scrapeConfig: Site|ScrapeOpts|string):Promise<Site> {
+    let site:Site;
+
+    if (scrapeConfig instanceof Site) {
+      site = scrapeConfig;
+    }
+    else {
+      const scrapeOpts:ScrapeOpts = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
       const { Site } = this.storage;
       site = new Site({
-        name: new URL(siteOrUrl).hostname,
-        url: siteOrUrl,
-        pluginOpts: scenarios[scenario] ? mergePluginOpts(scenarios[scenario].defaultPluginOpts, pluginOpts) : pluginOpts,
+        name: new URL(scrapeOpts.url).hostname,
+        url: scrapeOpts.url,
+        pluginOpts: scenarios[scrapeOpts.scenario]
+          ? mergePluginOpts(scenarios[scrapeOpts.scenario].defaultPluginOpts, scrapeOpts.pluginOpts)
+          : scrapeOpts.pluginOpts,
       });
       await site.save();
       this.logger.info(`new Site ${site.name} saved`);
-    }
-    else {
-      site = siteOrUrl;
-    }
-
-    if (!this.browserClient.isLaunched) {
-      await this.browserClient.launch();
     }
 
     return site;
   }
 
-  async scrape(site: Site):Promise<void>
-  async scrape(url: string, scenario: string, pluginOpts: IPluginOpts[]):Promise<void>
-  async scrape(siteOrUrl: Site|string, scenario?: string, pluginOpts?: IPluginOpts[]) {
+  async postScrape() {
+    await this.browserClient.close();
+  }
+
+  async scrape(site: Site):Promise<Site>
+  async scrape(scrapeOpts: ScrapeOpts):Promise<Site>
+  async scrape(scrapeHash: string):Promise<Site>
+  async scrape(scrapeConfig: Site|ScrapeOpts|string) {
     try {
-      this.site = await this.preScrape(siteOrUrl, scenario, pluginOpts);
+      await this.preScrape();
+      this.site = await this.initSite(scrapeConfig);
     }
     catch (err) {
       this.logger.error(err, 'Error preScraping operations');
       // no site > no scrape process > abort
-      return;
+      return null;
     }
 
     this.logger.debug(this.site, 'Scraping site');
@@ -83,7 +102,7 @@ export default class Scraper {
     catch (err) {
       this.logger.error(err, 'Error instantiating plugin definitions for site %s', this.site.name);
       // no plugins > no scrape process > abort
-      return;
+      return null;
     }
 
     /*
@@ -99,6 +118,10 @@ export default class Scraper {
       resource = await this.scrapeResource(this.site);
     }
     while (resource);
+
+    await this.postScrape();
+
+    return this.site;
   }
 
   async scrapeResource(site: Site, resource: Resource = null):Promise<Resource> {

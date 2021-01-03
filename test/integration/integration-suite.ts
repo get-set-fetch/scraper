@@ -3,7 +3,6 @@ import { GsfServer, ScrapingSuite } from 'get-set-fetch-test-utils';
 import { IScrapingTest } from 'get-set-fetch-test-utils/lib/scraping-suite/ScrapingSuite';
 import BrowserClient from '../../src/browserclient/BrowserClient';
 import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
-import PluginStore from '../../src/pluginstore/PluginStore';
 import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
 
 import Scraper from '../../src/scraper/Scraper';
@@ -39,7 +38,6 @@ export default function integrationSuite(storage: Storage) {
           '--single-process',
         ],
       });
-      await browserClient.launch();
 
       // init storage
       ({ Site } = await storage.connect());
@@ -47,13 +45,11 @@ export default function integrationSuite(storage: Storage) {
 
     afterEach(async () => {
       await Site.delAll();
-      await browserClient.closePage();
     });
 
     after(async () => {
       await storage.close();
       srv.stop();
-      await browserClient.close();
     });
 
     const tests = ScrapingSuite.getTests();

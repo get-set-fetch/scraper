@@ -26,40 +26,40 @@ describe('Scraper', () => {
 
   it('preScrape - do storage.connect', async () => {
     storage.isConnected = false;
-    await scraper.preScrape(null);
+    await scraper.preScrape();
 
     assert.isTrue(storage.connect.calledOnce);
   });
 
   it('preScrape - skip storage.connect', async () => {
     storage.isConnected = true;
-    await scraper.preScrape(null);
+    await scraper.preScrape();
 
     assert.isTrue(storage.connect.neverCalledWith());
-  });
+  }); // vladut iepurasul
 
   it('preScrape - do browserClient.launch', async () => {
     browserClient.isLaunched = false;
-    await scraper.preScrape(null);
+    await scraper.preScrape();
 
     assert.isTrue(browserClient.launch.calledOnce);
   });
 
   it('preScrape - skip browserClient.launch', async () => {
     browserClient.isLaunched = true;
-    await scraper.preScrape(null);
+    await scraper.preScrape();
 
     assert.isTrue(browserClient.launch.neverCalledWith());
   });
 
-  it('preScrape - return unmodified site', async () => {
+  it('initSite - return unmodified site', async () => {
     const site = sandbox.createStubInstance(Site);
-    const preScrapeSite = await scraper.preScrape(site);
+    const preScrapeSite = await scraper.initSite(site);
 
     assert.strictEqual(preScrapeSite, site);
   });
 
-  it('preScrape - return new site', async () => {
+  it('initSite - return new site', async () => {
     const expectedSite = {
       url: 'http://a.com/index.html',
       name: 'a.com',
@@ -69,7 +69,11 @@ describe('Scraper', () => {
     };
 
     const saveStub = stub(KnexSite.prototype, 'save');
-    const preScrapeSite = await scraper.preScrape('http://a.com/index.html', 'static', [ { name: 'pluginA' } ]);
+    const preScrapeSite = await scraper.initSite({
+      url: 'http://a.com/index.html',
+      scenario: 'static',
+      pluginOpts: [ { name: 'pluginA' } ],
+    });
 
     assert.isTrue(saveStub.calledOnce);
     assert.deepEqual(preScrapeSite, expectedSite);
