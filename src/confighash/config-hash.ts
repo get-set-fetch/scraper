@@ -7,7 +7,7 @@ function encode(input: object):string {
   return Buffer.from(deflatedIntArr).toString('base64');
 }
 
-function decode(deflatedBase64String: string): object {
+function decode(deflatedBase64String: string) {
   if (!deflatedBase64String || deflatedBase64String.length === 0) return null;
 
   let inflatedInstance = null;
