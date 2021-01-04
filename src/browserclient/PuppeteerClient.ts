@@ -17,6 +17,8 @@ export default class PuppeteerClient extends BrowserClient {
 
   async launch():Promise<void> {
     this.browser = await plaunch(this.opts);
+    this.page = await this.browser.newPage();
+
     this.isLaunched = true;
   }
 
@@ -27,11 +29,6 @@ export default class PuppeteerClient extends BrowserClient {
   }
 
   async goto(url: string, opts: DirectNavigationOptions) {
-    if (!this.page) {
-      this.page = await this.browser.newPage();
-      await this.page.setCacheEnabled(false);
-    }
-
     return this.page.goto(url, opts);
   }
 
