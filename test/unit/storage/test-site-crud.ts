@@ -12,7 +12,7 @@ export default function crudSite(storage: Storage) {
     });
 
     beforeEach(async () => {
-      expectedSite = new Site({ name: 'siteA', url: 'urlA', pluginOpts: [ { name: 'pluginA', propA: 'valA' } ] });
+      expectedSite = new Site({ name: 'siteA', url: 'http://sitea.com/index.html', pluginOpts: [ { name: 'pluginA', propA: 'valA' } ] });
       expectedSite.id = await expectedSite.save();
     });
 
@@ -42,7 +42,7 @@ export default function crudSite(storage: Storage) {
 
     it(`${storage.config.client} site update`, async () => {
       Object.assign(expectedSite, {
-        url: 'urlB',
+        url: 'http://sitea.com/b.html',
         pluginOpts: [
           {
             name: 'pluginA1',
@@ -68,6 +68,11 @@ export default function crudSite(storage: Storage) {
       const actualSite = await Site.get(expectedSite.id);
 
       assert.isUndefined(actualSite);
+    });
+
+    it(`${storage.config.client} site normalize url`, async () => {
+      assert.strictEqual(new Site({ name: 'siteN', url: 'http://siten.com' }).url, 'http://siten.com/');
+      assert.strictEqual(new Site({ name: 'siteN', url: 'http://wWw.CaPs.com' }).url, 'http://www.caps.com/');
     });
   });
 }

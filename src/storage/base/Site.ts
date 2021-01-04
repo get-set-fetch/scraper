@@ -23,6 +23,13 @@ export default abstract class Site extends Entity {
     if (typeof kwArgs.pluginOpts === 'string') {
       this.pluginOpts = JSON.parse(kwArgs.pluginOpts);
     }
+
+    /*
+    URI normalization
+    make sure we don't end up with equivalent but syntactically different URIs
+    ex: http://sitea.com, http://sitea.com/, http://SitEa.com
+    */
+    this.url = new URL(this.url).toString();
   }
 
   initPlugins():Plugin[] {
