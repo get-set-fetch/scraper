@@ -40,7 +40,6 @@
     "font/otf": "otf",
     "image/png": "png",
     "application/pdf": "pdf",
-    "application/x-httpd-php": "php",
     "application/vnd.ms-powerpoint": "ppt",
     "officedocument.presentationml.presentation": "pptx",
     "application/vnd.rar": "rar",

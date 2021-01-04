@@ -4,6 +4,7 @@ import Site from '../../storage/base/Site';
 import Resource from '../../storage/base/Resource';
 import BrowserClient from '../../browserclient/BrowserClient';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
+import * as MimeTypes from '../../export/MimeTypes.json';
 
 export default class FetchPlugin extends Plugin {
   static get schema() {
@@ -45,35 +46,36 @@ export default class FetchPlugin extends Plugin {
     return protocol === 'http:' || protocol === 'https:';
   }
 
-  apply(site: Site, resource: Resource, client: BrowserClient) {
-    // url appears to be of html mime type, loaded it in a browser tab
-    if (this.probableHtmlMimeType(resource.url)) {
+  async apply(site: Site, resource: Resource, client: BrowserClient) {
+    // url is of html mime type, loaded it in a browser tab
+    if (await this.isHtml(resource, client)) {
       return this.openInTab(resource, client);
     }
 
     /*
-    url appears to be a non html mime type,
+    url is of non html mime type,
     download it and store it as Uint8Array compatible with both nodejs and browser env
     */
     return this.fetch(resource, client);
   }
 
   // fetch resource via builtin fetch
-  async fetch(resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
+  async fetch(resource: Resource, client: BrowserClient, opts:RequestInit = {}):Promise<Partial<Resource>> {
     /*
       trying to load a resource from a different domain, CORS is in effect
       open the external url in a new browser tab
       only afterwards attempt to fetch it now that we're on the same domain
       this will request the resource twice, hopefully the 2nd time will be cached ...
+      open just the external hostname as the full external url may trigger a browser download, not supported in chrome headless
     */
     if (this.isCorsActive(client.getUrl(), resource.url)) {
-      await this.openInTab(resource, client);
+      await client.goto(new URL('/', resource.url).toString(), { waitUntil: 'load' });
     }
 
     const serializedBlob:{binaryString: string, contentType: string} = await client.evaluate(
-      (url: string) => new Promise(async (resolve, reject) => {
+      (url: string, opts:RequestInit) => new Promise(async (resolve, reject) => {
         try {
-          const response = await fetch(url, { method: 'GET', credentials: 'include' });
+          const response = await fetch(url, { method: 'GET', credentials: 'include', ...opts });
           if (response.blob) {
             const blob = await response.blob();
             const reader = new FileReader();
@@ -83,22 +85,21 @@ export default class FetchPlugin extends Plugin {
               throw Error('error reading binary string');
             };
           }
+          else {
+            resolve({ contentType: response.headers.get('Content-Type') });
+          }
         }
         catch (err) {
           reject(err);
         }
       }),
-      resource.url,
+      resource.url, opts,
     );
 
     return {
       data: Buffer.from(serializedBlob.binaryString, 'binary'),
       contentType: serializedBlob.contentType,
     };
-  }
-
-  isCorsActive(originUrl: string, toBeFetchedUrl: string):boolean {
-    return new URL(originUrl).hostname !== new URL(toBeFetchedUrl).hostname;
   }
 
   async openInTab(resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
@@ -120,17 +121,39 @@ export default class FetchPlugin extends Plugin {
       : { contentType, url: response.url(), redirectOrigin: resource.url };
   }
 
-  probableHtmlMimeType(urlStr: string) {
+  isCorsActive(originUrl: string, toBeFetchedUrl: string):boolean {
+    return new URL(originUrl).hostname !== new URL(toBeFetchedUrl).hostname;
+  }
+
+  getExtension(urlStr: string) {
     const { pathname } = new URL(urlStr);
     const extensionMatch = /^.*\.(.+)$/.exec(pathname);
 
-    // no extension found, most probably html
-    if (!extensionMatch) {
-      return true;
+    return extensionMatch ? extensionMatch[1] : null;
+  }
+
+  async isHtml(resource: Resource, client:BrowserClient):Promise<boolean> {
+    const ext = this.getExtension(resource.url);
+
+    let isHtml:boolean;
+
+    // try to determine if resource is scrapable (html content) based on extension type
+    if (ext) {
+      if (/htm/.test(ext)) {
+        isHtml = true;
+      }
+      else if (Object.values(MimeTypes).includes(ext)) {
+        isHtml = false;
+      }
     }
 
-    // extension found, test it against most probable extensions of html compatible mime types
-    const ext = extensionMatch[1];
-    return /htm|php/.test(ext);
+    // extension type is missing from url or not present in the list of registered MimeTypes
+    if (isHtml === undefined) {
+      // just fetch the headers, returned contentType will be used to determine if resource is an html one
+      const { contentType } = await this.fetch(resource, client, { method: 'HEAD' });
+      isHtml = /htm/.test(contentType);
+    }
+
+    return isHtml;
   }
 }

@@ -1,10 +1,12 @@
 import { assert } from 'chai';
+import { stub } from 'sinon';
 import FetchPlugin from '../../../src/plugins/default/FetchPlugin';
 import Resource from '../../../src/storage/base/Resource';
+import Site from '../../../src/storage/base/Site';
 
 describe('FetchPlugin', () => {
   let plugin: FetchPlugin;
-  const site:any = { resourceCount: 0 };
+  const site:Site = <Site>{ resourceCount: 0 };
 
   it('test conditions', () => {
     plugin = new FetchPlugin();
@@ -14,15 +16,28 @@ describe('FetchPlugin', () => {
     assert.isTrue(plugin.test(site, <Resource>{ url: 'http://a.com' }));
   });
 
-  it('probableHtmlMimeType', () => {
+  it('getExtension', () => {
     plugin = new FetchPlugin();
 
-    assert.isTrue(plugin.probableHtmlMimeType('http://www.a.com/dirA'));
-    assert.isTrue(plugin.probableHtmlMimeType('http://www.a.com/a.html?param'));
-    assert.isTrue(plugin.probableHtmlMimeType('http://www.a.com/a.htm'));
-    assert.isTrue(plugin.probableHtmlMimeType('http://www.a.com/a.php4?param'));
+    assert.isNull(plugin.getExtension('http://www.a.com/dirA'));
+    assert.strictEqual(plugin.getExtension('http://www.a.com/a.html?param'), 'html');
+    assert.strictEqual(plugin.getExtension('http://www.a.com/a.php'), 'php');
+  });
 
-    assert.isFalse(plugin.probableHtmlMimeType('http://www.a.com/a.png'));
+  it('isHtml', async () => {
+    plugin = new FetchPlugin();
+
+    stub(plugin, 'fetch')
+      .onCall(0)
+      .returns(Promise.resolve({ contentType: 'text/html' }))
+      .onCall(1)
+      .returns(Promise.resolve({ contentType: 'application/pdf' }));
+
+    assert.isTrue(await plugin.isHtml(<Resource>{ url: 'http://www.a.com/a.html' }, null));
+    assert.isTrue(await plugin.isHtml(<Resource>{ url: 'http://www.a.com/a.html?param' }, null));
+    assert.isFalse(await plugin.isHtml(<Resource>{ url: 'http://www.a.com/a.png' }, null));
+    assert.isTrue(await plugin.isHtml(<Resource>{ url: 'http://www.a.com/a' }, null));
+    assert.isFalse(await plugin.isHtml(<Resource>{ url: 'http://www.a.com/a' }, null));
   });
 
   it('isCorsActive', () => {
