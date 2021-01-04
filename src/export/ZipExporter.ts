@@ -1,23 +1,30 @@
 import fs from 'fs';
-import path from 'path';
+import path, { join } from 'path';
 import JSZip from 'jszip';
 import Resource from '../storage/base/Resource';
 import Exporter, { ExportOptions } from './Exporter';
 import * as MimeTypes from './MimeTypes.json';
+import { getLogger } from '../logger/Logger';
 
 export type ZipExportOptions = ExportOptions & {
   type: 'zip',
   pageLimit?: number;
 }
 export default class ZipExporter extends Exporter {
+  logger = getLogger('ZipExporter');
   opts: ZipExportOptions;
 
   async export() {
     const { pageLimit } = this.opts;
     let pageOffset = 0;
 
+    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.getPath(this.filepath, pageOffset, pageLimit))} ...`);
+
     let resources = await this.site.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
-    if (resources.length === 0) throw new Error('No binary content to export.');
+    if (resources.length === 0) {
+      this.logger.warn('No binary content to export.');
+      return;
+    }
 
     while (resources && resources.length > 0) {
       // create an archive for each chunk of paged resources
@@ -40,6 +47,8 @@ export default class ZipExporter extends Exporter {
       // eslint-disable-next-line no-await-in-loop
       resources = await this.site.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
     }
+
+    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.getPath(this.filepath, pageOffset, pageLimit))} ... done`);
   }
 
   getPath(filepath: string, offset: number, limit: number) {

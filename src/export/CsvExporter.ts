@@ -1,6 +1,8 @@
 import fs from 'fs';
+import { join } from 'path';
 import Resource from '../storage/base/Resource';
 import Exporter, { ExportOptions } from './Exporter';
+import { getLogger } from '../logger/Logger';
 
 export type CsvExportOptions = ExportOptions & {
   type: 'csv',
@@ -10,9 +12,13 @@ export type CsvExportOptions = ExportOptions & {
   pageLimit?: number;
 }
 export default class CsvExporter extends Exporter {
+  logger = getLogger('CsvExporter');
+
   opts: CsvExportOptions;
 
   async export() {
+    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.filepath)} ...`);
+
     const { lineSeparator, fieldSeparator, pageLimit } = this.opts;
     let pageOffset = 0;
 
@@ -38,6 +44,8 @@ export default class CsvExporter extends Exporter {
     }
 
     wstream.close();
+
+    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.filepath)} ... done`);
   }
 
   getContentKeys() {

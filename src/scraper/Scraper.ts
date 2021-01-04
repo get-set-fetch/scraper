@@ -310,8 +310,6 @@ export default class Scraper {
         return;
     }
 
-    this.logger.info(`Exporting as ${opts.type} ...`);
     await exporter.export();
-    this.logger.info(`Exporting as ${opts.type} ... done`);
   }
 }
