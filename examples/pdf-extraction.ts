@@ -1,5 +1,5 @@
 /* eslint-disable object-curly-newline */
-import { KnexStorage, PuppeteerClient, Scraper, setLogger, encode } from '../src/index';
+import { KnexStorage, PuppeteerClient, Scraper, setLogger } from '../src/index';
 
 setLogger({ level: 'info' });
 
