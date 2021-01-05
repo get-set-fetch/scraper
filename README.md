@@ -11,15 +11,14 @@
 
 nodejs web scraper
 
+What follows is a quickstart guide. For more in-depth information the following sections are available:
+- [Storage](#storage)
+- [Scenarios](#scenarios)
+- [Plugins](#plugins)
+- [Export](#export)
+- [Examples](#examples)
 ## Important!
 The package is not yet published to the npm registry as the scraper is still missing some functionality from the below API.
-
-Work in progress:
-- Storage
-- Browser clients
-- Scenarios
-- Plugins
-- Examples
 
 ## Install the scraper
 ```
@@ -30,14 +29,14 @@ $ npm install get-set-fetch-scraper --save
 ```
 $ npm install knex, sqlite3 --save
 ```
-Supported storage options are defined as peer dependencies. You need to install at least one of them. Currently available: sqlite3, mysql, postgresql. All of them require Knex.js query builder to be installed as well.
+Supported storage options are defined as peer dependencies. You need to install at least one of them. Currently available: sqlite3, mysql, postgresql. All of them require Knex.js query builder to be installed as well. MongoDB storage is on the roadmap.
 
 ## Install a browser client
 ```
 $ npm install puppeteer --save
 ```
 Supported browser clients are defined as peer dependencies.
-Right now only puppeteer is supported
+Right now only puppeteer is supported. Playwright full support and jsdom partial support are on the roadmap. 
 
 ## Init storage
 ```js
@@ -51,7 +50,7 @@ const conn = {
 }
 const storage = new KnexStorage(conn);
 ```
-See Knex.js documentation on full configurations for supported sqlite, mysql, postgresql.
+See [Storage](#storage) on full configurations for supported sqlite, mysql, postgresql.
 
 ## Init browser client
 ```js
@@ -71,32 +70,68 @@ const scraper = new Scraper(storage, client);
 ## Start scraping
 ```js
 await scraper.scrape({
-  url: "https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers",
-  scenario: "static",
+  url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
+  scenario: 'static-content',
   pluginOpts: [
     {
-      "name": "ExtractUrlsPlugin",
-      "maxDepth": 0
+      name: 'SelectResourcePlugin',
+      delay: 2000,
     },
     {
-      "name": "ExtractHtmlContentPlugin",
-      "selectorPairs": [
+      name: 'ExtractUrlsPlugin',
+      maxDepth: 3,
+      selectorPairs: [
         {
-          "selector": "td span"
+          urlSelector: '#searchResults ~ .pagination > a.ChoosePage:nth-child(2)',
         },
-      ]
-    }
-  ]
+        {
+          urlSelector: 'h3.booktitle a.results',
+        },
+        {
+          urlSelector: 'a.coverLook > img.cover',
+        },
+      ],
+    },
+    {
+      name: 'ExtractHtmlContentPlugin',
+      selectorPairs: [
+        {
+          selector: 'h1.work-title',
+          label: 'title',
+        },
+        {
+          selector: 'h2.edition-byline a',
+          label: 'author',
+        },
+        {
+          selector: 'ul.readers-stats > li.avg-ratings > span[itemProp="ratingValue"]',
+          label: 'rating value',
+        },
+        {
+          selector: 'ul.readers-stats > li > span[itemProp="reviewCount"]',
+          label: 'review count',
+        },
+      ],
+    },
+  ],
 });
 ```
-The above configuration scrapes the content from the second wiki table and stops. 
-Each scenario contains a list of predefined plugins with default options. To scrape a resource each plugin is invoked sequentially.
-Usually, the first plugin selects a resource from the database and the last one updates it with the scraped content. You can override the default pluginOpts via pluginOpts.
+You can define a scraping configuration in multiple ways. The above example is the most direct one.
+You define a starting url, a predefined scenario that defines a series of scraping plugins with default options, and any plugin options you want to override. 
 
-In the above example ExtractUrlsPlugin is responsible for discovering new resources to be scraped. A maxDepth value of 0 limits the scraping to the url provided, achieving single page scraping. ExtractHtmlContentPlugin is responsible for actual scraping via provided CSS selectors.
+"static-content" scenario contains the following plugins: SelectResourcePlugin, FetchPlugin, ExtractUrlsPlugin, ExtractHtmlContentPlugin, InsertResourcesPlugin, UpsertResourcePlugin. See [scenarios](#scenarios) and [plugins](#plugins) for all available options.
+
+SelectResourcePlugin.delay will add a delay between scraping two consecutive resources (web pages, images, pdfs ...).
+
+ExtractUrlsPlugin.maxDepth defines a maximum depth of resources to be scraped. The starting resource has depth 0. Resources discovered from it have depth 1 and so on. A value of -1 disables this check.
+
+ExtractUrlsPlugin.selectorPairs defines CSS selectors for discovering new resources. urlSelector property selects the links while the optional titleSelector can be used for renaming binary resources like images or pdfs. In order, the define selectorPairs extract pagination urls, book detail urls, img cover urls.
+
+ExtractHtmlContentPlugin.selectorPairs scrapes content via CSS selectors. Optional labels can be used for specifying columns when exporting results as csv.
 
 ## Export results
 ```js
-scraper.export('languages.csv')
+await scraper.export('books.csv', { type: 'csv' });
+await scraper.export('book-covers.zip', { type: 'zip' });
 ```
-Export scraping content as csv.
+Export scraped html content as csv. Export scraped images under a zip archive. See [Export](#export) for all supported parameters.
