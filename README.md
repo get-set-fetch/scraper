@@ -42,10 +42,10 @@ Right now only puppeteer is supported. Playwright full support and jsdom partial
 ```js
 const { KnexStorage } = require('get-set-fetch-scraper');
 const conn = {
-  "client": "sqlite3",
-  "useNullAsDefault": true,
-  "connection": {
-    "filename": ":memory:"
+  client: 'sqlite3',
+  useNullAsDefault: true,
+  connection: {
+    filename: ':memory:'
   }
 }
 const storage = new KnexStorage(conn);
@@ -54,11 +54,11 @@ See [Storage](#storage) on full configurations for supported sqlite, mysql, post
 
 ## Init browser client
 ```js
-const { BrowserClient } = require('get-set-fetch-scraper');
+const { PuppeteerClient } = require('get-set-fetch-scraper');
 const launchOpts = {
-  "headless": true,
+  headless: true,
 }
-const client = new BrowserClient(launchOpts);
+const client = new PuppeteerClient(launchOpts);
 ```
 
 ## Init scraper
