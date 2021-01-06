@@ -12,8 +12,8 @@
 nodejs web scraper
 
 What follows is a quickstart guide. For more in-depth information the following sections are available:
-- [Storage](#storage)
-- [Scenarios](#scenarios)
+- [Storage](./src/storage/README.md)
+- [Scenarios](./src/scenarios/README.md)
 - [Plugins](#plugins)
 - [Export](#export)
 - [Examples](#examples)
@@ -27,7 +27,7 @@ $ npm install get-set-fetch-scraper --save
 
 ## Install a storage solution
 ```
-$ npm install knex, sqlite3 --save
+$ npm install knex sqlite3 --save
 ```
 Supported storage options are defined as peer dependencies. You need to install at least one of them. Currently available: sqlite3, mysql, postgresql. All of them require Knex.js query builder to be installed as well. MongoDB storage is on the roadmap.
 
