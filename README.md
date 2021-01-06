@@ -14,7 +14,7 @@ nodejs web scraper
 What follows is a quickstart guide. For more in-depth information the following sections are available:
 - [Storage](./src/storage/README.md)
 - [Scenarios](./src/scenarios/README.md)
-- [Plugins](#plugins)
+- [Plugins](./src/plugins/README.md)
 - [Export](#export)
 - [Examples](#examples)
 ## Important!
@@ -117,9 +117,7 @@ await scraper.scrape({
 });
 ```
 You can define a scraping configuration in multiple ways. The above example is the most direct one.
-You define a starting url, a predefined scenario that defines a series of scraping plugins with default options, and any plugin options you want to override. 
-
-"static-content" scenario contains the following plugins: SelectResourcePlugin, FetchPlugin, ExtractUrlsPlugin, ExtractHtmlContentPlugin, InsertResourcesPlugin, UpsertResourcePlugin. See [scenarios](#scenarios) and [plugins](#plugins) for all available options.
+You define a starting url, a predefined scenario that defines a series of scraping plugins with default options, and any plugin options you want to override. See [scenarios](./src/scenarios/README.md) and [plugins](./src/plugins/README.md) for all available options.
 
 SelectResourcePlugin.delay will add a delay between scraping two consecutive resources (web pages, images, pdfs ...).
 

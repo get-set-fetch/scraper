@@ -18,7 +18,7 @@ Take a look at [Examples](../../examples/README.md) for real world scraping defi
 | InsertResourcesPlugin | maxResources | -1
 | UpsertResourcePlugin |  | 
 
-## static-content extend examples
+## static-content usage examples
 
 Limit scraping to a single page by setting ExtractUrlsPlugin.maxDepth to 0.
 ```js
