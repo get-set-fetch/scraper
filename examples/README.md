@@ -1,6 +1,8 @@
 ## Examples
 
-What follows are real world scraping examples. If in the meanwhile the pages have changed, the scraping definitions below may become obsolete and no longer produce the expected scraping results. Last check    performed on 7th January 2021.
+What follows are real world scraping examples. If in the meanwhile the pages have changed, the scraping definitions below may become obsolete and no longer produce the expected scraping results. Last check performed on 7th January 2021. 
+
+[Acceptance test definitions](https://github.com/get-set-fetch/test-utils/tree/main/lib/scraping-suite) may also serve as inspiration.
 
 - [Table Scraping](#table-scraping)
 - [Product Details](#product-details)
