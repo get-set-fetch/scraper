@@ -1,4 +1,4 @@
-# get-set-fetch-scraper
+<img src="https://get-set-fetch.github.io/get-set-fetch/logo.png">
 
 <p align="left">
   <a href="https://github.com/get-set-fetch/scraper/actions?query=workflow%3Aaudit">
@@ -9,14 +9,16 @@
   </a>
 </p>
 
-nodejs web scraper
+# Node.js web scraper
+
+get-set, Fetch! is a plugin based, node.js web scraper.
 
 What follows is a quickstart guide. For more in-depth information the following sections are available:
 - [Storage](./src/storage/README.md)
 - [Scenarios](./src/scenarios/README.md)
 - [Plugins](./src/plugins/README.md)
-- [Export](#export)
-- [Examples](#examples)
+- [Export](./src/export/README.md)
+- [Examples](./examples/README.md)
 ## Important!
 The package is not yet published to the npm registry as the scraper is still missing some functionality from the below API.
 
@@ -50,7 +52,7 @@ const conn = {
 }
 const storage = new KnexStorage(conn);
 ```
-See [Storage](#storage) on full configurations for supported sqlite, mysql, postgresql.
+See [Storage](./src/storage/README.md) on full configurations for supported sqlite, mysql, postgresql.
 
 ## Init browser client
 ```js
@@ -132,4 +134,4 @@ ExtractHtmlContentPlugin.selectorPairs scrapes content via CSS selectors. Option
 await scraper.export('books.csv', { type: 'csv' });
 await scraper.export('book-covers.zip', { type: 'zip' });
 ```
-Export scraped html content as csv. Export scraped images under a zip archive. See [Export](#export) for all supported parameters.
+Export scraped html content as csv. Export scraped images under a zip archive. See [Export](./src/export/README.md) for all supported parameters.
