@@ -17,7 +17,7 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract html content, single selector', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' } ] });
 
     stubQuerySelectorAll.withArgs('h1').returns([
       { innerText: 'h1 valA' },
@@ -34,7 +34,7 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract html content. missing values', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' }, { selector: 'h2' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' } ] });
 
     stubQuerySelectorAll.withArgs('h1').returns([
       { innerText: 'h1 valA' },
@@ -54,7 +54,7 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract html content - multiple selectors, duplicate values', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' }, { selector: 'h2' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' } ] });
 
     stubQuerySelectorAll.withArgs('h1').returns([
       { innerText: 'h1 valA' },
@@ -79,7 +79,7 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract html content - multiple selectors, different result length', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' }, { selector: 'h2' }, { selector: 'h3' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' }, { contentSelector: 'h3' } ] });
 
     stubQuerySelectorAll.withArgs('h1').returns([
       { innerText: 'h1 valA' },
@@ -105,7 +105,7 @@ describe('ExtractHtmlContentPlugin', () => {
 
   it('extract html content - multiple selectors, same result length, common base', () => {
     plugin = new ExtractHtmlContentPlugin(
-      { selectorPairs: [ { selector: '[class|="top"] h1' }, { selector: '[class|="top"] h2' }, { selector: '[class|="top"] h3' } ] },
+      { selectorPairs: [ { contentSelector: '[class|="top"] h1' }, { contentSelector: '[class|="top"] h2' }, { contentSelector: '[class|="top"] h3' } ] },
     );
 
     stubQuerySelectorAll.withArgs('[class|="top"]').returns([
@@ -136,7 +136,7 @@ describe('ExtractHtmlContentPlugin', () => {
 
   it('extract html content - multiple selectors, different result length, common base', () => {
     plugin = new ExtractHtmlContentPlugin(
-      { selectorPairs: [ { selector: '[class|="top"] h1' }, { selector: '[class|="top"] h2' }, { selector: '[class|="top"] h3' } ] },
+      { selectorPairs: [ { contentSelector: '[class|="top"] h1' }, { contentSelector: '[class|="top"] h2' }, { contentSelector: '[class|="top"] h3' } ] },
     );
 
     stubQuerySelectorAll.withArgs('[class|="top"]').returns([
@@ -157,7 +157,7 @@ describe('ExtractHtmlContentPlugin', () => {
 
   it('extract html content - multiple selectors, different result length, common base, invalid rows', () => {
     plugin = new ExtractHtmlContentPlugin(
-      { selectorPairs: [ { selector: '[class|="top"] h1' }, { selector: '[class|="top"] h2' }, { selector: '[class|="top"] h3' } ] },
+      { selectorPairs: [ { contentSelector: '[class|="top"] h1' }, { contentSelector: '[class|="top"] h2' }, { contentSelector: '[class|="top"] h3' } ] },
     );
 
     stubQuerySelectorAll.withArgs('[class|="top"]').returns([
@@ -176,7 +176,7 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract html content - multiple selectors, different result length, cumulative apply', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' }, { selector: 'h2' }, { selector: 'h3' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' }, { contentSelector: 'h3' } ] });
 
     // 1st apply
     stubQuerySelectorAll.withArgs('h1').returns([
@@ -235,7 +235,7 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract html content - multiple selectors, different result length, cumulative apply, partial overlap', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'h1' }, { selector: 'h2' }, { selector: 'h3' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' }, { contentSelector: 'h3' } ] });
 
     // 1st apply
     stubQuerySelectorAll.withArgs('h1').returns([
@@ -284,34 +284,34 @@ describe('ExtractHtmlContentPlugin', () => {
   });
 
   it('extract valid selector base', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'div.row' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'div.row' } ] });
 
     assert.strictEqual(
       plugin.getSelectorBase([
-        { selector: 'div.row h1', property: 'innerText' },
-        { selector: 'div.row h2', property: 'innerText' },
-        { selector: 'div.row h3', property: 'innerText' },
+        { contentSelector: 'div.row h1', property: 'innerText' },
+        { contentSelector: 'div.row h2', property: 'innerText' },
+        { contentSelector: 'div.row h3', property: 'innerText' },
       ]),
       'div.row',
     );
 
     assert.strictEqual(
       plugin.getSelectorBase([
-        { selector: 'div.row a.red h1', property: 'innerText' },
-        { selector: 'div.row a.red h2', property: 'innerText' },
-        { selector: 'div.row a.red h3', property: 'innerText' },
+        { contentSelector: 'div.row a.red h1', property: 'innerText' },
+        { contentSelector: 'div.row a.red h2', property: 'innerText' },
+        { contentSelector: 'div.row a.red h3', property: 'innerText' },
       ]),
       'div.row a.red',
     );
   });
 
   it('extract null selector base', () => {
-    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { selector: 'div.row' } ] });
+    plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'div.row' } ] });
 
     const cssBase = plugin.getSelectorBase([
-      { selector: 'div.rowA h1', property: 'innerText' },
-      { selector: 'div.rowA h2', property: 'innerText' },
-      { selector: 'div.rowB h3', property: 'innerText' },
+      { contentSelector: 'div.rowA h1', property: 'innerText' },
+      { contentSelector: 'div.rowA h2', property: 'innerText' },
+      { contentSelector: 'div.rowB h3', property: 'innerText' },
     ]);
     assert.isNull(cssBase);
   });

@@ -44,7 +44,7 @@ await scraper.scrape({
       name: 'ExtractHtmlContentPlugin',
       selectorPairs: [
         {
-          selector: 'h1.title',
+          contentSelector 'h1.title',
           label: 'main title',
         },
       ]

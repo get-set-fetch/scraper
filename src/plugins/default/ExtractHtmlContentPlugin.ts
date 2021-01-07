@@ -24,7 +24,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
               label: {
                 type: 'string',
               },
-              selector: {
+              contentSelector: {
                 type: 'string',
               },
               property: {
@@ -81,7 +81,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     see https://github.com/get-set-fetch/extension/issues/44
     */
     if (selectorBase) {
-      const suffixSelectors = this.opts.selectorPairs.map(selectorPair => selectorPair.selector.replace(selectorBase, '').trim());
+      const suffixSelectors = this.opts.selectorPairs.map(selectorPair => selectorPair.contentSelector.replace(selectorBase, '').trim());
       content = Array.from(document.querySelectorAll(selectorBase)).reduce(
         (rows: string[][], baseElm: HTMLElement) => {
           const contentBySelector:string[][] = Array(suffixSelectors.length).fill(0).map(() => []);
@@ -112,7 +112,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     else {
       const contentBySelector: string[][] = this.opts.selectorPairs.map(
         selectorPair => Array
-          .from(document.querySelectorAll(selectorPair.selector))
+          .from(document.querySelectorAll(selectorPair.contentSelector))
           .map(elm => this.getContent(elm as HTMLElement, selectorPair.property)),
       );
 
@@ -123,7 +123,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   getSelectorBase(selectorPairs: SchemaType<typeof ExtractHtmlContentPlugin.schema>['selectorPairs']):string {
-    const selectors = selectorPairs.map(selectorPair => selectorPair.selector);
+    const selectors = selectorPairs.map(selectorPair => selectorPair.contentSelector);
 
     const cssFragments = selectors[0].split(' ');
     let selectorBase = null;
@@ -142,7 +142,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   getContentKeys() {
-    return this.opts.selectorPairs.map(selectorPair => selectorPair.label || selectorPair.selector);
+    return this.opts.selectorPairs.map(selectorPair => selectorPair.label || selectorPair.contentSelector);
   }
 
   diffAndMerge(currentContent: string[][]) {

@@ -36,7 +36,7 @@ const scrapeOpts = {
       maxDepth: 2,
       selectorPairs: [
         {
-          urlSelector: '.sf-meeting-report-list:nth-child(3) > a.sf-meeting-report-list__item',
+          urlSelector: '.sf-meeting-report-list:nth-child(5) > a.sf-meeting-report-list__item',
         },
         {
           urlSelector: '.button-blue-background > a',
