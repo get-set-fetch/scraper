@@ -288,18 +288,18 @@ describe('ExtractHtmlContentPlugin', () => {
 
     assert.strictEqual(
       plugin.getSelectorBase([
-        { contentSelector: 'div.row h1', property: 'innerText' },
-        { contentSelector: 'div.row h2', property: 'innerText' },
-        { contentSelector: 'div.row h3', property: 'innerText' },
+        { contentSelector: 'div.row h1', contentProperty: 'innerText' },
+        { contentSelector: 'div.row h2', contentProperty: 'innerText' },
+        { contentSelector: 'div.row h3', contentProperty: 'innerText' },
       ]),
       'div.row',
     );
 
     assert.strictEqual(
       plugin.getSelectorBase([
-        { contentSelector: 'div.row a.red h1', property: 'innerText' },
-        { contentSelector: 'div.row a.red h2', property: 'innerText' },
-        { contentSelector: 'div.row a.red h3', property: 'innerText' },
+        { contentSelector: 'div.row a.red h1', contentProperty: 'innerText' },
+        { contentSelector: 'div.row a.red h2', contentProperty: 'innerText' },
+        { contentSelector: 'div.row a.red h3', contentProperty: 'innerText' },
       ]),
       'div.row a.red',
     );
@@ -309,9 +309,9 @@ describe('ExtractHtmlContentPlugin', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'div.row' } ] });
 
     const cssBase = plugin.getSelectorBase([
-      { contentSelector: 'div.rowA h1', property: 'innerText' },
-      { contentSelector: 'div.rowA h2', property: 'innerText' },
-      { contentSelector: 'div.rowB h3', property: 'innerText' },
+      { contentSelector: 'div.rowA h1', contentProperty: 'innerText' },
+      { contentSelector: 'div.rowA h2', contentProperty: 'innerText' },
+      { contentSelector: 'div.rowB h3', contentProperty: 'innerText' },
     ]);
     assert.isNull(cssBase);
   });

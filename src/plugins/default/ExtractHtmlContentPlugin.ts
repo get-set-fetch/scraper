@@ -27,7 +27,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
               contentSelector: {
                 type: 'string',
               },
-              property: {
+              contentProperty: {
                 type: 'string',
                 default: 'innerText',
               },
@@ -87,10 +87,10 @@ export default class ExtractHtmlContentPlugin extends Plugin {
           const contentBySelector:string[][] = Array(suffixSelectors.length).fill(0).map(() => []);
           for (let i = 0; i < suffixSelectors.length; i += 1) {
             const suffixSelector = suffixSelectors[i];
-            const { property } = this.opts.selectorPairs[i];
+            const { contentProperty } = this.opts.selectorPairs[i];
 
             contentBySelector[i] = Array.from(baseElm.querySelectorAll(suffixSelector))
-              .map(elm => this.getContent((elm as HTMLElement), property))
+              .map(elm => this.getContent((elm as HTMLElement), contentProperty))
               .filter(val => val);
           }
 
@@ -113,7 +113,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
       const contentBySelector: string[][] = this.opts.selectorPairs.map(
         selectorPair => Array
           .from(document.querySelectorAll(selectorPair.contentSelector))
-          .map(elm => this.getContent(elm as HTMLElement, selectorPair.property)),
+          .map(elm => this.getContent(elm as HTMLElement, selectorPair.contentProperty)),
       );
 
       content = this.transformToContentRows(contentBySelector);
