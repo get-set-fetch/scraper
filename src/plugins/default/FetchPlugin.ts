@@ -16,7 +16,7 @@ export default class FetchPlugin extends Plugin {
         stabilityCheck: {
           type: 'integer',
           default: 0,
-          title: 'Stability Timeout',
+          title: 'Stability Check',
           description: 'Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Only applies to html resources. Useful for bypassing preloader content.',
         },
         stabilityTimeout: {
