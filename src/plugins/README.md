@@ -30,7 +30,7 @@ Extracts new (html or binary) resource urls using CSS selectors | [schema](./def
 ## ExtractHtmlContentPlugin
 Scrapes html content using CSS selectors | [schema](./default/ExtractHtmlContentPlugin.ts)
 - `selectorPairs`
-  - Array of CSS selectors to be applied. Each entry is a `{ contentSelector, contentProperty, label }` object. contentSelector selects DOM elements while contentProperty specifies the DOM element property that holds the value to be scraped defaulting to `innerText`. label is used as column name when exporting as csv.
+  - Array of CSS selectors to be applied. Each entry is a `{ contentSelector, contentProperty, label }` object. contentSelector: selects DOM elements while contentProperty specifies the DOM element property that holds the value to be scraped defaulting to `innerText`. label is used as column name when exporting as csv.
   - default: none
 
 ## InsertResourcesPlugin
@@ -51,7 +51,7 @@ Performs infinite scrolling in order to load additional content | [schema](./def
   - Number of maximum scroll actions. A value of -1 scrolls till no new content is added to the page.
   - default: -1
 - `stabilityCheck`
-  - Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Only applies to html resources. Useful for bypassing preloader content.
+  - Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Useful for bypassing preloader content.
   - default: 1000
 - `stabilityTimeout`
   - Maximum waiting time (miliseconds) for achieving DOM stability in case of a continuously updated DOM (ex: timers, countdowns).
