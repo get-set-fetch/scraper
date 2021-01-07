@@ -37,11 +37,11 @@ const scrapeOpts = {
       name: 'ExtractHtmlContentPlugin',
       selectorPairs: [
         {
-          contentSelector 'table.metadata + p + table.wikitable td:nth-child(2) > a:first-child',
+          contentSelector: 'table.metadata + p + table.wikitable td:nth-child(2) > a:first-child',
           label: 'language',
         },
         {
-          contentSelector 'table.metadata + p + table.wikitable td:nth-child(3)',
+          contentSelector: 'table.metadata + p + table.wikitable td:nth-child(3)',
           label: 'speakers (milions)',
         },
       ],

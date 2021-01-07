@@ -36,11 +36,11 @@ const scrapeOpts = {
       name: 'ExtractHtmlContentPlugin',
       selectorPairs: [
         {
-          contentSelector 'div.statistics-item--name',
+          contentSelector: 'div.statistics-item--name',
           label: 'player',
         },
         {
-          contentSelector 'div.history-numbers',
+          contentSelector: 'div.history-numbers',
           label: 'goals',
         },
       ],

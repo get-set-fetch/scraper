@@ -50,19 +50,19 @@ const scrapeOpts = {
       name: 'ExtractHtmlContentPlugin',
       selectorPairs: [
         {
-          contentSelector 'h1.work-title',
+          contentSelector: 'h1.work-title',
           label: 'title',
         },
         {
-          contentSelector 'h2.edition-byline a',
+          contentSelector: 'h2.edition-byline a',
           label: 'author',
         },
         {
-          contentSelector 'ul.readers-stats > li.avg-ratings > span[itemProp="ratingValue"]',
+          contentSelector: 'ul.readers-stats > li.avg-ratings > span[itemProp="ratingValue"]',
           label: 'rating value',
         },
         {
-          contentSelector 'ul.readers-stats > li > span[itemProp="reviewCount"]',
+          contentSelector: 'ul.readers-stats > li > span[itemProp="reviewCount"]',
           label: 'review count',
         },
       ],
