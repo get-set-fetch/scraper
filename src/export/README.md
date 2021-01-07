@@ -11,6 +11,7 @@ You can export directly from each individual exporter.
 ```js
 const { CsvExporter } = require('get-set-fetch-scraper');
 exporter = new CsvExporter(site, 'file.csv', {fieldSeparator: ','});
+await exporter.export();
 ```
 
 Or via a scraper instance with the site parameter being ommited as it is already linked to the scraper. In this case you also need to specify the export type as either csv or zip.
