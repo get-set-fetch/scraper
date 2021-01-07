@@ -20,7 +20,7 @@ Take a look at [Examples](../../examples/README.md) for real world scraping defi
 
 ## static-content usage examples
 
-Limit scraping to a single page by setting ExtractUrlsPlugin.maxDepth to 0.
+Limit scraping to a single page by setting `ExtractUrlsPlugin.maxDepth` to `0`.
 ```js
 await scraper.scrape({
   url: 'startUrl',
@@ -34,7 +34,7 @@ await scraper.scrape({
 })
 ```
 
-Scrape from each html page all elements found by the "h1.title" CSS selector.
+Scrape from each html page all elements found by the `h1.title` CSS selector.
 ```js
 await scraper.scrape({
   url: 'startUrl',
@@ -53,7 +53,7 @@ await scraper.scrape({
 })
 ```
 
-Add a new ScrollPlugin to the scenario and scroll html pages to reveal further dynamically loaded content.
+Add a new `ScrollPlugin` to the scenario and scroll html pages to reveal further dynamically loaded content.
 ```js
 await scraper.scrape({
   url: 'startUrl',
