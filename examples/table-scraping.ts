@@ -23,9 +23,9 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeOptsHash = 'eLt7R4n7pZNBCsIwEEWvkmWLmoruuvAE3iFMzTQNTdLQpBVv79QSrEpBKCEw+Yv5zPyXb2rQ8btutUepgXe9KqZXcdUhiq4WBpwaQGEQ1UO4wVbYT7IjokYUwSO0SBFt4O0j+Hd+x19E/iNzgSOFapBbjCAhAtsxT3cWpyFfFYuydLE53BptZHbK2YVBWVOzOEvkkVhPu1ilfL/R/Zwv3NJuWWaJTIIjX/9ddJ43QKbJ';
+const scrapeHash = 'eLt7R4n7pZNBCsIwEEWvkmWLmoruuvAE3iFMzTQNTdLQpBVv79QSrEpBKCEw+Yv5zPyXb2rQ8btutUepgXe9KqZXcdUhiq4WBpwaQGEQ1UO4wVbYT7IjokYUwSO0SBFt4O0j+Hd+x19E/iNzgSOFapBbjCAhAtsxT3cWpyFfFYuydLE53BptZHbK2YVBWVOzOEvkkVhPu1ilfL/R/Zwv3NJuWWaJTIIjX/9ddJ43QKbJ';
 
-const scrapeOpts = {
+const scrapeDefinition = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
   scenario: 'static-content',
   pluginOpts: [
@@ -50,9 +50,9 @@ const scrapeOpts = {
 };
 
 (async () => {
-  await scraper.scrape(scrapeOptsHash);
+  await scraper.scrape(scrapeHash);
   await scraper.export('./examples/data/languages.csv', { type: 'csv' });
   await storage.close();
 
-  encode(scrapeOpts);
+  encode(scrapeDefinition);
 })();

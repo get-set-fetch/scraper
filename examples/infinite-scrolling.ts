@@ -22,9 +22,9 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeOptsHash = 'eLt7R4n7pZLRDoIwDEX/xWdH/SFjKtSxwAZZnYsP/rtdNYgQEhPf9tL13p6ztCbnXCVRSu0pj7pFP5Y0PaFNBK1jufAdIobOBcswyj6KDHbAnk9cD5Ea+Ee5L/YfhIe1Jb/JOTOycbdKw7DkYSMIvDH6535y+NVnV7YtJt/VTUj+LI1nM9q93HMTOV6uFLdArCVUfMfHE+w/lJc=';
+const scrapeHash = 'eLt7R4n7pZLRDoIwDEX/xWdH/SFjKtSxwAZZnYsP/rtdNYgQEhPf9tL13p6ztCbnXCVRSu0pj7pFP5Y0PaFNBK1jufAdIobOBcswyj6KDHbAnk9cD5Ea+Ee5L/YfhIe1Jb/JOTOycbdKw7DkYSMIvDH6535y+NVnV7YtJt/VTUj+LI1nM9q93HMTOV6uFLdArCVUfMfHE+w/lJc=';
 
-const scrapeOpts = {
+const scrapeDefinition = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
   scenario: 'static-content',
   pluginOpts: [
@@ -54,7 +54,7 @@ const scrapeOpts = {
 };
 
 (async () => {
-  await scraper.scrape(scrapeOpts);
+  await scraper.scrape(scrapeDefinition);
   await scraper.export('./examples/data/infinite-scrolling.csv', { type: 'csv' });
   await storage.close();
 })();

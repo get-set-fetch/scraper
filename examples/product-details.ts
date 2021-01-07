@@ -22,8 +22,8 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeOptsHash = 'eLt7R4n7pVRdS8MwFP0rob4omJS2PglTxp4Gg+3JFydy24YmLE1G0nbsxd/uTeOwnR0OpU/pvTnnfpyTc9XgurSSuQV7ZMZWMbSNMNbF61X2kKbJPF46gOJ97mRtuuc9VHyW/ElfF7r5Kj8dlz+liu/lZr9L5MZxsIVAOvSKIx+EYelSg58zeSLAFsIYxzfYz6NuBC2EVOVtehf5IsZQImO5MbtecHjRBsiJREAHdtyuMBkpZF2Fsx/7j86us9nAWyJhB2N3tC8Dk08OPJ2njXc/xkgZL6UfAc2PSmpsZ4AUNn8lVKtwEFBy66jfv8OGlWTQVdTijHXlf7g96FdUfb1BwNk2CpEXUC3fRm8D5hAgnY/8h3+Kk3eSHxam1c0ZZx8ghY9cfrfw+wQSXx87';
-const scrapeOpts = {
+const scrapeHash = 'eLt7R4n7pVRdS8MwFP0rob4omJS2PglTxp4Gg+3JFydy24YmLE1G0nbsxd/uTeOwnR0OpU/pvTnnfpyTc9XgurSSuQV7ZMZWMbSNMNbF61X2kKbJPF46gOJ97mRtuuc9VHyW/ElfF7r5Kj8dlz+liu/lZr9L5MZxsIVAOvSKIx+EYelSg58zeSLAFsIYxzfYz6NuBC2EVOVtehf5IsZQImO5MbtecHjRBsiJREAHdtyuMBkpZF2Fsx/7j86us9nAWyJhB2N3tC8Dk08OPJ2njXc/xkgZL6UfAc2PSmpsZ4AUNn8lVKtwEFBy66jfv8OGlWTQVdTijHXlf7g96FdUfb1BwNk2CpEXUC3fRm8D5hAgnY/8h3+Kk3eSHxam1c0ZZx8ghY9cfrfw+wQSXx87';
+const scrapeDefinition = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
   scenario: 'static-content',
   pluginOpts: [
@@ -71,7 +71,7 @@ const scrapeOpts = {
 };
 
 (async () => {
-  await scraper.scrape(scrapeOpts);
+  await scraper.scrape(scrapeDefinition);
   await scraper.export('./examples/data/books.csv', { type: 'csv' });
   await scraper.export('./examples/data/book-covers.zip', { type: 'zip' });
   await storage.close();

@@ -21,7 +21,7 @@ scraper is:
 - storage agnostic (init storage outside scraper)
 */
 
-export type ScrapeOpts = {
+export type ScrapeDefinition = {
   url: string,
   scenario: string,
   pluginOpts: IPluginOpts[]
@@ -54,21 +54,21 @@ export default class Scraper {
     }
   }
 
-  async initSite(scrapeConfig: Site|ScrapeOpts|string):Promise<Site> {
+  async initSite(scrapeConfig: Site|ScrapeDefinition|string):Promise<Site> {
     let site:Site;
 
     if (scrapeConfig instanceof Site) {
       site = scrapeConfig;
     }
     else {
-      const scrapeOpts:ScrapeOpts = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
+      const scrapeDef:ScrapeDefinition = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
       const { Site } = this.storage;
       site = new Site({
-        name: new URL(scrapeOpts.url).hostname,
-        url: scrapeOpts.url,
-        pluginOpts: scenarios[scrapeOpts.scenario]
-          ? mergePluginOpts(scenarios[scrapeOpts.scenario].defaultPluginOpts, scrapeOpts.pluginOpts)
-          : scrapeOpts.pluginOpts,
+        name: new URL(scrapeDef.url).hostname,
+        url: scrapeDef.url,
+        pluginOpts: scenarios[scrapeDef.scenario]
+          ? mergePluginOpts(scenarios[scrapeDef.scenario].defaultPluginOpts, scrapeDef.pluginOpts)
+          : scrapeDef.pluginOpts,
       });
       await site.save();
       this.logger.info(`new Site ${site.name} saved`);
@@ -82,9 +82,9 @@ export default class Scraper {
   }
 
   async scrape(site: Site):Promise<Site>
-  async scrape(scrapeOpts: ScrapeOpts):Promise<Site>
+  async scrape(scrapeDefinition: ScrapeDefinition):Promise<Site>
   async scrape(scrapeHash: string):Promise<Site>
-  async scrape(scrapeConfig: Site|ScrapeOpts|string) {
+  async scrape(scrapeConfig: Site|ScrapeDefinition|string) {
     try {
       await this.preScrape();
       this.site = await this.initSite(scrapeConfig);
