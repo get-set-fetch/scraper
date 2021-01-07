@@ -7,7 +7,7 @@ import Resource from '../../../src/storage/base/Resource';
 describe('ScrollPlugin', () => {
   let sandbox:SinonSandbox;
   let plugin: ScrollPlugin;
-  const site:any = {};
+  const project:any = {};
 
   beforeEach(() => {
     sandbox = createSandbox();
@@ -20,9 +20,9 @@ describe('ScrollPlugin', () => {
 
   it('test conditions', () => {
     plugin = new ScrollPlugin();
-    assert.isFalse(plugin.test(site, null));
-    assert.isFalse(plugin.test(site, <Resource>{ actions: [ 'clickA' ] }));
-    assert.isTrue(plugin.test(site, <Resource>{ contentType: 'text/html' }));
+    assert.isFalse(plugin.test(project, null));
+    assert.isFalse(plugin.test(project, <Resource>{ actions: [ 'clickA' ] }));
+    assert.isTrue(plugin.test(project, <Resource>{ contentType: 'text/html' }));
   });
 
   it('apply DOM unchanged', async () => {

@@ -1,10 +1,10 @@
 import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
 /**
- * Plugin responsible for selecting a resource to crawl from the current site.
+ * Plugin responsible for selecting a resource to crawl from the current project.
  */
 export default class SelectResourcePlugin extends Plugin {
   static get schema() {
@@ -35,12 +35,12 @@ export default class SelectResourcePlugin extends Plugin {
   }
 
   // only retrieve a new resource when one hasn't already been selected
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     return resource === null;
   }
 
-  async apply(site: Site, resource: Resource):Promise<Resource> {
+  async apply(project: Project, resource: Resource):Promise<Resource> {
     await new Promise(resolve => setTimeout(resolve, this.opts.delay));
-    return site.getResourceToCrawl();
+    return project.getResourceToCrawl();
   }
 }

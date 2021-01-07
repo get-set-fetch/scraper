@@ -3,7 +3,7 @@
 /* eslint-disable no-restricted-syntax */
 import { JSONSchema7 } from 'json-schema';
 import SchemaHelper from '../schema/SchemaHelper';
-import Site from '../storage/base/Site';
+import Project from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import BrowserClient from '../browserclient/BrowserClient';
 
@@ -31,8 +31,8 @@ export default abstract class Plugin {
     this.opts = SchemaHelper.instantiate(schema, opts);
   }
 
-  abstract test(site: Site, resource: Resource): Promise<boolean> | boolean;
-  abstract apply(site: Site, resource: Resource, client: BrowserClient): Promise<void | Partial<Resource>> | void | Partial<Resource>;
+  abstract test(project: Project, resource: Resource): Promise<boolean> | boolean;
+  abstract apply(project: Project, resource: Resource, client: BrowserClient): Promise<void | Partial<Resource>> | void | Partial<Resource>;
 }
 
 export interface IPlugin {

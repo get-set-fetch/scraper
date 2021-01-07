@@ -1,6 +1,6 @@
 import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import BrowserClient from '../../browserclient/BrowserClient';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
@@ -35,7 +35,7 @@ export default class FetchPlugin extends Plugin {
     super(opts);
   }
 
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     if (!resource || !resource.url) return false;
 
     // only fetch a resource that hasn't been fetched yet
@@ -46,7 +46,7 @@ export default class FetchPlugin extends Plugin {
     return protocol === 'http:' || protocol === 'https:';
   }
 
-  async apply(site: Site, resource: Resource, client: BrowserClient) {
+  async apply(project: Project, resource: Resource, client: BrowserClient) {
     // url is of html mime type, loaded it in a browser tab
     if (await this.isHtml(resource, client)) {
       return this.openInTab(resource, client);

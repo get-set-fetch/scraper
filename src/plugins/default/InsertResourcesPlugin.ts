@@ -1,11 +1,11 @@
 /* eslint-disable no-await-in-loop */
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import { SchemaType } from '../../schema/SchemaHelper';
 
 /**
- * Plugin responsible for saving new resources within the current site.
+ * Plugin responsible for saving new resources within the current project.
  */
 export default class InsertResourcesPlugin extends Plugin {
   static get schema() {
@@ -30,7 +30,7 @@ export default class InsertResourcesPlugin extends Plugin {
     super(opts);
   }
 
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     if (!resource) return false;
 
     // only save new urls if there's something to save
@@ -40,13 +40,13 @@ export default class InsertResourcesPlugin extends Plugin {
     return true;
   }
 
-  async apply(site: Site, resource: Resource) {
+  async apply(project: Project, resource: Resource) {
     const { resourcesToAdd } = resource;
 
     let resourcesNotInStorage:Partial<Resource>[] = [];
 
     for (let i = 0; i < resourcesToAdd.length; i += 1) {
-      const resourceInStorage = await site.getResource(resourcesToAdd[i].url);
+      const resourceInStorage = await project.getResource(resourcesToAdd[i].url);
       if (!resourceInStorage) {
         resourcesNotInStorage.push(Object.assign(resourcesToAdd[i], { depth: resource.depth + 1 }));
       }
@@ -54,7 +54,7 @@ export default class InsertResourcesPlugin extends Plugin {
 
     // don't add more resources than maxResources threshold
     if (this.opts.maxResources > 0) {
-      const resourceCount = await site.countResources();
+      const resourceCount = await project.countResources();
       const maxResourcesToAdd = Math.max(0, this.opts.maxResources - resourceCount);
 
       if (maxResourcesToAdd === 0) {
@@ -65,6 +65,6 @@ export default class InsertResourcesPlugin extends Plugin {
       }
     }
 
-    await site.saveResources(resourcesNotInStorage);
+    await project.saveResources(resourcesNotInStorage);
   }
 }

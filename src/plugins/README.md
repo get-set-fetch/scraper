@@ -3,7 +3,7 @@
 Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
 
 ## SelectResourcePlugin
-Selects a resource to scrape from the current site | [schema](./default/SelectResourcePlugin.ts)
+Selects a resource to scrape from the current project | [schema](./default/SelectResourcePlugin.ts)
 - `delay`
   - Delay in milliseconds between fetching two consecutive resources.
   - default: 1000
@@ -34,7 +34,7 @@ Scrapes html content using CSS selectors | [schema](./default/ExtractHtmlContent
   - default: none
 
 ## InsertResourcesPlugin
-Saves new resources within the current site based on newly identified urls | [schema](./default/InsertResourcesPlugin.ts)
+Saves new resources within the current project based on newly identified urls | [schema](./default/InsertResourcesPlugin.ts)
 - `maxResources`
   - Maximum number of resources to be saved and scraped. A value of -1 disables this check.
   - default: -1

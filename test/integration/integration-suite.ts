@@ -6,14 +6,14 @@ import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
 import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
 
 import Scraper from '../../src/scraper/Scraper';
-import { IStaticSite } from '../../src/storage/base/Site';
+import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 
 export default function integrationSuite(storage: Storage) {
   describe(`integration suite using ${storage.config.client}`, () => {
     let srv: GsfServer;
     let browserClient:BrowserClient;
-    let Site: IStaticSite;
+    let Project: IStaticProject;
 
     before(async () => {
       // start web server
@@ -40,11 +40,11 @@ export default function integrationSuite(storage: Storage) {
       });
 
       // init storage
-      ({ Site } = await storage.connect());
+      ({ Project } = await storage.connect());
     });
 
     afterEach(async () => {
-      await Site.delAll();
+      await Project.delAll();
     });
 
     after(async () => {
@@ -58,20 +58,20 @@ export default function integrationSuite(storage: Storage) {
       it(`${storage.config.client} - ${test.title}`, async () => {
         srv.update(test.vhosts);
 
-        // save a site for the current scraping test
-        const site = new Site({
+        // save a project for the current scraping test
+        const project = new Project({
           name: test.title,
           url: test.definition.url,
           pluginOpts: mergePluginOpts(scenarios[test.definition.scenario].defaultPluginOpts, test.definition.pluginOpts),
         });
-        await site.save();
+        await project.save();
 
         // start scraping
         const scraper = new Scraper(storage, browserClient);
-        await scraper.scrape(site);
+        await scraper.scrape(project);
 
         // compare results
-        const resources = await site.getResources();
+        const resources = await project.getResources();
         // console.log(JSON.stringify(resources));
         ScrapingSuite.checkResources(resources, test.resources);
 

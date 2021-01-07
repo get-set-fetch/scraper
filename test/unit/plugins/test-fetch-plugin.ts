@@ -2,18 +2,18 @@ import { assert } from 'chai';
 import { stub } from 'sinon';
 import FetchPlugin from '../../../src/plugins/default/FetchPlugin';
 import Resource from '../../../src/storage/base/Resource';
-import Site from '../../../src/storage/base/Site';
+import Project from '../../../src/storage/base/Project';
 
 describe('FetchPlugin', () => {
   let plugin: FetchPlugin;
-  const site:Site = <Site>{ resourceCount: 0 };
+  const project:Project = <Project>{ resourceCount: 0 };
 
   it('test conditions', () => {
     plugin = new FetchPlugin();
-    assert.isFalse(plugin.test(site, <Resource>{ contentType: 'text/html' }));
-    assert.isFalse(plugin.test(site, null));
-    assert.isFalse(plugin.test(site, <Resource>{}));
-    assert.isTrue(plugin.test(site, <Resource>{ url: 'http://a.com' }));
+    assert.isFalse(plugin.test(project, <Resource>{ contentType: 'text/html' }));
+    assert.isFalse(plugin.test(project, null));
+    assert.isFalse(plugin.test(project, <Resource>{}));
+    assert.isTrue(plugin.test(project, <Resource>{ url: 'http://a.com' }));
   });
 
   it('getExtension', () => {

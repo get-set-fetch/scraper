@@ -22,7 +22,7 @@ export default class CsvExporter extends Exporter {
     const { lineSeparator, fieldSeparator, pageLimit } = this.opts;
     let pageOffset = 0;
 
-    let resources = await this.site.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
+    let resources = await this.project.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
     if (resources.length === 0) throw new Error('No csv content to export.');
 
     const wstream = fs.createWriteStream(this.filepath);
@@ -40,7 +40,7 @@ export default class CsvExporter extends Exporter {
 
       pageOffset += pageLimit;
       // eslint-disable-next-line no-await-in-loop
-      resources = await this.site.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
+      resources = await this.project.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
     }
 
     wstream.close();
@@ -49,7 +49,7 @@ export default class CsvExporter extends Exporter {
   }
 
   getContentKeys() {
-    const contentPlugin:any = this.site.plugins.find((plugin:any) => typeof plugin.getContentKeys === 'function');
+    const contentPlugin:any = this.project.plugins.find((plugin:any) => typeof plugin.getContentKeys === 'function');
     return contentPlugin ? contentPlugin.getContentKeys() : [];
   }
 

@@ -1,6 +1,6 @@
 import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
 export default class ExtractHtmlContentPlugin extends Plugin {
@@ -49,7 +49,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     this.content = new Set<string>();
   }
 
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     if (!resource) return false;
 
     const selectorsPresent = this.opts.selectorPairs && this.opts.selectorPairs.length > 0;

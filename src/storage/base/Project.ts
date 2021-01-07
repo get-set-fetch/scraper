@@ -3,7 +3,7 @@ import Plugin, { IPluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 
-export default abstract class Site extends Entity {
+export default abstract class Project extends Entity {
   id: number;
   name: string;
   url: string;
@@ -17,7 +17,7 @@ export default abstract class Site extends Entity {
   // populated based on countResources, usefull info to have when serializing to plugin exection in DOM
   resourceCount:number;
 
-  constructor(kwArgs: Partial<Site> = {}) {
+  constructor(kwArgs: Partial<Project> = {}) {
     super(kwArgs);
 
     if (typeof kwArgs.pluginOpts === 'string') {
@@ -64,8 +64,8 @@ export default abstract class Site extends Entity {
   }
 }
 
-export interface IStaticSite extends IStaticEntity {
-  new(kwArgs: Partial<Site>): Site;
-  get(nameOrId: string | number):Promise<Site>;
+export interface IStaticProject extends IStaticEntity {
+  new(kwArgs: Partial<Project>): Project;
+  get(nameOrId: string | number):Promise<Project>;
   getAll():Promise<any[]>;
 }

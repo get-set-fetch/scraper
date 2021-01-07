@@ -1,10 +1,10 @@
 import Storage from '../../../src/storage/base/Storage';
 import crudResource from './test-resource-crud';
-import crudSite from './test-site-crud';
+import crudProject from './test-project-crud';
 
 const suites = {
   crudResource,
-  crudSite,
+  crudProject,
 };
 
 export default function unitSuite(storage: Storage) {

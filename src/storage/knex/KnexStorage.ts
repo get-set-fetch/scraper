@@ -2,10 +2,10 @@
 import Knex from 'knex';
 import Entity from '../base/Entity';
 import { IStaticResource } from '../base/Resource';
-import { IStaticSite } from '../base/Site';
+import { IStaticProject } from '../base/Project';
 import Storage from '../base/Storage';
 import KnexResource from './KnexResource';
-import KnexSite from './KnexSite';
+import KnexProject from './KnexProject';
 
 export type CapabilitiesType = {
   returning: boolean;
@@ -14,7 +14,7 @@ export default class KnexStorage extends Storage {
   knex: Knex;
   config: Knex.Config;
 
-  Site: IStaticSite & typeof KnexSite;
+  Project: IStaticProject & typeof KnexProject;
   Resource: IStaticResource & typeof KnexResource;
 
   constructor(config?) {
@@ -36,15 +36,15 @@ export default class KnexStorage extends Storage {
     const DynamicKnexResource = class extends KnexResource {};
     await DynamicKnexResource.init(this);
 
-    const DynamicKnexSite = class extends KnexSite {};
-    await DynamicKnexSite.init(this);
+    const DynamicKnexProject = class extends KnexProject {};
+    await DynamicKnexProject.init(this);
 
-    this.Site = DynamicKnexSite;
+    this.Project = DynamicKnexProject;
     this.Resource = DynamicKnexResource;
     this.isConnected = true;
 
     return {
-      Site: DynamicKnexSite,
+      Project: DynamicKnexProject,
       Resource: DynamicKnexResource,
     };
   }

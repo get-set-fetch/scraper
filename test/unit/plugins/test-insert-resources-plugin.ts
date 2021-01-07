@@ -7,11 +7,11 @@ describe('InsertResourcesPlugin', () => {
   let sandbox:SinonSandbox;
   let spySaveResources:SinonSpy;
   let plugin: InsertResourcesPlugin;
-  const site:any = { resourceCount: 0, saveResources: () => undefined, getResource: () => undefined, countResources: () => 0 };
+  const project:any = { resourceCount: 0, saveResources: () => undefined, getResource: () => undefined, countResources: () => 0 };
 
   beforeEach(() => {
     sandbox = createSandbox();
-    spySaveResources = sandbox.spy(site, 'saveResources');
+    spySaveResources = sandbox.spy(project, 'saveResources');
   });
 
   afterEach(() => {
@@ -20,14 +20,14 @@ describe('InsertResourcesPlugin', () => {
 
   it('test conditions', () => {
     plugin = new InsertResourcesPlugin();
-    assert.isFalse(plugin.test(site, null));
-    assert.isFalse(plugin.test(site, <Resource>{ resourcesToAdd: [ ] }));
-    assert.isTrue(plugin.test(site, <Resource>{ resourcesToAdd: [ { url: 'http://a.com' } ] }));
+    assert.isFalse(plugin.test(project, null));
+    assert.isFalse(plugin.test(project, <Resource>{ resourcesToAdd: [ ] }));
+    assert.isTrue(plugin.test(project, <Resource>{ resourcesToAdd: [ { url: 'http://a.com' } ] }));
   });
 
   it('fully save new resources, maxResources undefined', async () => {
     plugin = new InsertResourcesPlugin();
-    await plugin.apply(site, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
+    await plugin.apply(project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
     assert.isTrue(spySaveResources.calledOnce);
     const [ saveResources ] = spySaveResources.getCall(0).args;
@@ -36,7 +36,7 @@ describe('InsertResourcesPlugin', () => {
 
   it('fully save new resources, maxResources defined', async () => {
     plugin = new InsertResourcesPlugin({ maxResources: 2 });
-    await plugin.apply(site, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
+    await plugin.apply(project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
     assert.isTrue(spySaveResources.calledOnce);
     const [ saveResources ] = spySaveResources.getCall(0).args;
@@ -45,7 +45,7 @@ describe('InsertResourcesPlugin', () => {
 
   it('partially save new resources', async () => {
     plugin = new InsertResourcesPlugin({ maxResources: 1 });
-    await plugin.apply(site, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
+    await plugin.apply(project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
     assert.isTrue(spySaveResources.calledOnce);
     const [ saveResources ] = spySaveResources.getCall(0).args;

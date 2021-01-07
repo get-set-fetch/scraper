@@ -2,13 +2,13 @@ import { assert } from 'chai';
 import { createSandbox, SinonSandbox } from 'sinon';
 import ExtractUrlsPlugin from '../../../src/plugins/default/ExtractUrlsPlugin';
 import Resource from '../../../src/storage/base/Resource';
-import Site from '../../../src/storage/base/Site';
+import Project from '../../../src/storage/base/Project';
 
 describe('ExtractUrlsPlugin', () => {
   let sandbox:SinonSandbox;
   let stubQuerySelectorAll;
   let plugin: ExtractUrlsPlugin;
-  const site:Site = <Site>{ resourceCount: 0 };
+  const project:Project = <Project>{ resourceCount: 0 };
 
   beforeEach(() => {
     sandbox = createSandbox();
@@ -21,9 +21,9 @@ describe('ExtractUrlsPlugin', () => {
 
   it('test conditions', () => {
     plugin = new ExtractUrlsPlugin({ selectorPairs: [] });
-    assert.isFalse(plugin.test(site, null));
-    assert.isTrue(plugin.test(site, <Resource>{ contentType: 'text/html' }));
-    assert.isFalse(plugin.test(site, <Resource>{ contentType: 'text/plain' }));
+    assert.isFalse(plugin.test(project, null));
+    assert.isTrue(plugin.test(project, <Resource>{ contentType: 'text/html' }));
+    assert.isFalse(plugin.test(project, <Resource>{ contentType: 'text/plain' }));
   });
 
   it('extract unique urls - default options', () => {
@@ -45,7 +45,7 @@ describe('ExtractUrlsPlugin', () => {
       },
     ];
     // eslint-disable-next-line prefer-spread
-    const { resourcesToAdd } = plugin.apply(site, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
+    const { resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
   });
 
@@ -77,7 +77,7 @@ describe('ExtractUrlsPlugin', () => {
       },
     ];
     // eslint-disable-next-line prefer-spread
-    const { resourcesToAdd } = plugin.apply(site, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
+    const { resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
   });
 
@@ -111,7 +111,7 @@ describe('ExtractUrlsPlugin', () => {
       },
     ];
     // eslint-disable-next-line prefer-spread
-    const { resourcesToAdd } = plugin.apply(site, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
+    const { resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
   });
 
@@ -122,7 +122,7 @@ describe('ExtractUrlsPlugin', () => {
 
     const expectedValidUrls = [];
     // eslint-disable-next-line prefer-spread
-    const { resourcesToAdd } = plugin.apply(site, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
+    const { resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
   });
 
@@ -155,7 +155,7 @@ describe('ExtractUrlsPlugin', () => {
       },
     ];
 
-    let { resourcesToAdd } = plugin.apply(site, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
+    let { resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
 
     // 2nd apply
@@ -188,7 +188,7 @@ describe('ExtractUrlsPlugin', () => {
       },
     ];
 
-    ({ resourcesToAdd } = plugin.apply(site, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 }));
+    ({ resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 }));
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
   });
 });

@@ -1,6 +1,6 @@
 import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
 /**
@@ -53,7 +53,7 @@ export default class ExtractUrlsPlugin extends Plugin {
     this.prevUrls = new Set<string>();
   }
 
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     if (!resource) return false;
 
     // don't extract new resources from non-parsable pages
@@ -67,7 +67,7 @@ export default class ExtractUrlsPlugin extends Plugin {
     return true;
   }
 
-  apply(site: Site, resource: Resource) {
+  apply(project: Project, resource: Resource) {
     const allResourcesToAdd: Partial<Resource>[] = this.extractResources(resource);
     const resourcesToAdd = this.diffAndMerge(allResourcesToAdd);
 
@@ -81,7 +81,7 @@ export default class ExtractUrlsPlugin extends Plugin {
       (resources, selectorPair) => {
         /*
         sometimes the link innerText or img alt text is not enough to uniquely differentiate between child urls..
-        ex: extracting pdf files from a site where on each page is a link with "Export" text
+        ex: extracting pdf files from a project where on each page is a link with "Export" text
         if we are to rename the pdf files based on link innerText, all pdf files will result in the name 'export.pdf'
         to avoid this, an extra, optional title selector is added
         is responsible for linking link(s) with some other elm innerText from the page, like, for ex, h2.page-title

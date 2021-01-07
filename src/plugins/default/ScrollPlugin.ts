@@ -1,6 +1,6 @@
 import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
 
@@ -56,7 +56,7 @@ export default class ScrollPlugin extends Plugin {
     this.actionNo = 0;
   }
 
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     if (!resource) return false;
 
     // don't attempt to scroll non-html resources

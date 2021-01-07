@@ -20,7 +20,7 @@ export default class ZipExporter extends Exporter {
 
     this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.getPath(this.filepath, pageOffset, pageLimit))} ...`);
 
-    let resources = await this.site.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
+    let resources = await this.project.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
     if (resources.length === 0) {
       this.logger.warn('No binary content to export.');
       return;
@@ -45,7 +45,7 @@ export default class ZipExporter extends Exporter {
 
       pageOffset += pageLimit;
       // eslint-disable-next-line no-await-in-loop
-      resources = await this.site.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
+      resources = await this.project.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
     }
 
     this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.getPath(this.filepath, pageOffset, pageLimit))} ... done`);

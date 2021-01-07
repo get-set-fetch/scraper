@@ -4,21 +4,21 @@ import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
 import JSZip from 'jszip';
 import ZipExporter from '../../../src/export/ZipExporter';
-import KnexSite from '../../../src/storage/knex/KnexSite';
+import KnexProject from '../../../src/storage/knex/KnexProject';
 import Exporter from '../../../src/export/Exporter';
 
 describe('ZipExporter', () => {
   let sandbox:SinonSandbox;
   let exporter: Exporter;
   let writeStub;
-  let site;
+  let project;
 
   beforeEach(() => {
     sandbox = createSandbox();
-    site = sandbox.createStubInstance(KnexSite);
+    project = sandbox.createStubInstance(KnexProject);
     writeStub = sandbox.stub(fs, 'writeFileSync');
 
-    exporter = new ZipExporter(site, 'archiveA.zip');
+    exporter = new ZipExporter(project, 'archiveA.zip');
   });
 
   afterEach(() => {
@@ -26,7 +26,7 @@ describe('ZipExporter', () => {
   });
 
   it('entry name from parent, extension from contentType', async () => {
-    site.getPagedResources.onCall(0).returns([
+    project.getPagedResources.onCall(0).returns([
       {
         url: 'siteA.com/bkg.png',
         data: Uint8Array.from(Buffer.from('dataA')),
@@ -34,7 +34,7 @@ describe('ZipExporter', () => {
         contentType: 'image/png',
       },
     ]);
-    site.getPagedResources.onCall(1).returns([]);
+    project.getPagedResources.onCall(1).returns([]);
     await exporter.export();
 
     const [ archiveName, archiveContent ] = writeStub.getCall(0).args;
@@ -47,14 +47,14 @@ describe('ZipExporter', () => {
   });
 
   it('entry name from url, extension from url', async () => {
-    site.getPagedResources.onCall(0).returns([
+    project.getPagedResources.onCall(0).returns([
       {
         url: 'siteA.com/report.pdf',
         data: Uint8Array.from(Buffer.from('dataA')),
         contentType: 'NotPresentInMimeTypes',
       },
     ]);
-    site.getPagedResources.onCall(1).returns([]);
+    project.getPagedResources.onCall(1).returns([]);
     await exporter.export();
 
     const [ archiveName, archiveContent ] = writeStub.getCall(0).args;
@@ -67,21 +67,21 @@ describe('ZipExporter', () => {
   });
 
   it('entry name from url, extension from url, multiple archives', async () => {
-    site.getPagedResources.onCall(0).returns([
+    project.getPagedResources.onCall(0).returns([
       {
         url: 'siteA.com/report.pdf',
         data: Uint8Array.from(Buffer.from('dataA')),
         contentType: 'NotPresentInMimeTypes',
       },
     ]);
-    site.getPagedResources.onCall(1).returns([
+    project.getPagedResources.onCall(1).returns([
       {
         url: 'siteA.com/animation.gif',
         data: Uint8Array.from(Buffer.from('dataA')),
         contentType: 'NotPresentInMimeTypes',
       },
     ]);
-    site.getPagedResources.onCall(2).returns([]);
+    project.getPagedResources.onCall(2).returns([]);
     await exporter.export();
 
     let [ archiveName, archiveContent ] = writeStub.getCall(0).args;

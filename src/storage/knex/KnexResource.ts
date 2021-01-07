@@ -19,7 +19,7 @@ export default class KnexResource extends Resource {
       'resources',
       builder => {
         builder.increments('id').primary();
-        builder.integer('siteId');
+        builder.integer('projectId');
         builder.string('url');
         builder.integer('depth');
         builder.dateTime('scrapedAt');
@@ -72,12 +72,12 @@ export default class KnexResource extends Resource {
     return rawResources;
   }
 
-  static getAll(siteId: number) {
-    return this.builder.where({ siteId });
+  static getAll(projectId: number) {
+    return this.builder.where({ projectId });
   }
 
-  static async getResource(siteId:number, url: string):Promise<Resource> {
-    const rawResource = await this.builder.where({ siteId, url }).first();
+  static async getResource(projectId:number, url: string):Promise<Resource> {
+    const rawResource = await this.builder.where({ projectId, url }).first();
     return rawResource ? new this.storage.Resource(rawResource) : undefined;
   }
 
@@ -86,15 +86,15 @@ export default class KnexResource extends Resource {
   }
 
   // find a resource to crawl and set its scrapeInProgress flag
-  static async getResourceToCrawl(siteId:number):Promise<Resource> {
+  static async getResourceToCrawl(projectId:number):Promise<Resource> {
     let resource:Resource = null;
 
     await this.storage.knex.transaction(async trx => {
       // block SELECT FOR UPDATE execution of other concurrent transactions till the current one issues a COMMIT
       const rawResource = await this.builder
         .transacting(trx).forUpdate()
-        // try to find a resource matching {siteId, scrapeInProgress : false, scrapedAt: undefined}
-        .where({ siteId, scrapeInProgress: false, scrapedAt: null })
+        // try to find a resource matching {projectId, scrapeInProgress : false, scrapedAt: undefined}
+        .where({ projectId, scrapeInProgress: false, scrapedAt: null })
         .first();
 
       if (rawResource) {

@@ -1,11 +1,11 @@
 import Resource, { IStaticResource } from './Resource';
-import Site, { IStaticSite } from './Site';
+import Project, { IStaticProject } from './Project';
 
 export default abstract class Storage {
   config;
   isConnected:boolean;
 
-  Site: IStaticSite & typeof Site;
+  Project: IStaticProject & typeof Project;
   Resource: IStaticResource & typeof Resource;
 
   constructor(config) {
@@ -14,7 +14,7 @@ export default abstract class Storage {
   }
 
   abstract connect():Promise<{
-    Site: IStaticSite & typeof Site,
+    Project: IStaticProject & typeof Project,
     Resource: IStaticResource & typeof Resource
   }>;
 

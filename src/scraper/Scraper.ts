@@ -3,7 +3,7 @@
 /* eslint-disable no-param-reassign */
 import { URL } from 'url';
 import BrowserClient from '../browserclient/BrowserClient';
-import Site from '../storage/base/Site';
+import Project from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import Plugin, { IPluginOpts } from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
@@ -31,7 +31,7 @@ export default class Scraper {
 
   storage: Storage;
   browserClient:BrowserClient;
-  site: Site;
+  project: Project;
 
   constructor(storage: Storage, browserClient:BrowserClient) {
     this.storage = storage;
@@ -54,53 +54,53 @@ export default class Scraper {
     }
   }
 
-  async initSite(scrapeConfig: Site|ScrapeDefinition|string):Promise<Site> {
-    let site:Site;
+  async initProject(scrapeConfig: Project|ScrapeDefinition|string):Promise<Project> {
+    let project:Project;
 
-    if (scrapeConfig instanceof Site) {
-      site = scrapeConfig;
+    if (scrapeConfig instanceof Project) {
+      project = scrapeConfig;
     }
     else {
       const scrapeDef:ScrapeDefinition = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
-      const { Site } = this.storage;
-      site = new Site({
+      const { Project } = this.storage;
+      project = new Project({
         name: new URL(scrapeDef.url).hostname,
         url: scrapeDef.url,
         pluginOpts: scenarios[scrapeDef.scenario]
           ? mergePluginOpts(scenarios[scrapeDef.scenario].defaultPluginOpts, scrapeDef.pluginOpts)
           : scrapeDef.pluginOpts,
       });
-      await site.save();
-      this.logger.info(`new Site ${site.name} saved`);
+      await project.save();
+      this.logger.info(`new Project ${project.name} saved`);
     }
 
-    return site;
+    return project;
   }
 
   async postScrape() {
     await this.browserClient.close();
   }
 
-  async scrape(site: Site):Promise<Site>
-  async scrape(scrapeDefinition: ScrapeDefinition):Promise<Site>
-  async scrape(scrapeHash: string):Promise<Site>
-  async scrape(scrapeConfig: Site|ScrapeDefinition|string) {
+  async scrape(project: Project):Promise<Project>
+  async scrape(scrapeDefinition: ScrapeDefinition):Promise<Project>
+  async scrape(scrapeHash: string):Promise<Project>
+  async scrape(scrapeConfig: Project|ScrapeDefinition|string) {
     try {
       await this.preScrape();
-      this.site = await this.initSite(scrapeConfig);
+      this.project = await this.initProject(scrapeConfig);
     }
     catch (err) {
       this.logger.error(err, 'Error preScraping operations');
-      // no site > no scrape process > abort
+      // no project > no scrape process > abort
       return null;
     }
 
-    this.logger.debug(this.site, 'Scraping site');
+    this.logger.debug(this.project, 'Scraping project');
     try {
-      this.site.plugins = this.site.initPlugins();
+      this.project.plugins = this.project.initPlugins();
     }
     catch (err) {
-      this.logger.error(err, 'Error instantiating plugin definitions for site %s', this.site.name);
+      this.logger.error(err, 'Error instantiating plugin definitions for project %s', this.project.name);
       // no plugins > no scrape process > abort
       return null;
     }
@@ -115,32 +115,32 @@ export default class Scraper {
     */
     let resource: Resource;
     do {
-      resource = await this.scrapeResource(this.site);
+      resource = await this.scrapeResource(this.project);
     }
     while (resource);
 
     await this.postScrape();
 
-    return this.site;
+    return this.project;
   }
 
-  async scrapeResource(site: Site, resource: Resource = null):Promise<Resource> {
+  async scrapeResource(project: Project, resource: Resource = null):Promise<Resource> {
     // dynamic resource, a resource that was modified by a dynamic action: scroll, click, ..
     if (resource && resource.actions) {
-      this.logger.info('Started re-scraping a dynamic resource from site %s, url %s, dynamic action %s', site.name, resource.url, resource.actions);
+      this.logger.info('Started re-scraping a dynamic resource from project %s, url %s, dynamic action %s', project.name, resource.url, resource.actions);
     }
     else {
-      this.logger.info('Started scraping a new resource from site %s', site.name);
+      this.logger.info('Started scraping a new resource from project %s', project.name);
     }
 
     let pluginIdx: number;
     try {
       /*
       will execute the plugins in the order they are defined
-      apply each plugin to the current (site, resource) pair
+      apply each plugin to the current (project, resource) pair
       */
-      for (pluginIdx = 0; pluginIdx < site.plugins.length; pluginIdx += 1) {
-        const result = await this.executePlugin(site, resource, site.plugins[pluginIdx]);
+      for (pluginIdx = 0; pluginIdx < project.plugins.length; pluginIdx += 1) {
+        const result = await this.executePlugin(project, resource, project.plugins[pluginIdx]);
 
         /*
         a plugin result can represent:
@@ -167,14 +167,14 @@ export default class Scraper {
         this.logger.info('Resource successfully scraped %s', resource.url);
       }
       else {
-        this.logger.info('No scrapable resource found for site %s', site.name);
+        this.logger.info('No scrapable resource found for project %s', project.name);
       }
     }
     catch (err) {
       this.logger.error(
         err,
-        'Crawl error for site %s , Plugin %s against resource %s',
-        site.name, site.plugins[pluginIdx].constructor.name, resource ? resource.url : '',
+        'Crawl error for project %s , Plugin %s against resource %s',
+        project.name, project.plugins[pluginIdx].constructor.name, resource ? resource.url : '',
       );
 
       /*
@@ -207,9 +207,9 @@ export default class Scraper {
       && resource.actions.length > 0
     ) {
       const dynamicResource:Resource = (
-        ({ url, depth, contentType, parent, actions }) => site.createResource({ url, depth, contentType, parent, actions })
+        ({ url, depth, contentType, parent, actions }) => project.createResource({ url, depth, contentType, parent, actions })
       )(resource);
-      return this.scrapeResource(site, dynamicResource);
+      return this.scrapeResource(project, dynamicResource);
     }
 
     /*
@@ -222,20 +222,20 @@ export default class Scraper {
     return resource;
   }
 
-  async executePlugin(site: Site, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
+  async executePlugin(project: Project, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
     this.logger.debug(
       'Executing plugin %s using options %o , against resource %o',
       plugin.constructor.name, plugin.opts, resource,
     );
 
     if (plugin.opts && (plugin.opts.domRead || plugin.opts.domWrite)) {
-      return this.executePluginInDom(site, resource, plugin);
+      return this.executePluginInDom(project, resource, plugin);
     }
 
     // test if plugin is aplicable
-    const isApplicable = await plugin.test(site, resource);
+    const isApplicable = await plugin.test(project, resource);
     if (isApplicable) {
-      return plugin.apply(site, resource, this.browserClient);
+      return plugin.apply(project, resource, this.browserClient);
     }
 
     return null;
@@ -246,7 +246,7 @@ export default class Scraper {
   use a block declaration in order not to polute the global namespace
   avoiding conflicts, thus redeclaration errors
   */
-  async executePluginInDom(site: Site, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
+  async executePluginInDom(project: Project, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
     // plugins running in DOM assume a valid resource has already been fetched
     if (!resource) return null;
 
@@ -267,9 +267,9 @@ export default class Scraper {
 
            // execute plugin
            let result;
-           const isApplicable = await window.${pluginInstanceName}.test(${JSON.stringify((await site.toJSONAsync()))}, ${JSON.stringify(resource)});
+           const isApplicable = await window.${pluginInstanceName}.test(${JSON.stringify((await project.toJSONAsync()))}, ${JSON.stringify(resource)});
            if (isApplicable) {
-             result = await window.${pluginInstanceName}.apply(${JSON.stringify(site)}, ${JSON.stringify(resource)});
+             result = await window.${pluginInstanceName}.apply(${JSON.stringify(project)}, ${JSON.stringify(resource)});
            }
 
            return result;
@@ -300,10 +300,10 @@ export default class Scraper {
 
     switch (opts.type) {
       case 'csv':
-        exporter = new CsvExporter(this.site, filepath, opts);
+        exporter = new CsvExporter(this.project, filepath, opts);
         break;
       case 'zip':
-        exporter = new ZipExporter(this.site, filepath, opts);
+        exporter = new ZipExporter(this.project, filepath, opts);
         break;
       default:
         this.logger.error(`unsupported export type ${opts.type}`);

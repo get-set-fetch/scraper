@@ -1,6 +1,6 @@
 /* eslint-disable no-param-reassign */
 import Plugin from '../Plugin';
-import Site from '../../storage/base/Site';
+import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
 /**
@@ -14,11 +14,11 @@ export default class UpsertResourcePlugin extends Plugin {
     };
   }
 
-  test(site: Site, resource: Resource) {
+  test(project: Project, resource: Resource) {
     return !!(resource);
   }
 
-  async apply(site: Site, resource: Resource) {
+  async apply(project: Project, resource: Resource) {
     // scrape complete, save the scraped resource
     await this.saveResource(resource);
 
@@ -27,7 +27,7 @@ export default class UpsertResourcePlugin extends Plugin {
       - current resource has the final url
       - save the initial url under a new resource to avoid future redirects on the same url
     */
-    await this.addRedirectOriginResource(site, resource.redirectOrigin);
+    await this.addRedirectOriginResource(project, resource.redirectOrigin);
 
     /*
     after a resource is updated, remove its dynamic actions
@@ -52,11 +52,11 @@ export default class UpsertResourcePlugin extends Plugin {
     }
   }
 
-  async addRedirectOriginResource(site:Site, redirectOrigin:string) {
+  async addRedirectOriginResource(project:Project, redirectOrigin:string) {
     if (!redirectOrigin) return;
 
     // check if origin resource already present
-    const storedResource = await site.getResource(redirectOrigin);
+    const storedResource = await project.getResource(redirectOrigin);
     if (storedResource) return;
 
     const redirectOriginResource: Partial<Resource> = {
@@ -64,6 +64,6 @@ export default class UpsertResourcePlugin extends Plugin {
       scrapedAt: new Date(Date.now()),
     };
 
-    await site.saveResources([ redirectOriginResource ]);
+    await project.saveResources([ redirectOriginResource ]);
   }
 }

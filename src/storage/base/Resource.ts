@@ -8,7 +8,7 @@ export interface IResourceParent {
 
 export default abstract class Resource extends Entity {
   id: number;
-  siteId: number;
+  projectId: number;
   url: string;
   actions: string[];
 
@@ -58,7 +58,7 @@ export default abstract class Resource extends Entity {
   }
 
   get dbCols() {
-    return [ 'id', 'siteId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'data', 'parent' ];
+    return [ 'id', 'projectId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'data', 'parent' ];
   }
 }
 
@@ -66,7 +66,7 @@ export type ResourceQuery = {
   offset: number;
   limit: number;
   where: {
-    siteId: number;
+    projectId: number;
     [prop: string]: string|number;
   },
   whereNotNull: string[],
@@ -75,8 +75,8 @@ export type ResourceQuery = {
 
 export interface IStaticResource extends IStaticEntity {
   new(kwArgs: Partial<Resource>): Resource;
-  getResource(siteId:number, url: string):Promise<Resource>;
+  getResource(projectId:number, url: string):Promise<Resource>;
   getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
-  getAll(siteId: number):Promise<any[]>;
-  getResourceToCrawl(siteId:number):Promise<Resource>;
+  getAll(projectId: number):Promise<any[]>;
+  getResourceToCrawl(projectId:number):Promise<Resource>;
 }

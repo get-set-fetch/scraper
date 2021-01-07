@@ -1,24 +1,24 @@
 /* eslint-disable no-await-in-loop */
 import Resource, { ResourceQuery } from '../base/Resource';
-import Site from '../base/Site';
+import Project from '../base/Project';
 import KnexStorage from './KnexStorage';
 
-export default class KnexSite extends Site {
+export default class KnexProject extends Project {
   static storage:KnexStorage;
 
   static get builder() {
-    return this.storage.knex('sites');
+    return this.storage.knex('projects');
   }
 
   static async init(storage: KnexStorage):Promise<void> {
     this.storage = storage;
 
     const schemaBuilder = storage.knex.schema;
-    const tablePresent = await schemaBuilder.hasTable('sites');
+    const tablePresent = await schemaBuilder.hasTable('projects');
     if (tablePresent) return;
 
     await schemaBuilder.createTable(
-      'sites',
+      'projects',
       builder => {
         builder.increments('id').primary();
         builder.string('name');
@@ -29,10 +29,10 @@ export default class KnexSite extends Site {
     );
   }
 
-  static async get(nameOrId: number | string):Promise<Site> {
+  static async get(nameOrId: number | string):Promise<Project> {
     const colName = Number.isInteger(nameOrId) ? 'id' : 'name';
-    const rawSite = await this.builder.where({ [colName]: nameOrId }).first();
-    return rawSite ? new this.storage.Site(rawSite) : undefined;
+    const rawProject = await this.builder.where({ [colName]: nameOrId }).first();
+    return rawProject ? new this.storage.Project(rawProject) : undefined;
   }
 
   static getAll() {
@@ -43,17 +43,17 @@ export default class KnexSite extends Site {
     return this.builder.del();
   }
 
-  get Constructor():typeof KnexSite {
-    return (<typeof KnexSite> this.constructor);
+  get Constructor():typeof KnexProject {
+    return (<typeof KnexProject> this.constructor);
   }
 
   async countResources():Promise<number> {
-    const [ result ] = await this.Constructor.storage.Resource.builder.where('siteId', this.id).count('id', { as: 'count' });
+    const [ result ] = await this.Constructor.storage.Resource.builder.where('projectId', this.id).count('id', { as: 'count' });
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
   }
 
   async save():Promise<number> {
-    // save the site
+    // save the project
     const result:number[] = await (
       this.Constructor.storage.capabilities.returning
         ? this.Constructor.builder.insert(this.toJSON()).returning('id')
@@ -61,8 +61,8 @@ export default class KnexSite extends Site {
     );
     [ this.id ] = result;
 
-    // save the site url as a new resource, scraping will start with this resource
-    const resource = new this.Constructor.storage.Resource({ siteId: this.id, url: this.url });
+    // save the project url as a new resource, scraping will start with this resource
+    const resource = new this.Constructor.storage.Resource({ projectId: this.id, url: this.url });
     await resource.save();
 
     return this.id;
@@ -87,7 +87,7 @@ export default class KnexSite extends Site {
 
   async getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]> {
     // eslint-disable-next-line no-param-reassign
-    query.where = { ...query.where, siteId: this.id };
+    query.where = { ...query.where, projectId: this.id };
     return this.Constructor.storage.Resource.getPagedResources(query);
   }
 
@@ -96,13 +96,13 @@ export default class KnexSite extends Site {
   }
 
   createResource(resource: Partial<Resource>) {
-    return new this.Constructor.storage.Resource({ ...resource, siteId: this.id });
+    return new this.Constructor.storage.Resource({ ...resource, projectId: this.id });
   }
 
   async saveResources(resources: Partial<Resource>[]) {
     for (let i = 0; i < resources.length; i += 1) {
       const resource = new this.Constructor.storage.Resource(
-        Object.assign(resources[i], { siteId: this.id }),
+        Object.assign(resources[i], { projectId: this.id }),
       );
       await resource.save();
     }
