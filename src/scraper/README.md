@@ -98,7 +98,7 @@ If a project has unscraped resources, just re-start the scraping process. Alread
 You can retrieve an existing project by name or id. When scraping from a scraping definition the project name gets populated with the starting url hostname.
 
 ```js
-const { KnexStorage, scenarios, mergePluginOpts, PuppeteerClient, Scraper } = require('get-set-fetch-scraper');
+const { KnexStorage, PuppeteerClient, Scraper } = require('get-set-fetch-scraper');
 
 const storage = new KnexStorage();
 const { Project } = await storage.connect();
