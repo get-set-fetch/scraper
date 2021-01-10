@@ -1,7 +1,12 @@
 # Scraper
 
+- [Scrape starting from a scraping definition](#scrape-starting-from-a-scraping-definition)
+- [Scrape starting from a scraping hash](#scrape-starting-from-a-scraping-hash)
+- [Scrape starting from a predefined project](#scrape-starting-from-a-predefined-project)
+- [Resume scraping](#resume-scraping)
+
 ## Scrape starting from a scraping definition
-No need to specify a starting scraping project. One will be automatically created based on input url and plugin definitions.
+No need to specify a starting scraping project. One will be automatically created based on input url and plugin definitions. The project name resolves to the starting url hostname.
 
 ```js
 const { KnexStorage, PuppeteerClient, Scraper} = require('get-set-fetch-scraper');
@@ -63,7 +68,7 @@ const { KnexStorage, scenarios, mergePluginOpts, PuppeteerClient, Scraper } = re
 const storage = new KnexStorage();
 const { Project } = await storage.connect();
 const project = new Project({
-  name: 'projA',
+  name: 'projA.com',
   url: 'http://projA.com',
   pluginOpts: mergePluginOpts(
     scenarios['static-content'].defaultPluginOpts,
@@ -81,6 +86,23 @@ const project = new Project({
   ),
 });
 await project.save();
+
+const client = new PuppeteerClient();
+
+const scraper = new Scraper(storage, client);
+await scraper.scrape(project);
+```
+
+## Resume scraping
+If a project has unscraped resources, just re-start the scraping process. Already scraped resources will be ignored.
+You can retrieve an existing project by name or id. When scraping from a scraping definition the project name gets populated with the starting url hostname.
+
+```js
+const { KnexStorage, scenarios, mergePluginOpts, PuppeteerClient, Scraper } = require('get-set-fetch-scraper');
+
+const storage = new KnexStorage();
+const { Project } = await storage.connect();
+const project = await Project.get('startUrlHostname');
 
 const client = new PuppeteerClient();
 
