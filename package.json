@@ -2,7 +2,14 @@
   "name": "get-set-fetch-scraper",
   "version": "0.1.0",
   "description": "Node.js web scraper with the entire scraping process plugin based. Supports multiple storage options: sqlite, mysql, postgresql. Supports headless Chrome with Puppeteer.",
-  "keywords": ["scraper", "nodejs", "node", "plugin", "headless", "puppeteer"],
+  "keywords": [
+    "scraper",
+    "nodejs",
+    "node",
+    "plugin",
+    "headless",
+    "puppeteer"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -25,8 +32,8 @@
   "license": "MIT",
   "homepage": "https://github.com/get-set-fetch/scraper",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/get-set-fetch/scraper.git"
+    "type": "git",
+    "url": "https://github.com/get-set-fetch/scraper.git"
   },
   "devDependencies": {
     "@types/chai": "^4.2.13",
