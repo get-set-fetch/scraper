@@ -5,6 +5,7 @@ import { getLogger, setLogger } from './logger/Logger';
 import { encode, decode } from './confighash/config-hash';
 import CsvExporter from './export/CsvExporter';
 import ZipExporter from './export/ZipExporter';
+import { scenarios, mergePluginOpts } from './scenarios/scenarios';
 
 export {
   KnexStorage,
@@ -13,4 +14,5 @@ export {
   getLogger, setLogger,
   encode, decode,
   CsvExporter, ZipExporter,
+  scenarios, mergePluginOpts,
 };
