@@ -40,6 +40,8 @@ jobs:
       run: npm ci
     - name: Install Sqlite3 peer dependencies
       run: npm install knex sqlite3 --save
+    - name: Install Puppeteer
+      run: npm install puppeteer --save
 
     - name: Sqlite3 unit tests
       run: npm run test:storage:sqlite:unit
@@ -66,6 +68,8 @@ jobs:
       run: npm ci
     - name: Install MySQL peer dependencies
       run: npm install knex mysql --save
+    - name: Install Puppeteer
+      run: npm install puppeteer --save
 
     - name: MySQL unit tests
       run: npm run test:storage:mysql:unit
@@ -91,6 +95,8 @@ jobs:
       run: npm ci
     - name: Install PostgreSQL peer dependencies
       run: npm install knex pg --save
+    - name: Install Puppeteer
+      run: npm install puppeteer --save
 
     - name: PostgreSQL up
       run: docker-compose -f ./test/storage/pg/pg.yml up -d
