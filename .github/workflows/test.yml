@@ -20,9 +20,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Install required peer dependencies
-      run: npm install knex --save
-    - name: Install Puppeteer without browser
-      run: export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && npm install puppeteer --save
+      run: export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && npm install knex puppeteer --save
 
     - name: Unit tests
       run: npm run test:unit
