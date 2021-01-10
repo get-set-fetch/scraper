@@ -14,7 +14,7 @@ exporter = new CsvExporter(project, 'file.csv', {fieldSeparator: ','});
 await exporter.export();
 ```
 
-Or via a scraper instance with the project parameter being ommited as it is already linked to the scraper. In this case you also need to specify the export type as either csv or zip.
+Or via a scraper instance with the project parameter being omitted as it is already linked to the scraper. In this case you also need to specify the export type as either csv or zip.
 ```js
 await scraper.export('file.csv', {type: 'csv', fieldSeparator: ','});
 ```

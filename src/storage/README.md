@@ -1,9 +1,9 @@
 # Storage
 
-Each url (web page, image, API endpoint, ...) represents a [Resource](./base/Resource). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping definition and discovered from the same initial url are grouped in a [Project](./base/Project). 
+Each url (web page, image, API endpoint, ...) represents a [Resource](./base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping definition and discovered from the same initial url are grouped in a [Project](./base/Project.ts). 
 Projects represent the starting point for any scraping operation.
 
-You can add additional storage support by implementing the above two abstract classes and [Storage](./base/Storage).
+You can add additional storage support by implementing the above two abstract classes and [Storage](./base/Storage.ts).
 
 The database credentials below match the ones from the corresponding docker files.
 
