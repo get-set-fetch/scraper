@@ -41,7 +41,7 @@
     "eslint-config-airbnb": "^18.2.0",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jsx-a11y": "^6.3.1",
-    "get-set-fetch-test-utils": "git+https://github.com/get-set-fetch/test-utils.git",
+    "get-set-fetch-test-utils": "^0.2.1",
     "jsdom": "^16.4.0",
     "mocha": "^8.1.3",
     "nyc": "^15.1.0",
@@ -53,15 +53,14 @@
     "knex": ">=0.21.0 <0.22.0",
     "sqlite3": "^5.0.0",
     "mysql": "^2.18.1",
-    "pg": "^8.5.1"
+    "pg": "^8.5.1",
+    "puppeteer": "^5.3.1"
   },
   "dependencies": {
     "@rollup/plugin-typescript": "^8.1.0",
-    "immutable": "^4.0.0-rc.12",
     "jszip": "^3.5.0",
     "pako": "^2.0.2",
     "pino": "^6.8.0",
-    "puppeteer": "^5.3.1",
     "rollup": "^2.33.2",
     "tslib": "^2.0.1",
     "typescript": "^4.0.3"
