@@ -17,6 +17,7 @@ What follows is a quickstart guide. For more in-depth information the following 
 - [Storage](./src/storage/README.md)
 - [Scenarios](./src/scenarios/README.md)
 - [Plugins](./src/plugins/README.md)
+- [Scraping](./src/scraper/README.md)
 - [Export](./src/export/README.md)
 - [Examples](./examples/README.md)
 ## Important!
