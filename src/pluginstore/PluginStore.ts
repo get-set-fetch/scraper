@@ -1,7 +1,8 @@
 import fs from 'fs';
 import { rollup, Plugin as RollupPlugin } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
-import { join } from 'path';
+import commonjs from '@rollup/plugin-commonjs';
+import { extname, join } from 'path';
 import Plugin, { IPlugin } from '../plugins/Plugin';
 import { getLogger } from '../logger/Logger';
 
@@ -30,7 +31,14 @@ export default class PluginStore {
 
   static async addEntries(dirPath: string):Promise<void> {
     await Promise.all(
-      fs.readdirSync(dirPath).map(filename => PluginStore.addEntry(join(dirPath, filename))),
+      fs.readdirSync(dirPath)
+        .filter(filename => {
+          // can't use path.extName as it returns '.ts' from 'a.d.ts', need to filter out '.d.ts' files
+          const matchArr = filename.match(/[^.]+(.+)$/);
+          if (matchArr && (matchArr[1] === '.js' || matchArr[1] === '.ts')) return true;
+          return false;
+        })
+        .map(filename => PluginStore.addEntry(join(dirPath, filename))),
     );
   }
 
@@ -41,6 +49,7 @@ export default class PluginStore {
       const instance:Plugin = new Cls();
 
       // if instance.read/write DOM generate single file bundle to be loaded into the currently scraped browser page
+      PluginStore.logger.info('Bundling plugin %s', instance.constructor.name);
       let bundle = null;
       if (instance.opts && (instance.opts.domRead || instance.opts.domWrite)) {
         bundle = await PluginStore.buildBundle(filepath);
@@ -83,17 +92,25 @@ export default class PluginStore {
       },
     });
 
-    const plugins = [
-      typescript({
-        lib: [],
-        target: 'esnext',
-        module: 'es6',
-        tsconfig: false,
-      }),
-      exportToGlobalPlugin(),
-    ];
+    // different bundling settings for ts and js source files
+    const plugins = extname(filepath) === '.ts'
+      ? [
+        typescript({
+          lib: [],
+          target: 'esnext',
+          module: 'es6',
+          tsconfig: false,
+        }),
+
+        exportToGlobalPlugin(),
+      ]
+      : [
+        commonjs({ extensions: [ '.js', '.ts' ] }),
+        exportToGlobalPlugin(),
+      ];
 
     const bundle = await rollup({ ...inputOpts, plugins });
+
     const { output } = await bundle.generate(<any>outputOpts);
     const { code } = output[0];
 
