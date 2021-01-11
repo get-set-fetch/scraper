@@ -23,7 +23,10 @@ export default class CsvExporter extends Exporter {
     let pageOffset = 0;
 
     let resources = await this.project.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
-    if (resources.length === 0) throw new Error('No csv content to export.');
+    if (resources.length === 0) {
+      this.logger.warn('No csv content to export.');
+      return;
+    }
 
     const wstream = fs.createWriteStream(this.filepath);
 
