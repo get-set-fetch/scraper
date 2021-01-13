@@ -5,7 +5,7 @@ import { URL } from 'url';
 import BrowserClient from '../browserclient/BrowserClient';
 import Project from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
-import Plugin, { IPluginOpts } from '../plugins/Plugin';
+import Plugin, { PluginOpts } from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
 import Storage from '../storage/base/Storage';
@@ -24,7 +24,7 @@ scraper is:
 export type ScrapeDefinition = {
   url: string,
   scenario: string,
-  pluginOpts: IPluginOpts[]
+  pluginOpts: PluginOpts[]
 }
 export default class Scraper {
   logger = getLogger('Scraper');

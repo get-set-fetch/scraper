@@ -1,5 +1,5 @@
 import Entity, { IStaticEntity } from './Entity';
-import Plugin, { IPluginOpts } from '../../plugins/Plugin';
+import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 
@@ -8,8 +8,8 @@ export default abstract class Project extends Entity {
   name: string;
   url: string;
 
-  // stored as json string, initialized as IPluginOpts[]
-  pluginOpts: IPluginOpts[];
+  // stored as json string, initialized as PluginOpts[]
+  pluginOpts: PluginOpts[];
 
   // initialized based on pluginOpts
   plugins: Plugin[];
@@ -33,7 +33,7 @@ export default abstract class Project extends Entity {
   }
 
   initPlugins():Plugin[] {
-    return this.pluginOpts.map((pluginOpt:IPluginOpts) => {
+    return this.pluginOpts.map((pluginOpt:PluginOpts) => {
       const PluginCls = PluginStore.get(pluginOpt.name).Cls;
       return new PluginCls(pluginOpt);
     });

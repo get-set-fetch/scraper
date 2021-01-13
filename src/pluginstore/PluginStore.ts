@@ -6,16 +6,16 @@ import { extname, join } from 'path';
 import Plugin, { IPlugin } from '../plugins/Plugin';
 import { getLogger } from '../logger/Logger';
 
-export interface IStoreEntry {
+export type StoreEntry = {
   filepath: string;
   bundle: string,
   Cls: IPlugin;
 }
 export default class PluginStore {
   static logger = getLogger('PluginStore');
-  static store:Map<string, IStoreEntry> = new Map<string, IStoreEntry>();
+  static store:Map<string, StoreEntry> = new Map<string, StoreEntry>();
 
-  static init():Promise<void> {
+  static init():Promise<StoreEntry|StoreEntry[]> {
     return PluginStore.add(join(__dirname, '..', 'plugins', 'default'));
   }
 

@@ -1,6 +1,6 @@
 /* eslint-disable prefer-destructuring */
 import { assert } from 'chai';
-import { IPluginOpts } from '../../../src/plugins/Plugin';
+import { PluginOpts } from '../../../src/plugins/Plugin';
 import { scenarios, mergePluginOpts } from '../../../src/scenarios/scenarios';
 
 describe('MergePluginOpts', () => {
@@ -87,7 +87,7 @@ describe('MergePluginOpts', () => {
     ];
 
     const mergedOpts = mergePluginOpts(defaultPluginOpts, customOpts);
-    const expectedOpts:IPluginOpts[] = [
+    const expectedOpts:PluginOpts[] = [
       {
         name: 'CustomBefore1Plugin',
         before: 'SelectResourcePlugin',

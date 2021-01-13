@@ -1,8 +1,8 @@
-import { IPluginOpts } from '../plugins/Plugin';
+import { PluginOpts } from '../plugins/Plugin';
 import StaticContentScenario from './StaticContentScenario';
 
 interface IScenario {
-  defaultPluginOpts:IPluginOpts[];
+  defaultPluginOpts:PluginOpts[];
 }
 
 export type Scenarios = {
@@ -13,8 +13,8 @@ const scenarios: Scenarios = {
   'static-content': StaticContentScenario,
 };
 
-const mergePluginOpts = (defaultOpts: IPluginOpts[], customOpts: IPluginOpts[]):IPluginOpts[] => {
-  const mergeOpts:IPluginOpts[] = [ ...defaultOpts ];
+const mergePluginOpts = (defaultOpts: PluginOpts[], customOpts: PluginOpts[]):PluginOpts[] => {
+  const mergeOpts:PluginOpts[] = [ ...defaultOpts ];
   customOpts.forEach(pluginCustomOpts => {
     if (pluginCustomOpts.before) {
       const idx = mergeOpts.findIndex(mergePluginOpts => mergePluginOpts.name === pluginCustomOpts.before);

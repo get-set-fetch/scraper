@@ -7,7 +7,7 @@ import Project from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import BrowserClient from '../browserclient/BrowserClient';
 
-export interface IPluginOpts {
+export type PluginOpts = {
   name: string;
   domRead?: boolean;
   domWrite?: boolean;
@@ -24,7 +24,7 @@ export default abstract class Plugin {
     return {};
   }
 
-  opts: Partial<IPluginOpts>;
+  opts: Partial<PluginOpts>;
 
   constructor(opts = {}) {
     const { schema } = <typeof Plugin> this.constructor;
@@ -36,6 +36,6 @@ export default abstract class Plugin {
 }
 
 export interface IPlugin {
-  new(kwArgs: Partial<IPluginOpts>): Plugin;
+  new(kwArgs: Partial<PluginOpts>): Plugin;
   schema: JSONSchema7
 }
