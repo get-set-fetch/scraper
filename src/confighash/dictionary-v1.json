@@ -7,8 +7,8 @@
       "selectorPairs": [
         {
           "label": "",
-          "selector": "",
-          "property": "innerText"
+          "contentSelector": "",
+          "contentProperty": "innerText"
         }
       ],
       "domRead": true
