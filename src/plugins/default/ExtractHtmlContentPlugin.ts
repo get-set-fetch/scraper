@@ -32,7 +32,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
                 default: 'innerText',
               },
             },
-            required: [ 'selector' ],
+            required: [ 'contentSelector' ],
           },
           description: 'CSS selectors to be applied. By default the innerText property will be scraped but you can define your own using a {selector, property} pair.',
         },
