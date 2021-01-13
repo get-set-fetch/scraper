@@ -22,7 +22,7 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLt7R4n7pZLRDoIwDEX/xWdH/SFjKtSxwAZZnYsP/rtdNYgQEhPf9tL13p6ztCbnXCVRSu0pj7pFP5Y0PaFNBK1jufAdIobOBcswyj6KDHbAnk9cD5Ea+Ee5L/YfhIe1Jb/JOTOycbdKw7DkYSMIvDH6535y+NVnV7YtJt/VTUj+LI1nM9q93HMTOV6uFLdArCVUfMfHE+w/lJc=';
+const scrapeHash = 'eLsPRJVnpZJLDsIwDAXvwprUXAgh05o0okmrmBCx4O51DOIXKiGxyyb285v5dCjn3CQRTF0qj7ZHP5U0A6FNBL1jafgCEcPRBcswyT6KDHbEgXfcjpE6+EfAN/ZPhJvakt9Urf3s3LnRTCyx2AgJb4yOXj/Evp21Kku/D7gXYULye7n/5as2UdpdFAAPJ4pLWGolFeb2OgOx3JpN';
 
 const scrapeDefinition = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
