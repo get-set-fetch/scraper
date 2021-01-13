@@ -182,6 +182,6 @@ describe('Schema Helper', () => {
       propD: [ { d1: 'a', d2: 3 } ],
     };
     inst = SchemaHelper.instantiate(schemaWithDefault, fullObj);
-    assert.strictEqual(inst, fullObj);
+    assert.deepEqual(inst, fullObj);
   });
 });

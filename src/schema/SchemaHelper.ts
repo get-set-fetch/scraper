@@ -17,7 +17,7 @@ export type SchemaType<S> =
 export default class SchemaHelper {
   static instantiate(schema:JSONSchema7, data = undefined, path: string[] = []) {
     // make a data copy, don't augment in place
-    if (path.length === 0) {
+    if (data && path.length === 0) {
       data = JSON.parse(JSON.stringify(data));
     }
 
