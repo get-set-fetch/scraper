@@ -16,6 +16,29 @@ describe('ExtractHtmlContentPlugin', () => {
     sandbox.restore();
   });
 
+  it('constructor options are not augmented in place', () => {
+    const opts:any = {
+      name: 'ExtractHtmlContentPlugin',
+      selectorPairs: [
+        { contentSelector: 'h1' },
+      ],
+    };
+
+    const initialOpts = JSON.parse(JSON.stringify(opts));
+
+    const plugin = new ExtractHtmlContentPlugin(opts);
+    const augmentedOpts:any = {
+      name: 'ExtractHtmlContentPlugin',
+      domRead: true,
+      selectorPairs: [
+        { contentSelector: 'h1', contentProperty: 'innerText', label: undefined },
+      ],
+    };
+
+    assert.deepEqual(plugin.opts, augmentedOpts);
+    assert.deepEqual(opts, initialOpts);
+  });
+
   it('extract html content, single selector', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' } ] });
 
