@@ -19,18 +19,20 @@ export default class PluginStore {
     return PluginStore.add(join(__dirname, '..', 'plugins', 'default'));
   }
 
-  static add(fileOrDirPath: string):Promise<void> {
+  static add(fileOrDirPath: string):Promise<StoreEntry|StoreEntry[]> {
     if (fs.existsSync(fileOrDirPath)) {
       return fs.lstatSync(fileOrDirPath).isDirectory()
         ? PluginStore.addEntries(fileOrDirPath)
         : PluginStore.addEntry(fileOrDirPath);
     }
 
-    return null;
+    const err = new Error(`Could not register plugin(s), path does not exist ${fileOrDirPath}`);
+    PluginStore.logger.error(err);
+    throw err;
   }
 
-  static async addEntries(dirPath: string):Promise<void> {
-    await Promise.all(
+  static async addEntries(dirPath: string):Promise<StoreEntry[]> {
+    return Promise.all(
       fs.readdirSync(dirPath)
         .filter(filename => {
           // can't use path.extName as it returns '.ts' from 'a.d.ts', need to filter out '.d.ts' files
@@ -42,25 +44,29 @@ export default class PluginStore {
     );
   }
 
-  static async addEntry(filepath: string) {
+  static async addEntry(filepath: string):Promise<StoreEntry> {
     try {
       const pluginModule = await import(filepath);
       const Cls = pluginModule.default;
       const instance:Plugin = new Cls();
 
       // if instance.read/write DOM generate single file bundle to be loaded into the currently scraped browser page
-      PluginStore.logger.info('Bundling plugin %s', instance.constructor.name);
       let bundle = null;
       if (instance.opts && (instance.opts.domRead || instance.opts.domWrite)) {
+        PluginStore.logger.info('Bundling plugin %s', instance.constructor.name);
         bundle = await PluginStore.buildBundle(filepath);
       }
 
-      PluginStore.store.set(instance.constructor.name, {
+      const storeEntry = {
         filepath, bundle, Cls,
-      });
+      };
+      PluginStore.store.set(instance.constructor.name, storeEntry);
+
+      return storeEntry;
     }
     catch (err) {
-      PluginStore.logger.error(err, 'Could not add filepath %s', filepath);
+      PluginStore.logger.error(err, 'Could not rgister plugin %s', filepath);
+      throw (err);
     }
   }
 
