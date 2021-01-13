@@ -27,8 +27,8 @@ get-set, Fetch! is a plugin based, node.js web scraper.
 - [Scenarios](#scenarios)
   * [Static-Content Plugin Options](#static-content-plugin-options)
   * [Static-Content Usage Examples](#static-content-usage-examples)
+- [PluginStore](#pluginstore)
 - [Plugins](#plugins)
-  * [PluginStore](#pluginstore)
   * [SelectResourcePlugin](#selectresourceplugin)
   * [FetchPlugin](#fetchplugin)
   * [ExtractUrlsPlugin](#extracturlsplugin)
@@ -317,17 +317,17 @@ await scraper.scrape({
 })
 ```
 
-## Plugins
-
-The entire scraping process is plugin based. A scraping definition (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
-
-### PluginStore 
+## PluginStore 
 Prior to scraping, available plugins are registered into a plugin store via their filepaths. Each plugin is a javascript module with a default export declaration containing a class extending [Plugin](./src/plugins/Plugin.ts). Class `constructor.name` is used to uniquely identify a plugin. Each plugin together with its dependencies is bundled as a single module to be run either in DOM or node.js.
 
 Specifying a filePath will register a single plugin. Specifying a dirPath will register all plugins stored under that directory. Paths are relative to the current working directory.
 ```js
 await PluginStore.add(fileOrDirPath);
 ```
+
+## Plugins
+
+The entire scraping process is plugin based. A scraping definition (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
 
 ### SelectResourcePlugin
 Selects a resource to scrape from the current project | [schema](./src/plugins/default/SelectResourcePlugin.ts)
