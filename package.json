@@ -10,8 +10,12 @@
     "headless",
     "puppeteer"
   ],
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "module": "dist/esm/index.js",
   "scripts": {
     "postinstall": "patch-package",
     "link:gsf": "npm link ../test-utils",
@@ -25,7 +29,7 @@
     "test:storage:pg:unit": "mocha --config test/.mocharc.js \"test/storage/pg/pg-unit-suite.ts\"",
     "test:storage:pg:integration": "mocha --config test/.mocharc.js \"test/storage/pg/pg-integration-suite.ts\"",
     "example": "ts-node  examples/table-scraping.ts",
-    "build": "tsc",
+    "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json",
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
   },

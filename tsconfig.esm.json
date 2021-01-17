@@ -1,18 +1,21 @@
 {
   "compilerOptions": {
+    "composite": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "target": "esnext",
+    "target": "es2020",
     "strict": false,
     "moduleResolution": "node",
-    "module": "commonjs",
+    "module": "es2020",
     "allowJs": true,
     "rootDir": "src",
-    "outDir": "dist/cjs",
+    "outDir": "dist/esm",
     "declaration": true,
     "newLine": "LF"
   },
+  
   "include": [
-    "src"
-  ]
+    "src",
+    "src/**/*.json",
+  ],
 }
