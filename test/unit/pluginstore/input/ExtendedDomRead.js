@@ -1,4 +1,4 @@
-import * as types from 'asn1/lib/ber/types';
+import { extra } from '@get-set-fetch/test-utils';
 import { BaseJsB } from './BaseJs';
 import { BaseTsB } from './BaseTs';
 
@@ -13,7 +13,7 @@ export default class ExtendedDomRead extends BaseJsB {
   }
 
   async asum(a, b) {
-    console.log(types);
+    console.log(extra);
     return this.jsb(a, b);
   }
 }
