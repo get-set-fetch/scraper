@@ -2,7 +2,9 @@ import fs from 'fs';
 import { rollup, Plugin as RollupPlugin } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
-import { extname, join } from 'path';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import json from '@rollup/plugin-json';
+import { join } from 'path';
 import Plugin, { IPlugin } from '../plugins/Plugin';
 import { getLogger } from '../logger/Logger';
 
@@ -80,6 +82,9 @@ export default class PluginStore {
   static async buildBundle(filepath: string) {
     const inputOpts = {
       input: filepath,
+      treeshake: {
+        moduleSideEffects: false,
+      },
       onwarn: msg => {
         // to do: store and return warnings/errors ?
         // if not overwritten, warnings are written to console
@@ -88,6 +93,7 @@ export default class PluginStore {
     const outputOpts = {
       format: 'es',
       silent: true,
+      sourceMap: false,
     };
 
     const exportToGlobalPlugin = ():RollupPlugin => ({
@@ -98,22 +104,22 @@ export default class PluginStore {
       },
     });
 
-    // different bundling settings for ts and js source files
-    const plugins = extname(filepath) === '.ts'
-      ? [
-        typescript({
-          lib: [],
-          target: 'esnext',
-          module: 'es6',
-          tsconfig: false,
-        }),
-
-        exportToGlobalPlugin(),
-      ]
-      : [
-        commonjs({ extensions: [ '.js', '.ts' ] }),
-        exportToGlobalPlugin(),
-      ];
+    const plugins = [
+      nodeResolve(),
+      json(),
+      typescript({
+        lib: [],
+        target: 'esnext',
+        module: 'es6',
+        tsconfig: false,
+        sourceMap: false,
+      }),
+      commonjs({
+        extensions: [ '.js', '.ts' ],
+        sourceMap: false,
+      }),
+      exportToGlobalPlugin(),
+    ];
 
     const bundle = await rollup({ ...inputOpts, plugins });
 

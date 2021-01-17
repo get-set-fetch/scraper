@@ -5,7 +5,7 @@ import PluginStore from '../../../src/pluginstore/PluginStore';
 
 describe('PluginStore', () => {
   it('add plugin without bundling', async () => {
-    const pluginFilepath = join(__dirname, 'input', 'ts', 'Extended.ts');
+    const pluginFilepath = join(__dirname, 'input', 'Extended.ts');
 
     await PluginStore.add(pluginFilepath);
 
@@ -15,22 +15,8 @@ describe('PluginStore', () => {
     assert.isNotNull(Cls);
   });
 
-  it('add ts plugin with bundling', async () => {
-    const pluginFilepath = join(__dirname, 'input', 'ts', 'ExtendedDomRead.ts');
-
-    await PluginStore.add(pluginFilepath);
-
-    const { filepath, bundle, Cls } = PluginStore.get('ExtendedDomRead');
-    assert.isTrue(filepath.endsWith('ExtendedDomRead.ts'));
-    assert.isNotNull(Cls);
-
-    const compactCode = (code:string) => code.replace(/\s+/g, ' ').replace(/\r\n/g, '\n');
-    const expectedBundle = readFileSync(join(__dirname, 'input', 'ts', 'expected-extended-dom-read-bundle.txt'), 'utf8');
-    assert.strictEqual(compactCode(bundle), compactCode(expectedBundle));
-  });
-
-  it('add js plugin with bundling', async () => {
-    const pluginFilepath = join(__dirname, 'input', 'js', 'ExtendedDomRead.js');
+  it('add esm plugin containing ts, js, node_modules dependencies, with bundling', async () => {
+    const pluginFilepath = join(__dirname, 'input', 'ExtendedDomRead.js');
 
     await PluginStore.add(pluginFilepath);
 
@@ -39,7 +25,7 @@ describe('PluginStore', () => {
     assert.isNotNull(Cls);
 
     const compactCode = (code:string) => code.replace(/\s+/g, ' ').replace(/\r\n/g, '\n');
-    const expectedBundle = readFileSync(join(__dirname, 'input', 'js', 'expected-extended-dom-read-bundle.txt'), 'utf8');
+    const expectedBundle = readFileSync(join(__dirname, 'input', 'expected-extended-dom-read-bundle.txt'), 'utf8');
     assert.strictEqual(compactCode(bundle), compactCode(expectedBundle));
   });
 });
