@@ -28,7 +28,7 @@
     "test:storage:mysql:integration": "mocha --config test/.mocharc.js \"test/storage/mysql/mysql-integration-suite.ts\"",
     "test:storage:pg:unit": "mocha --config test/.mocharc.js \"test/storage/pg/pg-unit-suite.ts\"",
     "test:storage:pg:integration": "mocha --config test/.mocharc.js \"test/storage/pg/pg-integration-suite.ts\"",
-    "example": "ts-node  examples/table-scraping.ts",
+    "example": "ts-node  examples/custom-plugin-readability.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json",
     "start": "ts-node src/main.ts",
     "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
@@ -41,6 +41,7 @@
     "url": "https://github.com/get-set-fetch/scraper.git"
   },
   "devDependencies": {
+    "@mozilla/readability": "^0.4.0",
     "@types/chai": "^4.2.13",
     "@types/json-schema": "^7.0.6",
     "@types/jszip": "^3.4.1",
