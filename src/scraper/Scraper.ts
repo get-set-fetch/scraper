@@ -92,7 +92,7 @@ export default class Scraper {
     catch (err) {
       this.logger.error(err, 'Error preScraping operations');
       // no project > no scrape process > abort
-      return null;
+      throw err;
     }
 
     this.logger.debug(this.project, 'Scraping project');
@@ -102,7 +102,7 @@ export default class Scraper {
     catch (err) {
       this.logger.error(err, 'Error instantiating plugin definitions for project %s', this.project.name);
       // no plugins > no scrape process > abort
-      return null;
+      throw err;
     }
 
     /*
