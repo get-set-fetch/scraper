@@ -703,7 +703,7 @@ export default class ReadabilityPlugin extends Plugin {
   }
 }
 ```
-The above plugin checks if a web resource is already loaded and is of html type. If these test conditions are met, it extracts a page excerpt using `@mozilla/readability` library. It runs in browser due to its `domRead` option set to `true`. 
+The above plugin checks if a web resource is already loaded and is of html type. If these test conditions are met, it extracts a page excerpt using `@mozilla/readability` library. It runs in browser due to its `domRead` option set to `true`. `content` is a predefined property at [Resource](#storage) level with a `string[][]` type. Think of it as data rows with each row containing one or multiple entries. When extracting excerpts from a web page, there is only one row and it contains a single excerpt element.
 
 Prior to scraping the plugin needs to be registered.
 ```js
