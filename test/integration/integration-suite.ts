@@ -1,6 +1,5 @@
 import { unlinkSync } from 'fs';
-import { GsfServer, ScrapingSuite } from '@get-set-fetch/test-utils';
-import { IScrapingTest } from '@get-set-fetch/test-utils/dist/scraping-suite/ScrapingSuite';
+import { GsfServer, ScrapingSuite, IScrapingTest } from '@get-set-fetch/test-utils';
 import BrowserClient from '../../src/browserclient/BrowserClient';
 import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
 import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
