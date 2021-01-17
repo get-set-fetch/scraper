@@ -1,24 +1,14 @@
-import KnexStorage from './storage/knex/KnexStorage';
-import Project from './storage/base/Project';
-import Resource from './storage/base/Resource';
-import PuppeteerClient from './browserclient/PuppeteerClient';
-import Plugin, { PluginOpts } from './plugins/Plugin';
-import PluginStore, { StoreEntry } from './pluginstore/PluginStore';
-import Scraper, { ScrapeDefinition } from './scraper/Scraper';
-import { getLogger, setLogger } from './logger/Logger';
-import { encode, decode } from './confighash/config-hash';
-import CsvExporter from './export/CsvExporter';
-import ZipExporter from './export/ZipExporter';
-import { scenarios, mergePluginOpts } from './scenarios/scenarios';
+/* eslint-disable object-curly-newline */
+export { default as KnexStorage } from './storage/knex/KnexStorage';
+export { default as Project } from './storage/base/Project';
+export { default as Resource } from './storage/base/Resource';
+export { default as PuppeteerClient } from './browserclient/PuppeteerClient';
+export { default as Plugin, PluginOpts } from './plugins/Plugin';
+export { default as PluginStore, StoreEntry } from './pluginstore/PluginStore';
+export { default as Scraper, ScrapeDefinition } from './scraper/Scraper';
 
-export {
-  KnexStorage, Project, Resource,
-  PuppeteerClient,
-  PluginStore, StoreEntry,
-  Plugin, PluginOpts,
-  Scraper, ScrapeDefinition,
-  getLogger, setLogger,
-  encode, decode,
-  CsvExporter, ZipExporter,
-  scenarios, mergePluginOpts,
-};
+export { getLogger, setLogger } from './logger/Logger';
+export { encode, decode } from './confighash/config-hash';
+export { default as CsvExporter } from './export/CsvExporter';
+export { default as ZipExporter } from './export/ZipExporter';
+export { scenarios, mergePluginOpts } from './scenarios/scenarios';
