@@ -13,6 +13,8 @@
 
 get-set, Fetch! is a plugin based, batteries included, node.js web scraper. It scrapes, stores and exports data.
 
+An ordered list of plugins (builtin or custom) are executed against each to be scraped web resource. Supports multiple storage options: sqlite, mysql, postgresql. Supports headless Chrome via Puppeteer. 
+
 - [Getting Started](#getting-started)
   * [Install](#install-the-scraper)
   * [Init](#init-storage)
