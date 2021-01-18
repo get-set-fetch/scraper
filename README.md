@@ -186,7 +186,7 @@ const storage = new KnexStorage(conn);
 Database credentials from the connection examples below match the ones from the corresponding docker files.
 
 ### SQLite
-Default storage option if none provided consuming the least amount of resources. Requires knex and sqlite driver. I'm recommending sqlite3@4 as it seems latest sqlite3@5.0.x doesn't yet have pre-built binaries for all major node versions. 
+Default storage option if none provided consuming the least amount of resources. Requires knex and sqlite driver. I'm recommending sqlite3@4 as it seems latest 5.0.x versions don't yet have pre-built binaries for all major node versions. 
 ```
 $ npm install knex sqlite3@4
 ```
