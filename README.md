@@ -11,9 +11,7 @@
 
 # Node.js web scraper
 
-get-set, Fetch! is a plugin based, node.js web scraper.
-
-> **NOTE** The package is not yet published to the npm registry as the scraper is still missing some functionality from the below API.
+get-set, Fetch! is a plugin based, batteries included, node.js web scraper. It scrapes, stores and exports data.
 
 - [Getting Started](#getting-started)
   * [Install](#install-the-scraper)
@@ -37,7 +35,7 @@ get-set, Fetch! is a plugin based, node.js web scraper.
   * [UpsertResourcePlugin](#upsertresourceplugin)
   * [ScrollPlugin](#scrollplugin)
 - [Scrape](#scrape)
-  * [Start from a Scraping Definition](#start-from-a-scraping-definition)
+  * [Start from a Scraping Configuration](#start-from-a-scraping-configuration)
   * [Start from a Scraping Hash](#start-from-a-scraping-hash)
   * [Start from a Predefined Project](#start-from-a-predefined-project)
   * [Resume Scraping](#resume-scraping)
@@ -52,33 +50,29 @@ get-set, Fetch! is a plugin based, node.js web scraper.
   * [Custom Plugins](#custom-plugins)
 - [Browser Extension](#browser-extension)
 
-  
-
-
-
 ## Getting Started
 
 ### Install the scraper
 ```
-$ npm install get-set-fetch-scraper
+$ npm install @get-set-fetch/scraper
 ```
 
 ### Install a storage solution
 ```
-$ npm install knex sqlite3
+$ npm install knex sqlite3@4
 ```
 Supported storage options are defined as peer dependencies. You need to install at least one of them. Currently available: sqlite3, mysql, postgresql. All of them require Knex.js query builder to be installed as well. MongoDB storage is on the roadmap.
 
 ### Install a browser client
 ```
-$ npm install puppeteer --save
+$ npm install puppeteer
 ```
 Supported browser clients are defined as peer dependencies.
 Right now only puppeteer is supported. Playwright full support and jsdom partial support are on the roadmap. 
 
 ### Init storage
 ```js
-const { KnexStorage } = require('get-set-fetch-scraper');
+const { KnexStorage } = require('@get-set-fetch/scraper');
 const conn = {
   client: 'sqlite3',
   useNullAsDefault: true,
@@ -92,7 +86,7 @@ See [Storage](#storage) on full configurations for supported sqlite, mysql, post
 
 ### Init browser client
 ```js
-const { PuppeteerClient } = require('get-set-fetch-scraper');
+const { PuppeteerClient } = require('@get-set-fetch/scraper');
 const launchOpts = {
   headless: true,
 }
@@ -101,7 +95,7 @@ const client = new PuppeteerClient(launchOpts);
 
 ### Init scraper
 ```js
-const { Scraper } = require('get-set-fetch-scraper');
+const { Scraper } = require('@get-set-fetch/scraper');
 const scraper = new Scraper(storage, client);
 ```
 
@@ -175,83 +169,47 @@ Export scraped html content as csv. Export scraped images under a zip archive. S
 
 ## Storage
 
-Each url (web page, image, API endpoint, ...) represents a [Resource](./src/storage/base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping definition and discovered from the same initial url are grouped in a [Project](./src/storage/base/Project.ts). 
+Each url (web page, image, API endpoint, ...) represents a [Resource](./src/storage/base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping configuration and discovered from the same initial url are grouped in a [Project](./src/storage/base/Project.ts). 
 Projects represent the starting point for any scraping operation.
 
 You can add additional storage support by implementing the above two abstract classes and [Storage](./src/storage/base/Storage.ts).
 
-The database credentials below match the ones from the corresponding docker files.
+Sqlite, MySQL, PostgreSQL use [KnexStorage](./src/storage/knex/KnexStorage.ts). Check below connection examples for possible values of `conn`.
+
+```js
+const { KnexStorage } = require('@get-set-fetch/scraper');
+const storage = new KnexStorage(conn);
+```
+
+Database credentials from the connection examples below match the ones from the corresponding docker files.
 
 ### SQLite
-Default storage option if none provided consuming the least amount of resources. Requires knex and sqlite driver. 
+Default storage option if none provided consuming the least amount of resources. Requires knex and sqlite driver. I'm recommending sqlite3@4 as it seems latest sqlite3@5.0.x doesn't yet have pre-built binaries for all major node versions. 
 ```
-$ npm install knex sqlite3 --save
-``` 
-
-```js
-const { KnexStorage } = require('get-set-fetch-scraper');
-const conn = {
-  client: 'sqlite3',
-  useNullAsDefault: true,
-  connection: {
-    filename: ':memory:'
-  }
-}
-const storage = new KnexStorage(conn);
+$ npm install knex sqlite3@4
 ```
+Examples: [SQLite connection](./test/storage/sqlite/sqlite-conn.json)
 
 ### MySQL
-Requires knex and mysql driver.  
+Requires knex and mysql driver.
 ```
-$ npm install knex mysql --save
-``` 
-
-```js
-const { KnexStorage } = require('get-set-fetch-scraper');
-const conn = {
-  client: 'mysql',
-  useNullAsDefault: true,
-   connection: {
-    host: 'localhost',
-    port: '33060',
-    user: 'gsf-user',
-    password: 'gsf-pswd',
-    database: 'gsf-db'
-  }
-}
-const storage = new KnexStorage(conn);
+$ npm install knex mysql
 ```
-Docker file: [mysql.yml](./test/storage/mysql/mysql.yml)
+Examples: [MySQL connection](./test/storage/mysql/mysql-conn.json) | [MySQL docker file](./test/storage/mysql/mysql.yml)
 
 
 ### PostgreSQL
-Requires knex and postgresql driver.  
+Requires knex and postgresql driver.
 ```
-$ npm install knex pg --save
-``` 
-
-```js
-const { KnexStorage } = require('get-set-fetch-scraper');
-const conn = {
-  client: 'pg',
-  useNullAsDefault: true,
-   connection: {
-    host: 'localhost',
-    port: '54320',
-    user: 'gsf-user',
-    password: 'gsf-pswd',
-    database: 'gsf-db'
-  }
-}
-const storage = new KnexStorage(conn);
+$ npm install knex pg
 ```
-Docker file: [pg.yml](./test/storage/pg/pg.yml)
+Examples: [PostgreSQL connection](./test/storage/pg/pg-conn.json) | [PostgreSQL docker file](./test/storage/pg/pg.yml)
 
 ## Scenarios
 
-Each scenario contains a series of plugins with predefined values for all plugin options. A scraping definition extends a scenario by replacing/adding new plugins or overriding the predefined plugin options.
+Each scenario contains a series of plugins with predefined values for all plugin options. A scraping configuration extends a scenario by replacing/adding new plugins or overriding the predefined plugin options.
 
-Take a look at [Examples](#examples) for real world scraping definitions.
+Take a look at [Examples](#examples) for real world scraping configurations.
 
 ### static-content plugin options
 
@@ -320,14 +278,14 @@ await scraper.scrape({
 ## PluginStore 
 Prior to scraping, available plugins are registered into a plugin store via their filepaths. Each plugin is a javascript module with a default export declaration containing a class extending [Plugin](./src/plugins/Plugin.ts). Class `constructor.name` is used to uniquely identify a plugin. Each plugin together with its dependencies is bundled as a single module to be run either in DOM or node.js.
 
-Specifying a filePath will register a single plugin. Specifying a dirPath will register all plugins stored under that directory. Paths are relative to the current working directory.
+Specifying a filePath will register a single plugin. Specifying a dirPath will register all plugins stored under that directory. Paths are absolute.
 ```js
 await PluginStore.add(fileOrDirPath);
 ```
 
 ## Plugins
 
-The entire scraping process is plugin based. A scraping definition (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
+The entire scraping process is plugin based. A scraping configuration (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
 
 ### SelectResourcePlugin
 Selects a resource to scrape from the current project | [schema](./src/plugins/default/SelectResourcePlugin.ts)
@@ -386,11 +344,11 @@ Performs infinite scrolling in order to load additional content | [schema](./src
 
 ## Scrape
 
-### Start from a Scraping Definition
+### Start from a Scraping Configuration
 No need to specify a starting scraping project. One will be automatically created based on input url and plugin definitions. The project name resolves to the starting url hostname.
 
 ```js
-const { KnexStorage, PuppeteerClient, Scraper} = require('get-set-fetch-scraper');
+const { KnexStorage, PuppeteerClient, Scraper} = require('@get-set-fetch/scraper');
 
 const storage = new KnexStorage();
 const client = new PuppeteerClient();
@@ -422,10 +380,10 @@ await scraper.scrape({
 ```
 
 ### Start from a Scraping Hash
-A scraping hash represents a zlib archive of a scraping definition encoded as base64. To minimize size a preset deflate dictionary is used.
+A scraping hash represents a zlib archive of a scraping configuration encoded as base64. To minimize size a preset deflate dictionary is used.
 
 ```js
-const { KnexStorage, PuppeteerClient, Scraper, encode, decode } = require('get-set-fetch-scraper');
+const { KnexStorage, PuppeteerClient, Scraper, encode, decode } = require('@get-set-fetch/scraper');
 
 const storage = new KnexStorage();
 const client = new PuppeteerClient();
@@ -434,7 +392,7 @@ const scraper = new Scraper(storage, client);
 const scrapingHash = 'eLt7R4n7pZNBCsIwEEWvkmWLmoruuvAE3iFMzTQNTdLQpBVv79QSrEpBKCEw+Yv5zPyXb2rQ8btutUepgXe9KqZXcdUhiq4WBpwaQGEQ1UO4wVbYT7IjokYUwSO0SBFt4O0j+Hd+x19E/iNzgSOFapBbjCAhAtsxT3cWpyFfFYuydLE53BptZHbK2YVBWVOzOEvkkVhPu1ilfL/R/Zwv3NJuWWaJTIIjX/9ddJ43QKbJ';
 
 console.log(decode(scrapingHash));
-// outputs the scraping definition from the above "Scrape starting from a scraping definition" section
+// outputs the scraping configuration from the above "Scrape starting from a scraping configuration" section
 // use encode to generate a scraping hash
 
 await scraper.scrape(scrapingHash);
@@ -444,7 +402,7 @@ await scraper.scrape(scrapingHash);
 A new project is defined with plugin options overriding default ones from `static-content` scenario.
 
 ```js
-const { KnexStorage, scenarios, mergePluginOpts, PuppeteerClient, Scraper } = require('get-set-fetch-scraper');
+const { KnexStorage, scenarios, mergePluginOpts, PuppeteerClient, Scraper } = require('@get-set-fetch/scraper');
 
 const storage = new KnexStorage();
 const { Project } = await storage.connect();
@@ -476,10 +434,10 @@ await scraper.scrape(project);
 
 ### Resume scraping
 If a project has unscraped resources, just re-start the scraping process. Already scraped resources will be ignored.
-You can retrieve an existing project by name or id. When scraping from a scraping definition the project name gets populated with the starting url hostname.
+You can retrieve an existing project by name or id. When scraping from a scraping configuration the project name gets populated with the starting url hostname.
 
 ```js
-const { KnexStorage, PuppeteerClient, Scraper } = require('get-set-fetch-scraper');
+const { KnexStorage, PuppeteerClient, Scraper } = require('@get-set-fetch/scraper');
 
 const storage = new KnexStorage();
 const { Project } = await storage.connect();
@@ -502,7 +460,7 @@ Each exporter constructor takes 3 parameters:
 
 You can export directly from each individual exporter.
 ```js
-const { CsvExporter, ZipExporter } = require('get-set-fetch-scraper');
+const { CsvExporter, ZipExporter } = require('@get-set-fetch/scraper');
 exporter = new CsvExporter(project, 'file.csv', {fieldSeparator: ','});
 await exporter.export();
 ```
@@ -534,14 +492,14 @@ Exports binary resources as a series of zip archives.
 
 ## Examples
 
-What follows are real world scraping examples. If in the meanwhile the pages have changed, the scraping definitions below may become obsolete and no longer produce the expected scraping results. Last check performed on 7th January 2021. 
+What follows are real world scraping examples. If in the meanwhile the pages have changed, the scraping configurations below may become obsolete and no longer produce the expected scraping results. Last check performed on 7th January 2021. 
 
 [Acceptance test definitions](https://github.com/get-set-fetch/test-utils/tree/main/lib/scraping-suite) may also serve as inspiration.
 
 ### Table Scraping
 Top languages by population. Extract tabular data from a single static html page. [See full script.](./examples/table-scraping.ts)
 ```js
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
   scenario: 'static-content',
   pluginOpts: [
@@ -569,7 +527,7 @@ const scrapeDefinition = {
 ### Product Details
 Book details with author, title, rating value, review count. Also scrapes the book covers. Only the first and second page of results are being scraped. [See full script.](./examples/product-details.ts)
 ```js
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
   scenario: 'static-content',
   pluginOpts: [
@@ -620,7 +578,7 @@ const scrapeDefinition = {
 ### PDF Extraction
 World Health Organization COVID-19 Updates during last month. Opens each report page and downloads the pdf. [See full script.](./examples/pdf-extraction.ts)
 ```js
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
   scenario: 'static-content',
   pluginOpts: [
@@ -648,7 +606,7 @@ const scrapeDefinition = {
 ### Infinite Scrolling
 UEFA Champions League top goalscorers. Keeps scrolling and loading new content until the final 100th position is reached. After each scroll action scraping is resumed only after the preloader is removed and the new content is available. [See full script.](./examples/infinite-scrolling.ts)
 ```js
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
   scenario: 'static-content',
   pluginOpts: [
@@ -685,7 +643,7 @@ A plugin is executed in browser if it defines a `domRead` or `domWrite` option s
 
 ```js
 import { Readability } from '@mozilla/readability';
-import { Plugin } from 'get-set-fetch-scraper';
+import { Plugin } from '@get-set-fetch/scraper';
 
 export default class ReadabilityPlugin extends Plugin {
   opts = {
@@ -713,7 +671,7 @@ await PluginStore.addEntry(join(__dirname, 'plugins', 'ReadabilityPlugin.js'));
 
 With the help of this plugin one can extract article excerpts from news sites such as BBC technology section. Custom `ReadabilityPlugin` replaces builtin `ExtractHtmlContentPlugin`. Only links containing hrefs starting with `/news/technology-` are followed. Scraping is limited to 5 articles. [See full script.](./examples/custom-plugin-readability.ts)
 ```js
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
   scenario: 'static-content',
   pluginOpts: [
