@@ -13,14 +13,20 @@ export type StoreEntry = {
   bundle: string,
   Cls: IPlugin;
 }
+/** Responsible for registering, retrieving plugins. Plugins to be run in DOM are bundled with their dependencies. */
 export default class PluginStore {
   static logger = getLogger('PluginStore');
   static store:Map<string, StoreEntry> = new Map<string, StoreEntry>();
 
-  static init():Promise<StoreEntry|StoreEntry[]> {
-    return PluginStore.add(join(__dirname, '..', 'plugins', 'default'));
+  /** Registers the default plugins. */
+  static init():Promise<StoreEntry[]> {
+    return PluginStore.addEntries(join(__dirname, '..', 'plugins', 'default'));
   }
 
+  /**
+   * Register one or multiple plugins.
+   * @param fileOrDirPath - file or directory path
+   */
   static add(fileOrDirPath: string):Promise<StoreEntry|StoreEntry[]> {
     if (fs.existsSync(fileOrDirPath)) {
       return fs.lstatSync(fileOrDirPath).isDirectory()
@@ -33,6 +39,10 @@ export default class PluginStore {
     throw err;
   }
 
+  /**
+   * Register .js, .ts plugins found under the specified path.
+   * @param dirPath - directory path
+   */
   static async addEntries(dirPath: string):Promise<StoreEntry[]> {
     return Promise.all(
       fs.readdirSync(dirPath)
@@ -46,6 +56,10 @@ export default class PluginStore {
     );
   }
 
+  /**
+   * Register a plugin found under the specified path.
+   * @param filepath - file path
+   */
   static async addEntry(filepath: string):Promise<StoreEntry> {
     try {
       const pluginModule = await import(filepath);
@@ -72,14 +86,22 @@ export default class PluginStore {
     }
   }
 
-  static get(name: string) {
+  /**
+   * Retrieves a plugin.
+   * @param name - constructor name
+   */
+  static get(name: string):StoreEntry {
     if (!PluginStore.store.has(name)) {
       PluginStore.logger.error('Plugin %s not registered', name);
     }
     return PluginStore.store.get(name);
   }
 
-  static async buildBundle(filepath: string) {
+  /**
+   * Bundles a plugin together with its dependencies.
+   * @param filepath - input filepath
+   */
+  static async buildBundle(filepath: string):Promise<string> {
     const inputOpts = {
       input: filepath,
       treeshake: {

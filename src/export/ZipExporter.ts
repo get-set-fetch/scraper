@@ -10,6 +10,8 @@ export type ZipExportOptions = ExportOptions & {
   type: 'zip',
   pageLimit?: number;
 }
+
+/** Provides ZIP export capabilities. */
 export default class ZipExporter extends Exporter {
   logger = getLogger('ZipExporter');
   opts: ZipExportOptions;

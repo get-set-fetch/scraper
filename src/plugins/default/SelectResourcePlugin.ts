@@ -3,9 +3,7 @@ import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
-/**
- * Plugin responsible for selecting a resource to crawl from the current project.
- */
+/** Selects from database a new project resource to be scraped. */
 export default class SelectResourcePlugin extends Plugin {
   static get schema() {
     return {
@@ -34,7 +32,7 @@ export default class SelectResourcePlugin extends Plugin {
     super(opts);
   }
 
-  // only retrieve a new resource when one hasn't already been selected
+  /** Only retrieve a new resource when one hasn't already been selected. */
   test(project: Project, resource: Resource) {
     return resource === null;
   }

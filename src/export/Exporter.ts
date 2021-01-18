@@ -4,6 +4,7 @@ export type ExportOptions = {
   type: 'csv'|'zip';
 }
 
+/** Scraped data exporters should extend this class. */
 export default abstract class Exporter {
   project: Project;
   filepath: string;

@@ -1,6 +1,7 @@
 import Resource, { ResourceQuery } from '../base/Resource';
 import KnexStorage from './KnexStorage';
 
+/** @see {@link Resource} */
 export default class KnexResource extends Resource {
   static storage:KnexStorage;
 

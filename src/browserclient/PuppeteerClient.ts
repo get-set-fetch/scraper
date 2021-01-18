@@ -1,6 +1,7 @@
 import { Browser, LaunchOptions, launch as plaunch, Page, DirectNavigationOptions } from 'puppeteer';
 import BrowserClient from './BrowserClient';
 
+/** Puppeteer Client.  */
 export default class PuppeteerClient extends BrowserClient {
   browser: Browser;
   page: Page;

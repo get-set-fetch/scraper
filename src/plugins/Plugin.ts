@@ -19,6 +19,7 @@ export type PluginOpts = {
   after?: string;
 }
 
+/** All plugins should extend this class implementing the test and apply methods. */
 export default abstract class Plugin {
   static get schema() {
     return {};
@@ -26,16 +27,29 @@ export default abstract class Plugin {
 
   opts: Partial<PluginOpts>;
 
-  constructor(opts = {}) {
+  constructor(opts:Partial<PluginOpts> = {}) {
     const { schema } = <typeof Plugin> this.constructor;
     this.opts = SchemaHelper.instantiate(schema, opts);
   }
 
+  /**
+   * Tests if the plugin should be executed or not against the current resource.
+   * @param project - current scraping project
+   * @param resource - current scraping resource
+   */
   abstract test(project: Project, resource: Resource): Promise<boolean> | boolean;
+
+  /**
+   * Executes the plugin against the current resource, either in node.js or browser environment.
+   * The result will be merged into the currently scraped resource at scraper level.
+   * @param project - current scraping project
+   * @param resource - current scraping resource
+   * @param client - current browser client
+   */
   abstract apply(project: Project, resource: Resource, client: BrowserClient): Promise<void | Partial<Resource>> | void | Partial<Resource>;
 }
 
 export interface IPlugin {
   new(kwArgs: Partial<PluginOpts>): Plugin;
-  schema: JSONSchema7
+  schema: JSONSchema7;
 }

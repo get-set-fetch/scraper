@@ -10,6 +10,8 @@ import KnexProject from './KnexProject';
 export type CapabilitiesType = {
   returning: boolean;
 }
+
+/** @see {@link Storage} */
 export default class KnexStorage extends Storage {
   knex: Knex;
   config: Knex.Config;

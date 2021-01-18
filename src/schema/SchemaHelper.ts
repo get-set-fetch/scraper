@@ -14,7 +14,14 @@ export type SchemaType<S> =
           :S extends {type: 'number'|'integer'} ? number
             : unknown;
 
+/** Json-schema handler. */
 export default class SchemaHelper {
+  /**
+   * Based on input schema, augments data with missing default values.
+   * @param schema - json-schema
+   * @param data - input data
+   * @param path - json path
+   */
   static instantiate(schema:JSONSchema7, data = undefined, path: string[] = []) {
     // make a data copy, don't augment in place
     if (data && path.length === 0) {

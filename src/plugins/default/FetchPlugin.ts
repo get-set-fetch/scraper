@@ -6,6 +6,7 @@ import BrowserClient from '../../browserclient/BrowserClient';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
 import * as MimeTypes from '../../export/MimeTypes.json';
 
+/** Opens html resources in a browser tab. Downloads binary resources. */
 export default class FetchPlugin extends Plugin {
   static get schema() {
     return {

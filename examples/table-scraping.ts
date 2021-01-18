@@ -25,7 +25,7 @@ const scraper = new Scraper(storage, client);
 
 const scrapeHash = 'eLsPRJVnQ09DqXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpqcXxSZXxeaW5SahFIOA+YvspS44sLUhOzU4FRREHqQ4l4RPwZYCYR4tIpZuIExm1Oql5uakliSmJJooK2QgEQQwRBfgWzFEpSrPJKMnSTMzJzUjSMNBXsFBKt0oBmlkCEgFbBMgAsSJRALqSGbcaaSKbDglRBIxeYIIFpQhMUa7G1AIulnBc=';
 
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
   scenario: 'static-content',
   pluginOpts: [
@@ -54,5 +54,5 @@ const scrapeDefinition = {
   await scraper.export('./examples/data/languages.csv', { type: 'csv' });
   await storage.close();
 
-  encode(scrapeDefinition);
+  encode(scrapingConfig);
 })();

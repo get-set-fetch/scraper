@@ -4,9 +4,7 @@ import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import { SchemaType } from '../../schema/SchemaHelper';
 
-/**
- * Plugin responsible for saving new resources within the current project.
- */
+/** Saves in database newly identified resources within the current project. */
 export default class InsertResourcesPlugin extends Plugin {
   static get schema() {
     return {

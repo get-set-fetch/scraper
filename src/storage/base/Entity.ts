@@ -1,5 +1,6 @@
 import Storage from './Storage';
 
+/** Base class for all database entities. */
 export default abstract class Entity {
   abstract save():Promise<number>;
   abstract update():Promise<void>;

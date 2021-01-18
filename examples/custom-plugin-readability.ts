@@ -1,6 +1,6 @@
 /* eslint-disable object-curly-newline */
 import { join } from 'path';
-import { KnexStorage, PluginStore, PuppeteerClient, ScrapeDefinition, Scraper, setLogger } from '../src/index';
+import { KnexStorage, PluginStore, PuppeteerClient, ScrapingConfig, Scraper, setLogger } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -25,7 +25,7 @@ const client = new PuppeteerClient({ args: [
 const scraper = new Scraper(storage, client);
 
 const scrapeHash = 'eLsPRJVnQ09D5eXleklJyeCklJdaXqxfkpqckZefk59eSUmiQolPRLQYEhG50RlFqWkKcbYK6ugO0lWPBfkB4UtQioLGHNyyotSCnMRkAukbV2okLqpNgY4AAKH7dMw=';
-const scrapeDefinition:ScrapeDefinition = {
+const scrapingConfig:ScrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
   scenario: 'static-content',
   pluginOpts: [
@@ -52,7 +52,7 @@ const scrapeDefinition:ScrapeDefinition = {
   await PluginStore.init();
   await PluginStore.addEntry(join(__dirname, 'plugins', 'ReadabilityPlugin.ts'));
 
-  await scraper.scrape(scrapeDefinition);
+  await scraper.scrape(scrapingConfig);
   await scraper.export('./examples/data/readability.csv', { type: 'csv' });
   await storage.close();
 })();

@@ -3,6 +3,7 @@ import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 
+/** Groups resources sharing the same scraping configuration and discovered from the same initial URL. */
 export default abstract class Project extends Entity {
   id: number;
   name: string;

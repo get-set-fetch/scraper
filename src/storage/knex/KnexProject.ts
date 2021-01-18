@@ -3,6 +3,7 @@ import Resource, { ResourceQuery } from '../base/Resource';
 import Project from '../base/Project';
 import KnexStorage from './KnexStorage';
 
+/** @see {@link Project} */
 export default class KnexProject extends Project {
   static storage:KnexStorage;
 

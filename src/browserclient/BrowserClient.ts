@@ -1,3 +1,4 @@
+/** Provides a common API to interact with various browser clients. */
 export default abstract class BrowserClient {
   isLaunched: boolean;
 

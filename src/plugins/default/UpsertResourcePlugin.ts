@@ -3,9 +3,7 @@ import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
-/**
- * Plugin responsible for updating a resource after scraping it.
- */
+/** Updates a resource in the database after its scraping completes. */
 export default class UpsertResourcePlugin extends Plugin {
   static get schema() {
     return {

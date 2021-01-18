@@ -11,6 +11,8 @@ export type CsvExportOptions = ExportOptions & {
   lineSeparator?: string;
   pageLimit?: number;
 }
+
+/** Provides CSV export capabilities. */
 export default class CsvExporter extends Exporter {
   logger = getLogger('CsvExporter');
 

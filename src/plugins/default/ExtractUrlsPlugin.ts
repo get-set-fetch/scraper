@@ -3,9 +3,7 @@ import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
-/**
- * Plugin responsible for extracting new resources from a resource document.
- */
+/** Extracts new URLs to be scraped based on CSS selectors. Runs in browser. */
 export default class ExtractUrlsPlugin extends Plugin {
   static get schema() {
     return {
@@ -46,7 +44,9 @@ export default class ExtractUrlsPlugin extends Plugin {
   }
 
   opts: SchemaType<typeof ExtractUrlsPlugin.schema>;
-  prevUrls: Set<string>; // in case of dynamic resource, urls already added
+
+  /** in case of dynamic resource, urls already added */
+  prevUrls: Set<string>;
 
   constructor(opts: SchemaType<typeof ExtractUrlsPlugin.schema> = {}) {
     super(opts);

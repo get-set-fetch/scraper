@@ -4,6 +4,7 @@ import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
 
+/** Provides infinite scrolling. Runs in browser. */
 export default class ScrollPlugin extends Plugin {
   static get schema() {
     return {
@@ -35,7 +36,7 @@ export default class ScrollPlugin extends Plugin {
         stabilityCheck: {
           type: 'integer',
           default: 1000,
-          title: 'Stability Timeout',
+          title: 'Stability Check',
           description: 'Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Only applies to html resources. Useful for bypassing preloader content.',
         },
         stabilityTimeout: {

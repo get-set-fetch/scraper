@@ -6,6 +6,7 @@ export interface IResourceParent {
   title?: string;
 }
 
+/** Each url (web page, image, API endpoint, ...) represents a Resource. */
 export default abstract class Resource extends Entity {
   id: number;
   projectId: number;
@@ -17,18 +18,25 @@ export default abstract class Resource extends Entity {
   scrapeInProgress: boolean;
 
   contentType: string;
+
+  /** Stores text based content.
+   * Data rows with each row containing one or multiple entries.
+   * Usually each entry corresponds to content from a CSS selector.
+   */
   content: string[][];
+
+  /** Stores binary content. */
   data: Uint8Array;
 
   parent: IResourceParent;
 
-  // not stored, populated by the ExtractUrlsPlugin and saved as new resources by the InsertResourcesPlugin
+  /** not stored, populated by the ExtractUrlsPlugin and saved as new resources by the InsertResourcesPlugin */
   resourcesToAdd: Partial<Resource>[];
 
-  /*
-  not stored, in case of redirect the resource is updated with the final url,
-  need to save a separate "empty" resource with the initial url to avoid re-scraping it
-  */
+  /**
+   * not stored, in case of redirect the resource is updated with the final url,
+   * need to save a separate "empty" resource with the initial url to avoid re-scraping it
+   */
   redirectOrigin: string;
 
   constructor(kwArgs: Partial<Resource> = {}) {

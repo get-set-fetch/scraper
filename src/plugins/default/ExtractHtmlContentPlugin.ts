@@ -3,6 +3,7 @@ import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 
+/** Scrapes html content based on CSS selectors. Runs in browser. */
 export default class ExtractHtmlContentPlugin extends Plugin {
   static get schema() {
     return {
@@ -41,7 +42,9 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   opts: SchemaType<typeof ExtractHtmlContentPlugin.schema>;
-  content: Set<string>; // in case of dynamic resource, content already scraped
+
+  /** in case of dynamic resource, content already scraped */
+  content: Set<string>;
 
   constructor(opts:SchemaType<typeof ExtractHtmlContentPlugin.schema> = {}) {
     super(opts);

@@ -24,7 +24,7 @@ const scraper = new Scraper(storage, client);
 
 const scrapeHash = 'eLsPRJVnpZJLDsIwDAXvwprUXAgh05o0okmrmBCx4O51DOIXKiGxyyb285v5dCjn3CQRTF0qj7ZHP5U0A6FNBL1jafgCEcPRBcswyT6KDHbEgXfcjpE6+EfAN/ZPhJvakt9Urf3s3LnRTCyx2AgJb4yOXj/Evp21Kku/D7gXYULye7n/5as2UdpdFAAPJ4pLWGolFeb2OgOx3JpN';
 
-const scrapeDefinition = {
+const scrapingConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
   scenario: 'static-content',
   pluginOpts: [
@@ -54,7 +54,7 @@ const scrapeDefinition = {
 };
 
 (async () => {
-  await scraper.scrape(scrapeDefinition);
+  await scraper.scrape(scrapingConfig);
   await scraper.export('./examples/data/infinite-scrolling.csv', { type: 'csv' });
   await storage.close();
 })();

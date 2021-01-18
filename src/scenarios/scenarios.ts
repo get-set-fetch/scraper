@@ -9,10 +9,19 @@ export type Scenarios = {
   [key: string] : IScenario
 }
 
+/**
+ * Built-in, predefined scenarios.
+ * Each one defines a series of plugins with default options to be executed against each to be scraped resource.
+ */
 const scenarios: Scenarios = {
   'static-content': StaticContentScenario,
 };
 
+/**
+ * Takes starting default options and overrides them with custom ones.
+ * @param defaultOpts - default starting options
+ * @param customOpts - override options
+ */
 const mergePluginOpts = (defaultOpts: PluginOpts[], customOpts: PluginOpts[]):PluginOpts[] => {
   const mergeOpts:PluginOpts[] = [ ...defaultOpts ];
   customOpts.forEach(pluginCustomOpts => {

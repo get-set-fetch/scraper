@@ -15,17 +15,19 @@ import CsvExporter from '../export/CsvExporter';
 import ZipExporter from '../export/ZipExporter';
 import { decode } from '../confighash/config-hash';
 
-/*
-scraper is:
-- browser agnostic (init browser client outside scraper)
-- storage agnostic (init storage outside scraper)
-*/
-
-export type ScrapeDefinition = {
+export type ScrapingConfig = {
   url: string,
   scenario: string,
   pluginOpts: PluginOpts[]
 }
+
+/**
+ * Executes defined scraping plugins against to be scraped resources.
+ * Storage agnostic.
+ * Browser client agnostic.
+ * Will connect to db if provided storage not already connected.
+ * Will open browser client if provided browser client not already opened.
+ */
 export default class Scraper {
   logger = getLogger('Scraper');
 
@@ -38,6 +40,10 @@ export default class Scraper {
     this.browserClient = browserClient;
   }
 
+  /**
+   * Pre-scrape preparations regarding PluginStore, storage and browser client.
+   * Making sure default plugins are registered, a connection to a database is opened, a browser is launched.
+   */
   async preScrape():Promise<void> {
     if (PluginStore.store.size === 0) {
       await PluginStore.init();
@@ -54,14 +60,20 @@ export default class Scraper {
     }
   }
 
-  async initProject(scrapeConfig: Project|ScrapeDefinition|string):Promise<Project> {
+  /**
+   * If scrapingConfig is a project return it without modifications.
+   * If it's a scraping configuration or a deflated scraping configuration construct a new project based on start url.
+   * Project name resolves to the start url hostname.
+   * @param scrapingConfig - project, scraping configuration or base64 deflated scraping configuration
+   */
+  async initProject(scrapingConfig: Project|ScrapingConfig|string):Promise<Project> {
     let project:Project;
 
-    if (scrapeConfig instanceof Project) {
-      project = scrapeConfig;
+    if (scrapingConfig instanceof Project) {
+      project = scrapingConfig;
     }
     else {
-      const scrapeDef:ScrapeDefinition = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
+      const scrapeDef:ScrapingConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
       const { Project } = this.storage;
       project = new Project({
         name: new URL(scrapeDef.url).hostname,
@@ -77,17 +89,25 @@ export default class Scraper {
     return project;
   }
 
+  /**
+   * Cleanup actions after scraping completes.
+   * Closes the browser but keeps the storage connection open as scraping is often followed by data export actions.
+   */
   async postScrape() {
     await this.browserClient.close();
   }
 
+  /**
+   * Scrapes available resources from the provided project. If a scraping configuration is provided creates a project first.
+   * @param project - project, scraping configuration or base64 deflated scraping configuration
+   */
   async scrape(project: Project):Promise<Project>
-  async scrape(scrapeDefinition: ScrapeDefinition):Promise<Project>
+  async scrape(scrapingConfig: ScrapingConfig):Promise<Project>
   async scrape(scrapeHash: string):Promise<Project>
-  async scrape(scrapeConfig: Project|ScrapeDefinition|string) {
+  async scrape(scrapingConfig: Project|ScrapingConfig|string) {
     try {
       await this.preScrape();
-      this.project = await this.initProject(scrapeConfig);
+      this.project = await this.initProject(scrapingConfig);
     }
     catch (err) {
       this.logger.error(err, 'Error preScraping operations');
@@ -124,6 +144,12 @@ export default class Scraper {
     return this.project;
   }
 
+  /**
+   * Sequentially executes the project plugins against the current resource.
+   * It usually starts with an available resource being selected from db and ends with the resource being updated with the scraped content.
+   * @param project - current scraping project
+   * @param resource - current scraping resource
+   */
   async scrapeResource(project: Project, resource: Resource = null):Promise<Resource> {
     // dynamic resource, a resource that was modified by a dynamic action: scroll, click, ..
     if (resource && resource.actions) {
@@ -222,6 +248,12 @@ export default class Scraper {
     return resource;
   }
 
+  /**
+   * Executes the current plugin in either node.js or browser environment.
+   * @param project - current scraping project
+   * @param resource - current scraping resource
+   * @param plugin - current scraping plugin
+   */
   async executePlugin(project: Project, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
     this.logger.debug(
       'Executing plugin %s using options %o , against resource %o',
@@ -290,6 +322,11 @@ export default class Scraper {
     return result;
   }
 
+  /**
+   *
+   * @param filepath - location to store the content, relative to the current working directory. Missing directories will not be created.
+   * @param opts - export options pertinent to the selected export type. Type is required.
+   */
   async export(filepath: string, opts: ExportOptions):Promise<void> {
     let exporter: Exporter;
 
