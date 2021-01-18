@@ -1,6 +1,6 @@
 {
   "name": "@get-set-fetch/scraper",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "Plugin based, batteries included, node.js web scraper. It scrapes, stores and exports data.",
   "keywords": [
     "scraper",
@@ -18,7 +18,7 @@
   ],
   "module": "dist/esm/index.js",
   "scripts": {
-    "postinstall": "patch-package",
+    "patch": "patch-package",
     "link:gsf": "npm link ../test-utils",
     "lint": "eslint src/**/*.ts",
     "test:unit": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\"",
@@ -80,7 +80,7 @@
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.0.1",
     "@rollup/plugin-typescript": "^8.1.0",
-    "jszip": "^3.5.0",
+    "jszip": "https://github.com/Stuk/jszip#3db5fdc",
     "pako": "^2.0.2",
     "patch-package": "^6.2.2",
     "pino": "^6.8.0",
