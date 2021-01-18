@@ -1,9 +1,10 @@
 {
   "name": "@get-set-fetch/scraper",
   "version": "0.1.0",
-  "description": "Node.js web scraper with the entire scraping process plugin based. Supports multiple storage options: sqlite, mysql, postgresql. Supports headless Chrome with Puppeteer.",
+  "description": "Plugin based, batteries included, node.js web scraper. It scrapes, stores and exports data.",
   "keywords": [
     "scraper",
+    "web",
     "nodejs",
     "node",
     "plugin",
@@ -30,8 +31,6 @@
     "test:storage:pg:integration": "mocha --config test/.mocharc.js \"test/storage/pg/pg-integration-suite.ts\"",
     "example": "ts-node  examples/custom-plugin-readability.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json",
-    "start": "ts-node src/main.ts",
-    "start2": "node --experimental-modules --loader ts-node/esm src/main.ts"
   },
   "author": "Andrei Sabau",
   "license": "MIT",
