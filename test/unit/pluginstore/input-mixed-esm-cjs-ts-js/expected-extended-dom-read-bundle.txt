@@ -1,0 +1,43 @@
+const extra = 'just a named export required for testing partial package import when bundling scraper plugins';
+
+/* eslint-disable */
+class BaseJsA {
+  jsa(a, b) {
+    return a + b;
+  }
+}
+
+class BaseJsB {
+  jsb(a, b) {
+    return a + b;
+  }
+}
+
+var BaseJs = {
+  BaseJsA,
+  BaseJsB
+};
+
+/* eslint-disable */
+class BaseTsB {
+    tsb(a, b) {
+        return a + b;
+    }
+}
+
+class ExtendedDomRead extends BaseJs.BaseJsB {
+    constructor() {
+        super(...arguments);
+        this.opts = {
+            domRead: true,
+        };
+    }
+    sum(a, b) {
+        console.log(BaseTsB);
+        return this.jsb(a, b);
+    }
+    async asum(a, b) {
+        console.log(extra);
+        return this.jsb(a, b);
+    }
+}

@@ -4,7 +4,7 @@ import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
-import { join } from 'path';
+import { extname, join } from 'path';
 import Plugin, { IPlugin } from '../plugins/Plugin';
 import { getLogger } from '../logger/Logger';
 
@@ -13,6 +13,7 @@ export type StoreEntry = {
   bundle: string,
   Cls: IPlugin;
 }
+
 /** Responsible for registering, retrieving plugins. Plugins to be run in DOM are bundled with their dependencies. */
 export default class PluginStore {
   static logger = getLogger('PluginStore');
@@ -126,22 +127,33 @@ export default class PluginStore {
       },
     });
 
-    const plugins = [
-      nodeResolve(),
-      json(),
-      typescript({
-        lib: [],
-        target: 'esnext',
-        module: 'es6',
-        tsconfig: false,
-        sourceMap: false,
-      }),
-      commonjs({
-        extensions: [ '.js', '.ts' ],
-        sourceMap: false,
-      }),
-      exportToGlobalPlugin(),
-    ];
+    // different bundling settings for ts and js source files
+    const plugins = extname(filepath) === '.ts'
+      ? [
+        nodeResolve(),
+        json(),
+        typescript({
+          lib: [],
+          target: 'esnext',
+          module: 'es6',
+          tsconfig: false,
+          sourceMap: false,
+        }),
+        commonjs({
+          extensions: [ '.js', '.ts' ],
+          sourceMap: false,
+        }),
+        exportToGlobalPlugin(),
+      ]
+      : [
+        nodeResolve(),
+        json(),
+        commonjs({
+          extensions: [ '.js', '.ts' ],
+          sourceMap: false,
+        }),
+        exportToGlobalPlugin(),
+      ];
 
     const bundle = await rollup({ ...inputOpts, plugins });
 

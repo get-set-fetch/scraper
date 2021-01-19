@@ -1,0 +1,38 @@
+/* eslint-disable */
+class BaseJsA {
+  jsa(a, b) {
+    return a + b;
+  }
+}
+
+class BaseJsB {
+  jsb(a, b) {
+    return a + b;
+  }
+}
+
+var BaseJs = {
+  BaseJsA,
+  BaseJsB
+};
+
+/* eslint-disable */
+
+const { BaseJsB: BaseJsB$1 } = BaseJs;
+
+class ExtendedDomRead extends BaseJsB$1 {
+  opts = {
+    domRead: true,
+  }
+
+  sum(a, b) {
+    console.log(BaseJsB$1);
+    return this.jsb(a, b);
+  }
+
+  async asum(a, b) {
+    return this.jsb(a, b);
+  }
+}
+
+var ExtendedDomRead_1 = ExtendedDomRead;

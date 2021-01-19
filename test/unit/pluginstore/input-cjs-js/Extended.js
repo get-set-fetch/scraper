@@ -1,7 +1,8 @@
-import { BaseJsA } from './BaseJs';
+/* eslint-disable */
+const { BaseJsA } = require('./BaseJs');
 
 class Extended extends BaseJsA {
-  sum(a:number, b:number) {
+  sum(a, b) {
     return a + b;
   }
 }

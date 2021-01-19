@@ -8,20 +8,12 @@ class BaseJsB {
   }
 }
 
-/* eslint-disable */
-class BaseTsB {
-    tsb(a, b) {
-        return a + b;
-    }
-}
-
 class ExtendedDomRead extends BaseJsB {
   opts = {
     domRead: true,
   }
 
   sum(a, b) {
-    console.log(BaseTsB);
     return this.jsb(a, b);
   }
 
