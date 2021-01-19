@@ -4,7 +4,6 @@
   "description": "Plugin based, batteries included, node.js web scraper. It scrapes, stores and exports data.",
   "keywords": [
     "scraper",
-    "web",
     "nodejs",
     "node",
     "plugin",
