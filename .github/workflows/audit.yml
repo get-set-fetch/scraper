@@ -12,9 +12,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup node 14
+    - name: Setup node 15
       uses: actions/setup-node@v1
       with:
-        node-version: 14.x
+        node-version: 15.x
     - name: NPM Audit
       run: npm audit --audit-level=high
