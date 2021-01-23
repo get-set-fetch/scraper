@@ -191,14 +191,14 @@ Default storage option if none provided consuming the least amount of resources.
 ```
 $ npm install knex sqlite3@4
 ```
-Examples: [SQLite connection](./test/storage/sqlite/sqlite-conn.json)
+Examples: [SQLite connection](./test/config/storage/sqlite/sqlite-conn.json)
 
 ### MySQL
 Requires knex and mysql driver.
 ```
 $ npm install knex mysql
 ```
-Examples: [MySQL connection](./test/storage/mysql/mysql-conn.json) | [MySQL docker file](./test/storage/mysql/mysql.yml)
+Examples: [MySQL connection](./test/config/storage/mysql/mysql-conn.json) | [MySQL docker file](./test/config/storage/mysql/mysql.yml)
 
 
 ### PostgreSQL
@@ -206,7 +206,7 @@ Requires knex and postgresql driver.
 ```
 $ npm install knex pg
 ```
-Examples: [PostgreSQL connection](./test/storage/pg/pg-conn.json) | [PostgreSQL docker file](./test/storage/pg/pg.yml)
+Examples: [PostgreSQL connection](./test/config/storage/pg/pg-conn.json) | [PostgreSQL docker file](./test/config/storage/pg/pg.yml)
 
 ## Scenarios
 
