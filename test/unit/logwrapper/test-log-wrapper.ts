@@ -12,5 +12,8 @@ describe('LogWrapper', () => {
 
     setLogger({ level: 'info' });
     assert.strictEqual(childWrapper.logger.level, 'info');
+
+    // revert back to default log level
+    setLogger({ level: 'warn' });
   });
 });
