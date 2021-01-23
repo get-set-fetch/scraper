@@ -8,7 +8,7 @@ on:
 
 jobs:
   non_storage:
-    name: Non-storage
+    name: Non-Storage
     runs-on: ubuntu-18.04
 
     steps:
@@ -50,7 +50,7 @@ jobs:
       run: npm run test:acceptance:sqlite-puppeteer-chromium
 
   mysql_puppeteer_chromium:
-    name: MySQL tests
+    name: MySQL - Puppeteer - Chromium
     runs-on: ubuntu-18.04
     needs: non_storage
 
@@ -62,7 +62,7 @@ jobs:
         node-version: 14.x
 
     - name: MySQL up
-      run: docker-compose -f ./test/storage/mysql/mysql.yml up -d
+      run: docker-compose -f ./test/config/storage/mysql/mysql.yml up -d
 
     - name: Install dependencies
       run: npm ci
@@ -78,10 +78,10 @@ jobs:
       run: npm run test:acceptance:mysql-puppeteer-chromium
 
     - name: MySQL down
-      run: docker-compose -f ./test/storage/mysql/mysql.yml down
+      run: docker-compose -f ./test/config/storage/mysql/mysql.yml down
 
   pg_puppeteer_chromium:
-    name: PostgreSQL tests
+    name: PostgreSQL - Puppeteer - Chromium
     runs-on: ubuntu-18.04
     needs: non_storage
 
@@ -99,7 +99,7 @@ jobs:
       run: npm install puppeteer --save
 
     - name: PostgreSQL up
-      run: docker-compose -f ./test/storage/pg/pg.yml up -d
+      run: docker-compose -f ./test/config/storage/pg/pg.yml up -d
 
     - name: PostgreSQL unit tests
       run: npm run test:unit:pg
@@ -108,4 +108,4 @@ jobs:
       run: npm run test:acceptance:pg-puppeteer-chromium
 
     - name: PostgreSQL down
-      run: docker-compose -f ./test/storage/pg/pg.yml down
+      run: docker-compose -f ./test/config/storage/pg/pg.yml down
