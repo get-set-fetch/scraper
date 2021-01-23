@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  unit_test:
-    name: Non-storage unit tests
+  non_storage:
+    name: Non-storage
     runs-on: ubuntu-18.04
 
     steps:
@@ -22,13 +22,13 @@ jobs:
     - name: Install required peer dependencies
       run: export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && npm install knex puppeteer --save
 
-    - name: Unit tests
-      run: npm run test:unit
+    - name: Non-storage unit tests
+      run: npm run test:unit:non-storage
 
-  sqlite_test:
-    name: Sqlite3 tests
+  sqlite_puppeteer_chromium:
+    name: Sqlite3 - Puppeteer - Chromium
     runs-on: ubuntu-18.04
-    needs: unit_test
+    needs: non_storage
 
     steps:
     - uses: actions/checkout@v2
@@ -44,15 +44,15 @@ jobs:
       run: npm install puppeteer --save
 
     - name: Sqlite3 unit tests
-      run: npm run test:storage:sqlite:unit
+      run: npm run test:unit:sqlite
 
-    - name: Sqlite3 integration tests
-      run: npm run test:storage:sqlite:integration
+    - name: Sqlite3 - Puppeteer - Chromium acceptance tests
+      run: npm run test:acceptance:sqlite-puppeteer-chromium
 
-  mysql_test:
+  mysql_puppeteer_chromium:
     name: MySQL tests
     runs-on: ubuntu-18.04
-    needs: unit_test
+    needs: non_storage
 
     steps:
     - uses: actions/checkout@v2
@@ -72,18 +72,18 @@ jobs:
       run: npm install puppeteer --save
 
     - name: MySQL unit tests
-      run: npm run test:storage:mysql:unit
+      run: npm run test:unit:mysql
 
-    - name: MySQL integration tests
-      run: npm run test:storage:mysql:integration
+    - name: MySQL - Puppeteer - Chromium acceptance tests
+      run: npm run test:acceptance:mysql-puppeteer-chromium
 
     - name: MySQL down
       run: docker-compose -f ./test/storage/mysql/mysql.yml down
 
-  pg_test:
+  pg_puppeteer_chromium:
     name: PostgreSQL tests
     runs-on: ubuntu-18.04
-    needs: unit_test
+    needs: non_storage
 
     steps:
     - uses: actions/checkout@v2
@@ -101,11 +101,11 @@ jobs:
     - name: PostgreSQL up
       run: docker-compose -f ./test/storage/pg/pg.yml up -d
 
-    - name: PostgreSQL unit tests
-      run: npm run test:storage:pg:unit
+   - name: PostgreSQL unit tests
+      run: npm run test:unit:pg
 
-    - name: PostgreSQL integration tests
-      run: npm run test:storage:pg:integration
+    - name: PostgreSQL - Puppeteer - Chromium acceptance tests
+      run: npm run test:acceptance:pg-puppeteer-chromium
 
     - name: PostgreSQL down
       run: docker-compose -f ./test/storage/pg/pg.yml down
