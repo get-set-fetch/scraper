@@ -101,7 +101,7 @@ jobs:
     - name: PostgreSQL up
       run: docker-compose -f ./test/storage/pg/pg.yml up -d
 
-   - name: PostgreSQL unit tests
+    - name: PostgreSQL unit tests
       run: npm run test:unit:pg
 
     - name: PostgreSQL - Puppeteer - Chromium acceptance tests
