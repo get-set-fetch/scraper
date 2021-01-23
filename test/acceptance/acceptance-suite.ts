@@ -1,42 +1,21 @@
 import { unlinkSync } from 'fs';
 import { GsfServer, ScrapingSuite, IScrapingTest } from '@get-set-fetch/test-utils';
 import BrowserClient from '../../src/browserclient/BrowserClient';
-import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
 import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
 
 import Scraper from '../../src/scraper/Scraper';
 import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 
-export default function integrationSuite(storage: Storage) {
-  describe(`integration suite using ${storage.config.client}`, () => {
+export default function acceptanceSuite(storage: Storage, browserClient:BrowserClient) {
+  describe(`acceptance suite using ${storage.config.client} - ${browserClient.constructor.name} - ${browserClient.opts.browser}`, () => {
     let srv: GsfServer;
-    let browserClient:BrowserClient;
     let Project: IStaticProject;
 
     before(async () => {
       // start web server
       srv = new GsfServer();
       srv.start();
-
-      // launch browser with above web server as proxy
-      browserClient = new PuppeteerClient({
-        headless: true,
-        ignoreHTTPSErrors: true,
-        slowMo: 20,
-        args: [
-          `--host-rules=MAP *:80 127.0.0.1:${srv.httpPort}, MAP *:443 127.0.0.1:${srv.httpPort}`,
-          '--ignore-certificate-errors',
-
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--no-first-run',
-          '--no-sandbox',
-          '--no-zygote',
-          '--single-process',
-        ],
-      });
 
       // init storage
       ({ Project } = await storage.connect());
@@ -47,6 +26,7 @@ export default function integrationSuite(storage: Storage) {
     });
 
     after(async () => {
+      await browserClient.close();
       await storage.close();
       srv.stop();
     });
@@ -54,7 +34,7 @@ export default function integrationSuite(storage: Storage) {
     const tests = ScrapingSuite.getTests();
 
     tests.forEach((test:IScrapingTest) => {
-      it(`${storage.config.client} - ${test.title}`, async () => {
+      it(`${storage.config.client} - ${browserClient.constructor.name} - ${browserClient.opts.browser} - ${test.title}`, async () => {
         srv.update(test.vhosts);
 
         // save a project for the current scraping test

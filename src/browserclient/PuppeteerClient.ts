@@ -8,12 +8,10 @@ export default class PuppeteerClient extends BrowserClient {
   opts: LaunchOptions;
 
   constructor(opts:LaunchOptions = {}) {
-    super();
     const defaultOpts:LaunchOptions = {
       headless: true,
     };
-    this.opts = Object.assign(defaultOpts, opts);
-    this.isLaunched = false;
+    super(Object.assign(defaultOpts, opts));
   }
 
   async launch():Promise<void> {
