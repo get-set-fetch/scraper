@@ -8,7 +8,9 @@ import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 
 export default function acceptanceSuite(storage: Storage, browserClient:BrowserClient) {
-  describe(`acceptance suite using ${storage.config.client} - ${browserClient.constructor.name} - ${browserClient.opts.browser}`, () => {
+  const browserType = browserClient.opts.browser.charAt(0).toUpperCase() + browserClient.opts.browser.slice(1);
+
+  describe(`acceptance suite using ${storage.config.client} - ${browserClient.constructor.name} - ${browserType}`, () => {
     let srv: GsfServer;
     let Project: IStaticProject;
 
@@ -34,7 +36,7 @@ export default function acceptanceSuite(storage: Storage, browserClient:BrowserC
     const tests = ScrapingSuite.getTests();
 
     tests.forEach((test:IScrapingTest) => {
-      it(`${storage.config.client} - ${browserClient.constructor.name} - ${browserClient.opts.browser} - ${test.title}`, async () => {
+      it(`${storage.config.client} - ${browserClient.constructor.name} - ${browserType} - ${test.title}`, async () => {
         srv.update(test.vhosts);
 
         // save a project for the current scraping test
