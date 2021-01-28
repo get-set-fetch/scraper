@@ -25,6 +25,7 @@ export default class KnexResource extends Resource {
         builder.integer('depth');
         builder.dateTime('scrapedAt');
         builder.boolean('scrapeInProgress');
+        builder.integer('status');
         builder.string('contentType');
 
         this.storage.jsonCol(builder, 'content');

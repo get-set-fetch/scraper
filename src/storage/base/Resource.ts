@@ -17,6 +17,10 @@ export default abstract class Resource extends Entity {
   scrapedAt: Date;
   scrapeInProgress: boolean;
 
+  /** response status code */
+  status: number;
+
+  /** response content-type */
   contentType: string;
 
   /** Stores text based content.
@@ -66,7 +70,8 @@ export default abstract class Resource extends Entity {
   }
 
   get dbCols() {
-    return [ 'id', 'projectId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'contentType', 'content', 'data', 'parent' ];
+    return [ 'id', 'projectId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'status', 'contentType', 'content', 'data', 'parent' ];
+  }
   }
 }
 

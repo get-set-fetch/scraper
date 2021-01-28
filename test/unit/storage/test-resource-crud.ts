@@ -24,6 +24,7 @@ export default function crudResource(storage: Storage) {
       Object.assign(expectedResource, {
         data: null,
         content: null,
+        status: null,
         contentType: null,
         parent: null,
         actions: null,
@@ -118,6 +119,8 @@ export default function crudResource(storage: Storage) {
         url: 'urlB',
         content: { h1: 'titleA', h2: [ 'titleA', 'titleB' ] },
         parent: { propA: 'valA' },
+        status: 200,
+        contentType: 'text/html',
       });
       await expectedResource.update();
 
