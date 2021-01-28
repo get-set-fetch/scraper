@@ -19,8 +19,6 @@ jobs:
         node-version: 14.x
     - name: Install dependencies
       run: npm ci
-    - name: Install required peer dependencies
-      run: export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && npm install knex puppeteer --save
 
     - name: Non-storage unit tests
       run: npm run test:unit:non-storage

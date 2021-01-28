@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { getLogger, setLogger } from '../../../src';
+import { getLogger, setLogger } from '../../../src/logger/Logger';
 
 describe('LogWrapper', () => {
   it('default log level', () => {

@@ -1,10 +1,9 @@
 import { assert } from 'chai';
-import { SinonSandbox, createSandbox, stub } from 'sinon';
+import { SinonSandbox, createSandbox } from 'sinon';
 import Scraper from '../../../src/scraper/Scraper';
-import PuppeteerClient from '../../../src/browserclient/PuppeteerClient';
-import KnexStorage from '../../../src/storage/knex/KnexStorage';
 import Project from '../../../src/storage/base/Project';
-import KnexProject from '../../../src/storage/knex/KnexProject';
+import BrowserClient from '../../../src/browserclient/BrowserClient';
+import Storage from '../../../src/storage/base/Storage';
 
 describe('Scraper', () => {
   let sandbox:SinonSandbox;
@@ -14,9 +13,11 @@ describe('Scraper', () => {
 
   beforeEach(() => {
     sandbox = createSandbox();
-    storage = sandbox.createStubInstance(KnexStorage);
-    storage.Project = KnexProject;
-    browserClient = sandbox.createStubInstance(PuppeteerClient);
+    storage = <Storage>{};
+    storage.connect = sandbox.stub();
+    storage.Project = <Project>{};
+    browserClient = <BrowserClient>{};
+    browserClient.launch = sandbox.stub();
     scraper = new Scraper(storage, browserClient);
   });
 
@@ -68,7 +69,11 @@ describe('Scraper', () => {
       ],
     };
 
-    const saveStub = stub(KnexProject.prototype, 'save');
+    const saveStub = sandbox.stub();
+    storage.Project = sandbox.stub().callsFake(
+      () => ({ save: saveStub, ...expectedProject }),
+    );
+
     const preScrapeProject = await scraper.initProject({
       url: 'http://a.com/index.html',
       scenario: 'static',
@@ -76,6 +81,6 @@ describe('Scraper', () => {
     });
 
     assert.isTrue(saveStub.calledOnce);
-    assert.deepEqual(preScrapeProject, expectedProject);
+    assert.deepOwnInclude(preScrapeProject, expectedProject);
   });
 });
