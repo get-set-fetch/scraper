@@ -1,5 +1,14 @@
 import pino, { Logger, Bindings, DestinationStream, LoggerOptions } from 'pino';
 
+const defaultOpts:LoggerOptions = {
+  base: null,
+  level: 'warn',
+  redact: {
+    paths: [ 'data' ],
+    censor: '<Buffer> not included',
+  },
+};
+
 export class LogWrapper {
   /** pino */
   logger: Logger;
@@ -48,10 +57,10 @@ export class LogWrapper {
   }
 
   setLogger(opts?: LoggerOptions, stream?: DestinationStream) {
-    const fullOpts = opts || {};
-    if (fullOpts && !Object.prototype.hasOwnProperty.call(fullOpts, 'base')) {
-      fullOpts.base = null;
-    }
+    const fullOpts = {
+      ...defaultOpts,
+      ...opts,
+    };
 
     this.logger = pino(fullOpts, stream);
     Array.from(this.children.keys()).forEach(module => {
@@ -61,7 +70,7 @@ export class LogWrapper {
   }
 }
 
-const logWrapper = new LogWrapper(pino({ level: 'warn', base: null }));
+const logWrapper = new LogWrapper(pino(defaultOpts));
 
 /**
  * Returns either the main logger or a child one if a module is specified
