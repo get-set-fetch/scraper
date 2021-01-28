@@ -1,4 +1,10 @@
 /** Provides a common API to interact with various browser clients. */
+
+export type BaseResponse = {
+  status(): number;
+  url(): string;
+  request(): {}
+}
 export default abstract class BrowserClient {
   isLaunched: boolean;
   opts: {
@@ -14,7 +20,16 @@ export default abstract class BrowserClient {
   abstract launch():Promise<void>;
   abstract close():Promise<void>;
   abstract closePage():Promise<void>;
-  abstract evaluate(fnc, ...args):Promise<any>;
-  abstract goto(url: string, opts):Promise<any>;
+
+  /*
+  puppeteer supports evaluate with multiple arguments
+  playwright supports evaluate with a single argument object
+  use object destructuring to support both APIs
+  */
+  abstract evaluate(fnc, argObj?):Promise<any>;
+
+  abstract getRedirectResponse(req):Promise<BaseResponse|null>;
+
+  abstract goto(url: string, opts):Promise<BaseResponse>;
   abstract getUrl():string;
 }

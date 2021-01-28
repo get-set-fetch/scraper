@@ -130,7 +130,7 @@ export default class FetchPlugin extends Plugin {
     const contentType:string = await client.evaluate(() => document.contentType);
 
     if (/html/.test(contentType) && this.opts.stabilityCheck > 0) {
-      const stabilityStatus:DomStabilityStatus = await client.evaluate(waitForDomStability, this.opts.stabilityCheck, this.opts.stabilityTimeout);
+      const stabilityStatus:DomStabilityStatus = await client.evaluate(waitForDomStability, { stabilityCheck: this.opts.stabilityCheck, stabilityTimeout: this.opts.stabilityTimeout });
       if (stabilityStatus !== DomStabilityStatus.Stable) {
         throw new Error(`DOM not stable after stabilityTimeout of ${this.opts.stabilityTimeout}`);
       }

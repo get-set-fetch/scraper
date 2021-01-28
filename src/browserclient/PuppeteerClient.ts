@@ -1,17 +1,17 @@
-import { Browser, LaunchOptions, launch as plaunch, Page, DirectNavigationOptions } from 'puppeteer';
+import { Browser, LaunchOptions, launch as plaunch, Page, DirectNavigationOptions, Response, Request } from 'puppeteer';
+import { getLogger } from '../logger/Logger';
 import BrowserClient from './BrowserClient';
 
 /** Puppeteer Client.  */
 export default class PuppeteerClient extends BrowserClient {
+  logger = getLogger('PuppeteerClient');
+
   browser: Browser;
   page: Page;
   opts: LaunchOptions;
 
   constructor(opts:LaunchOptions = {}) {
-    const defaultOpts:LaunchOptions = {
-      headless: true,
-    };
-    super(Object.assign(defaultOpts, opts));
+    super({ headlesss: true, ...opts });
   }
 
   async launch():Promise<void> {
@@ -27,8 +27,13 @@ export default class PuppeteerClient extends BrowserClient {
     this.isLaunched = false;
   }
 
-  async goto(url: string, opts: DirectNavigationOptions) {
+  async goto(url: string, opts: DirectNavigationOptions):Promise<Response> {
     return this.page.goto(url, opts);
+  }
+
+  async getRedirectResponse(req:Request):Promise<Response|null> {
+    const redirectChain = req.redirectChain();
+    return redirectChain.length > 0 ? redirectChain[0].response() : null;
   }
 
   getUrl() {
@@ -42,7 +47,8 @@ export default class PuppeteerClient extends BrowserClient {
     }
   }
 
-  evaluate(pageFunction, ...args):any {
-    return this.page.evaluate(pageFunction, ...args);
+  evaluate(pageFunction, argObj?) {
+    this.logger.trace({ pageFunction: pageFunction.toString(), argObj }, 'evaluate call');
+    return this.page.evaluate(pageFunction, argObj);
   }
 }

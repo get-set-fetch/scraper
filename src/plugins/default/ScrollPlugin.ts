@@ -78,7 +78,7 @@ export default class ScrollPlugin extends Plugin {
     await new Promise(resolve => setTimeout(resolve, this.opts.delay));
 
     // start listening to DOM changes
-    const stabilityStatusPromise = waitForDomStability(this.opts.stabilityCheck, this.opts.stabilityTimeout);
+    const stabilityStatusPromise = waitForDomStability({ stabilityCheck: this.opts.stabilityCheck, stabilityTimeout: this.opts.stabilityTimeout });
 
     // actual scrolling action
     window.scrollTo(0, document.body.scrollHeight);
