@@ -73,6 +73,8 @@
     "sqlite3": "^5.0.0",
     "mysql": "^2.18.1",
     "pg": "^8.5.1",
+    "playwright-chromium": "^1.8.0",
+    "playwright-core": "^1.8.0",
     "puppeteer": "^5.3.1"
   },
   "dependencies": {
