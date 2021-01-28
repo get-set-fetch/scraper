@@ -5,6 +5,7 @@ import Resource from '../../storage/base/Resource';
 import BrowserClient from '../../browserclient/BrowserClient';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
 import * as MimeTypes from '../../export/MimeTypes.json';
+import { getLogger } from '../../logger/Logger';
 
 /** Opens html resources in a browser tab. Downloads binary resources. */
 export default class FetchPlugin extends Plugin {
@@ -30,6 +31,7 @@ export default class FetchPlugin extends Plugin {
     } as const;
   }
 
+  logger = getLogger('FetchPlugin');
   opts: SchemaType<typeof FetchPlugin.schema>;
 
   constructor(opts:SchemaType<typeof FetchPlugin.schema> = {}) {
