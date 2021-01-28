@@ -72,6 +72,17 @@ export default abstract class Resource extends Entity {
   get dbCols() {
     return [ 'id', 'projectId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'status', 'contentType', 'content', 'data', 'parent' ];
   }
+
+  toExecJSON() {
+    const jsonObj = { ...this.toJSON() };
+
+    /*
+    plugins running in DOM don't need the resource binary content
+    it's not worth passing it from node to DOM since it can take lots of memory
+    */
+    delete jsonObj.data;
+
+    return jsonObj;
   }
 }
 

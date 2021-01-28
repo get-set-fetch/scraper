@@ -58,7 +58,7 @@ export default abstract class Project extends Entity {
     return [ 'id', 'name', 'url', 'pluginOpts' ];
   }
 
-  async toJSONAsync() {
+  async toExecJSON() {
     const jsonObj = this.toJSON();
     const resourceCount = await this.countResources();
     return { ...jsonObj, resourceCount };

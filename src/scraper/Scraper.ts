@@ -299,9 +299,9 @@ export default class Scraper {
 
            // execute plugin
            let result;
-           const isApplicable = await window.${pluginInstanceName}.test(${JSON.stringify((await project.toJSONAsync()))}, ${JSON.stringify(resource)});
+           const isApplicable = await window.${pluginInstanceName}.test(${JSON.stringify((await project.toExecJSON()))}, ${JSON.stringify(resource.toExecJSON())});
            if (isApplicable) {
-             result = await window.${pluginInstanceName}.apply(${JSON.stringify(project)}, ${JSON.stringify(resource)});
+             result = await window.${pluginInstanceName}.apply(${JSON.stringify(project)}, ${JSON.stringify(resource.toExecJSON())});
            }
 
            return result;
