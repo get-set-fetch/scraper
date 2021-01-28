@@ -75,34 +75,52 @@ export default class FetchPlugin extends Plugin {
       await client.goto(new URL('/', resource.url).toString(), { waitUntil: 'load' });
     }
 
-    const serializedBlob:{binaryString: string, contentType: string} = await client.evaluate(
-      (url: string, opts:RequestInit) => new Promise(async (resolve, reject) => {
+    const { binaryString, headers }:{binaryString: string, headers: {[key: string]: string}} = await client.evaluate(
+      ({ url, opts }:{url: string, opts:RequestInit}) => new Promise(async (resolve, reject) => {
         try {
           const response = await fetch(url, { method: 'GET', credentials: 'include', ...opts });
-          if (response.blob) {
+          const { headers } = response;
+
+          // Headers instance toJSON() produces an empty obj, manually serialize
+          const headerObj = Array.from(headers.keys()).reduce(
+            (acc, k) => Object.assign(acc, { [k.toLowerCase()]: headers.get(k) }),
+            {},
+          );
+          const isHtml = /html/.test(headerObj['content-type']);
+
+          if (!isHtml) {
             const blob = await response.blob();
             const reader = new FileReader();
             reader.readAsBinaryString(blob);
-            reader.onload = () => resolve({ binaryString: reader.result, contentType: blob.type });
+            reader.onload = () => {
+              resolve({ binaryString: reader.result, headers: headerObj });
+            };
             reader.onerror = () => {
               throw Error('error reading binary string');
             };
           }
           else {
-            resolve({ contentType: response.headers.get('Content-Type') });
+            resolve({ headers: headerObj });
           }
         }
         catch (err) {
           reject(err);
         }
       }),
-      resource.url, opts,
+      { url: resource.url, opts },
     );
 
-    return {
-      data: Buffer.from(serializedBlob.binaryString, 'binary'),
-      contentType: serializedBlob.contentType,
+    this.logger.trace(headers, 'retrieved FETCH headers');
+
+    const result:Partial<Resource> = {
+      contentType: headers['content-type'],
     };
+
+    if (binaryString) {
+      result.data = Buffer.from(binaryString, 'binary');
+    }
+
+    return result;
   }
 
   async openInTab(resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
