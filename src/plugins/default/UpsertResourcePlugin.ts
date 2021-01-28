@@ -21,13 +21,6 @@ export default class UpsertResourcePlugin extends Plugin {
     await this.saveResource(resource);
 
     /*
-    if the resource was redirected
-      - current resource has the final url
-      - save the initial url under a new resource to avoid future redirects on the same url
-    */
-    await this.addRedirectOriginResource(project, resource.redirectOrigin);
-
-    /*
     after a resource is updated, remove its dynamic actions
     this allows for other dynamic plugins to be triggered
     */
@@ -48,20 +41,5 @@ export default class UpsertResourcePlugin extends Plugin {
     else {
       await resource.save();
     }
-  }
-
-  async addRedirectOriginResource(project:Project, redirectOrigin:string) {
-    if (!redirectOrigin) return;
-
-    // check if origin resource already present
-    const storedResource = await project.getResource(redirectOrigin);
-    if (storedResource) return;
-
-    const redirectOriginResource: Partial<Resource> = {
-      url: redirectOrigin,
-      scrapedAt: new Date(Date.now()),
-    };
-
-    await project.saveResources([ redirectOriginResource ]);
   }
 }

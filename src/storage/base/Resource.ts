@@ -37,12 +37,6 @@ export default abstract class Resource extends Entity {
   /** not stored, populated by the ExtractUrlsPlugin and saved as new resources by the InsertResourcesPlugin */
   resourcesToAdd: Partial<Resource>[];
 
-  /**
-   * not stored, in case of redirect the resource is updated with the final url,
-   * need to save a separate "empty" resource with the initial url to avoid re-scraping it
-   */
-  redirectOrigin: string;
-
   constructor(kwArgs: Partial<Resource> = {}) {
     super(kwArgs);
 

@@ -125,6 +125,20 @@ export default class FetchPlugin extends Plugin {
 
   async openInTab(resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
     const response = await client.goto(resource.url, { waitUntil: 'networkidle0' });
+    const redirectResponse = await client.getRedirectResponse(response.request());
+
+    /*
+    redirect detected
+    for the current resource return redirect status
+    also add the final url as a new resource to be scraped
+    don't return contentType as many plugin use it as testing condition and we don't want the original redirect url to be scraped
+    */
+    if (redirectResponse) {
+      return {
+        status: redirectResponse.status(),
+        resourcesToAdd: [ { url: response.url() } ],
+      };
+    }
 
     // to do add response status handling, 4xx, 5xx, for now assume it's 200
     const contentType:string = await client.evaluate(() => document.contentType);
@@ -136,10 +150,7 @@ export default class FetchPlugin extends Plugin {
       }
     }
 
-    // in case of redirects also return the updated resource url
-    return response.url() === resource.url
-      ? { contentType }
-      : { contentType, url: response.url(), redirectOrigin: resource.url };
+    return { contentType };
   }
 
   isCorsActive(originUrl: string, toBeFetchedUrl: string):boolean {
