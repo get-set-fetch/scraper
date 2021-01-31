@@ -47,6 +47,7 @@ An ordered list of plugins (builtin or custom) are executed against each to be s
   * [PDF Extraction](#pdf-extraction)
   * [Infinite Scrolling](#infinite-scrolling)
   * [Custom Plugins](#custom-plugins)
+- [Changelog](changelog.md)
 - [Browser Extension](#browser-extension)
 
 ## Getting Started
