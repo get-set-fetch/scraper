@@ -74,7 +74,7 @@ jobs:
       run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
     - name: ${{ matrix.storage_label }} - Puppeteer - Chromium acceptance tests
-      run: npx --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
+      run: npx mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
 
     - name: ${{ matrix.storage_label }} down
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
