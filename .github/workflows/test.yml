@@ -21,7 +21,14 @@ jobs:
       run: npm ci
 
     - name: Non-storage unit tests
-      run: npm run test:unit:non-storage
+      run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: non_storage_unit_tests
+        parallel: true
 
   storage_with_puppeteer:
     name: Puppeteer - Chromium - ${{ matrix.storage_label }}
@@ -64,14 +71,20 @@ jobs:
       run: npm install puppeteer --save
 
     - name: ${{ matrix.storage_label }} unit tests
-      run: npx mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
+      run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
     - name: ${{ matrix.storage_label }} - Puppeteer - Chromium acceptance tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
+      run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
 
     - name: ${{ matrix.storage_label }} down
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
      
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: ${{ matrix.storage_label }}
+        parallel: true
 
   clients_with_sqlite:
     name: ${{ matrix.client_label }} - Sqlite3
@@ -102,4 +115,23 @@ jobs:
       run: npm install ${{ matrix.npm_deps }} --save
 
     - name: Sqlite3 - ${{ matrix.client_label }} acceptance tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
+      run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: ${{ matrix.client_label }}
+        parallel: true
+
+  clients_with_sqlite:
+    name: Finish
+    runs-on: ubuntu-18.04
+    needs: [storage_with_puppeteer, clients_with_sqlite]
+    
+    steps:
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        parallel-finished: true
