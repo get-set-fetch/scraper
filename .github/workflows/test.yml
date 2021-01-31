@@ -42,7 +42,7 @@ jobs:
         include:
           - storage: sqlite
             storage_label: Sqlite3
-            npm_deps: knex sqlite3
+            npm_deps: knex sqlite3@4
             docker_file: 
           - storage: mysql
             storage_label: MySQL
@@ -109,7 +109,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Install Sqlite3 peer dependencies
-      run: npm install knex sqlite3 --save
+      run: npm install knex sqlite3@4 --save
 
     - name: Install ${{ matrix.client_label }}
       run: npm install ${{ matrix.npm_deps }} --save
