@@ -34,14 +34,17 @@ jobs:
         storage: [Sqlite3, MySQL, PostgreSQL]
         include:
           - storage: Sqlite3
-            npmdeps: knex sqlite3
+            npm_deps: knex sqlite3
             test: sqlite
+            docker_file: 
           - storage: MySQL
-            npmdeps: knex mysql
+            npm_deps: knex mysql
             test: mysql
+            docker_file: ./test/config/storage/mysql/mysql.yml 
           - storage: PostgreSQL
-            npmdeps: knex pg
+            npm_deps: knex pg
             test: pg
+            docker_file: ./test/config/storage/pg/pg.yml 
 
     steps:
     - uses: actions/checkout@v2
@@ -49,10 +52,14 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 14.x
+
+    - name: ${{ matrix.storage }} up
+      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
+      
     - name: Install dependencies
       run: npm ci
     - name: Install ${{ matrix.storage }} peer dependencies
-      run: npm install ${{ matrix.npmdeps }} --save
+      run: npm install ${{ matrix.npm_deps }} --save
     - name: Install Puppeteer
       run: npm install puppeteer --save
 
@@ -61,6 +68,10 @@ jobs:
 
     - name: ${{ matrix.storage }} - Puppeteer - Chromium acceptance tests
       run: npx mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.test }}-puppeteer-chromium.ts\"
+
+    - name: ${{ matrix.storage }} down
+      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
+     
 
   playwright_chromium:
     name: Sqlite3 - Playwright - Chromium
