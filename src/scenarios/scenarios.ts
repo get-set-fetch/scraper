@@ -22,7 +22,7 @@ const scenarios: Scenarios = {
  * @param defaultOpts - default starting options
  * @param customOpts - override options
  */
-const mergePluginOpts = (defaultOpts: PluginOpts[], customOpts: PluginOpts[]):PluginOpts[] => {
+const mergePluginOpts = (defaultOpts: PluginOpts[], customOpts: PluginOpts[] = []):PluginOpts[] => {
   const mergeOpts:PluginOpts[] = [ ...defaultOpts ];
   customOpts.forEach(pluginCustomOpts => {
     if (pluginCustomOpts.before) {
