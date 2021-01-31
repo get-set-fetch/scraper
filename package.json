@@ -41,7 +41,7 @@
     "url": "https://github.com/get-set-fetch/scraper.git"
   },
   "devDependencies": {
-    "@get-set-fetch/test-utils": "git+https://github.com/get-set-fetch/test-utils.git",
+    "@get-set-fetch/test-utils": "^0.3.4",
     "@mozilla/readability": "^0.4.0",
     "@types/chai": "^4.2.13",
     "@types/json-schema": "^7.0.6",
