@@ -102,4 +102,4 @@ jobs:
       run: npm install ${{ matrix.npm_deps }} --save
 
     - name: Sqlite3 - ${{ matrix.client_label }} acceptance tests
-       run: npx mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
+      run: npx mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
