@@ -124,7 +124,7 @@ jobs:
         flag-name: ${{ matrix.client_label }}
         parallel: true
 
-  clients_with_sqlite:
+  finish:
     name: Finish
     runs-on: ubuntu-18.04
     needs: [storage_with_puppeteer, clients_with_sqlite]
