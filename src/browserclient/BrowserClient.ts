@@ -3,7 +3,8 @@
 export type BaseResponse = {
   status(): number;
   url(): string;
-  request(): {}
+  request(): {};
+  ok(): boolean;
 }
 export default abstract class BrowserClient {
   isLaunched: boolean;
