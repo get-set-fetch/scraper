@@ -1,13 +1,9 @@
 <img src="https://get-set-fetch.github.io/get-set-fetch/logo.png">
 
-<p align="left">
-  <a href="https://github.com/get-set-fetch/scraper/actions?query=workflow%3Aaudit">
-    <img alt="audit status" src="https://github.com/get-set-fetch/scraper/workflows/audit/badge.svg">
-  </a>
-  <a href="https://github.com/get-set-fetch/scraper/actions?query=workflow%3Atest">
-    <img alt="test status" src="https://github.com/get-set-fetch/scraper/workflows/test/badge.svg">
-  </a>
-</p>
+[![License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/get-set-fetch/scraper/blob/main/LICENSE)
+[![Audit Status](https://github.com/get-set-fetch/scraper/workflows/audit/badge.svg)](https://github.com/get-set-fetch/scraper/actions?query=workflow%3Aaudit)
+[![Build Status](https://github.com/get-set-fetch/scraper/workflows/test/badge.svg)](https://github.com/get-set-fetch/scraper/actions?query=workflow%3Atest)
+[![Coverage Status](https://coveralls.io/repos/github/get-set-fetch/scraper/badge.svg?branch=main)](https://coveralls.io/github/get-set-fetch/scraper?branch=main)
 
 # Node.js web scraper
 
