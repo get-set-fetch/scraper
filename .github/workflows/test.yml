@@ -23,27 +23,27 @@ jobs:
     - name: Non-storage unit tests
       run: npm run test:unit:non-storage
 
-  puppeteer_chromium:
-    name: Puppeteer - Chromium - ${{ matrix.storage }}
+  storage_with_puppeteer:
+    name: Puppeteer - Chromium - ${{ matrix.storage_label }}
     runs-on: ubuntu-18.04
     needs: non_storage
 
     strategy:
       fail-fast: false
       matrix:
-        storage: [Sqlite3, MySQL, PostgreSQL]
+        storage: [sqlite, mysql, pg]
         include:
-          - storage: Sqlite3
+          - storage: sqlite
+            storage_label: Sqlite3
             npm_deps: knex sqlite3
-            test: sqlite
             docker_file: 
-          - storage: MySQL
+          - storage: mysql
+            storage_label: MySQL
             npm_deps: knex mysql
-            test: mysql
             docker_file: ./test/config/storage/mysql/mysql.yml 
-          - storage: PostgreSQL
+          - storage: pg
+            storage_label: PostgreSQL
             npm_deps: knex pg
-            test: pg
             docker_file: ./test/config/storage/pg/pg.yml 
 
     steps:
@@ -53,30 +53,39 @@ jobs:
       with:
         node-version: 14.x
 
-    - name: ${{ matrix.storage }} up
+    - name: ${{ matrix.storage_label }} up
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
       
     - name: Install dependencies
       run: npm ci
-    - name: Install ${{ matrix.storage }} peer dependencies
+    - name: Install ${{ matrix.storage_label }} peer dependencies
       run: npm install ${{ matrix.npm_deps }} --save
     - name: Install Puppeteer
       run: npm install puppeteer --save
 
-    - name: ${{ matrix.storage }} unit tests
-      run: npx mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.test }}-unit-suite.ts\"
+    - name: ${{ matrix.storage_label }} unit tests
+      run: npx mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
-    - name: ${{ matrix.storage }} - Puppeteer - Chromium acceptance tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.test }}-puppeteer-chromium.ts\"
+    - name: ${{ matrix.storage_label }} - Puppeteer - Chromium acceptance tests
+      run: npx mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
 
-    - name: ${{ matrix.storage }} down
+    - name: ${{ matrix.storage_label }} down
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
      
 
-  playwright_chromium:
-    name: Sqlite3 - Playwright - Chromium
+  clients_with_sqlite:
+    name: ${{ matrix.client_label }} - Sqlite3
     runs-on: ubuntu-18.04
     needs: non_storage
+
+    strategy:
+      fail-fast: false
+      matrix:
+        client: [playwright-chromium]
+        include:
+          - client: playwright-chromium
+            client_label: Playwright - Chromium
+            npm_deps: playwright-core playwright-chromium
 
     steps:
     - uses: actions/checkout@v2
@@ -88,8 +97,9 @@ jobs:
       run: npm ci
     - name: Install Sqlite3 peer dependencies
       run: npm install knex sqlite3 --save
-    - name: Install Playwright
-      run: npm install playwright-core playwright-chromium --save
 
-    - name: Sqlite3 - Puppeteer - Chromium acceptance tests
-      run: npm run test:acceptance:sqlite-playwright-chromium
+    - name: Install ${{ matrix.client_label }}
+      run: npm install ${{ matrix.npm_deps }} --save
+
+    - name: Sqlite3 - ${{ matrix.client_label }} acceptance tests
+       run: npx mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
