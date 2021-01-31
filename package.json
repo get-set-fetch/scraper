@@ -24,12 +24,7 @@
     "test:single:acceptance": "mocha --config test/.mocharc.js \"test/acceptance/sqlite-puppeteer-chromium.ts\" --grep \"sqlite3 - PuppeteerClient - Chromium - Dynamic - Scroll\"",
     "test:unit:non-storage": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* ",
     "test:unit:sqlite": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite-unit-suite.ts\"",
-    "test:acceptance:sqlite-puppeteer-chromium": "mocha --config test/.mocharc.js \"test/acceptance/sqlite-puppeteer-chromium.ts\"",
-    "test:acceptance:sqlite-playwright-chromium": "mocha --config test/.mocharc.js \"test/acceptance/sqlite-playwright-chromium.ts\"",
-    "test:unit:mysql": "mocha --config test/.mocharc.js \"test/unit/storage/mysql-unit-suite.ts\"",
-    "test:acceptance:mysql-puppeteer-chromium": "mocha --config test/.mocharc.js \"test/acceptance/mysql-puppeteer-chromium.ts\"",
-    "test:unit:pg": "mocha --config test/.mocharc.js \"test/unit/storage/pg-unit-suite.ts\"",
-    "test:acceptance:pg-puppeteer-chromium": "mocha --config test/.mocharc.js \"test/acceptance/pg-puppeteer-chromium.ts\"",
+    "test:acceptance:sqlite-puppeteer-chromium": "nyc mocha --config test/.mocharc.js \"test/acceptance/sqlite-puppeteer-chromium.ts\"",
     "example": "ts-node  examples/custom-plugin-readability.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json"
   },
