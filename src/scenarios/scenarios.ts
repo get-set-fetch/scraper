@@ -1,5 +1,6 @@
 import { PluginOpts } from '../plugins/Plugin';
 import BrowserStaticContentScenario from './BrowserStaticContentScenario';
+import DomStaticContentScenario from './DomStaticContentScenario';
 
 interface IScenario {
   defaultPluginOpts:PluginOpts[];
@@ -15,6 +16,7 @@ export type Scenarios = {
  */
 const scenarios: Scenarios = {
   'browser-static-content': BrowserStaticContentScenario,
+  'dom-static-content': DomStaticContentScenario,
 };
 
 /**
