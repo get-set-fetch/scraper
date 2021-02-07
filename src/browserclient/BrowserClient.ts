@@ -5,9 +5,19 @@ export type BaseResponse = {
   url(): string;
   request(): {};
   ok(): boolean;
+  headers();
 }
+
 export default abstract class BrowserClient {
+  /**
+   * whether or not the browser is launched
+   */
   isLaunched: boolean;
+
+  /**
+   * options for launching the browser
+   * if not specified {headless: true} is added
+   */
   opts: {
     browser?: string;
     [key: string]:any;

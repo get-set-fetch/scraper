@@ -61,7 +61,7 @@ export default class PlaywrightClient extends BrowserClient {
     this.isLaunched = false;
   }
 
-  async goto(url: string, opts: DirectNavigationOptions):Promise<Response> {
+  goto(url: string, opts: DirectNavigationOptions):Promise<Response> {
     return this.page.goto(url, opts);
   }
 
