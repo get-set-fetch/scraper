@@ -20,6 +20,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Install dom clients
+      run: npm install cheerio
+
     - name: Non-storage unit tests
       run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
 
@@ -94,11 +97,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        client: [playwright-chromium]
+        client: [playwright-chromium, cheerio]
         include:
           - client: playwright-chromium
             client_label: Playwright - Chromium
             npm_deps: playwright-core playwright-chromium
+          - client: cheerio
+            client_label: Cheerio
+            npm_deps: cheerio
 
     steps:
     - uses: actions/checkout@v2
@@ -117,8 +123,8 @@ jobs:
     - name: Sqlite3 - ${{ matrix.client_label }} acceptance tests
       run: npx mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
 
-  finish:
-    name: Finish
+  coverage:
+    name: Coverage
     runs-on: ubuntu-18.04
     needs: [storage_with_puppeteer, clients_with_sqlite]
     
