@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 /* eslint-disable no-param-reassign */
 import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
@@ -39,6 +40,18 @@ export default class UpsertResourcePlugin extends Plugin {
     await this.saveResource(resource);
 
     /*
+    update other impacted resources
+    ex1:
+      in case of browser redirect the resource initial url it's updated with the redirect location one
+      a resource with redirect status and initial url needs to be added so we don't keep visiting it
+    */
+    const impactedResources = resource.resourcesToAdd ? resource.resourcesToAdd.filter(resource => resource.status) : [];
+    for (let i = 0; i < impactedResources.length; i += 1) {
+      this.logger.debug(impactedResources[i], 'save impacted resource');
+      await this.saveResource(project.createResource(impactedResources[i]));
+    }
+
+    /*
     after a resource is updated, remove its dynamic actions
     this allows for other dynamic plugins to be triggered
     */
@@ -60,7 +73,11 @@ export default class UpsertResourcePlugin extends Plugin {
       await resource.update();
     }
 
-    // dynamic resources are found and scraped on the fly starting from an already scraped static resource, do save
+    /*
+    do save when:
+      dynamic resources are found and scraped on the fly starting from an already scraped static resource
+      impacted resources (redirect related) need to be recorded
+    */
     else {
       await resource.save();
     }
