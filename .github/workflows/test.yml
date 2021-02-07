@@ -71,7 +71,7 @@ jobs:
     - name: Install ${{ matrix.storage_label }} peer dependencies
       run: npm install ${{ matrix.npm_deps }} --save
     - name: Install Puppeteer
-      run: npm install puppeteer --save
+      run: npm install puppeteer@5.5.0 --save
 
     - name: ${{ matrix.storage_label }} unit tests
       run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
