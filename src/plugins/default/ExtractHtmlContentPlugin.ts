@@ -2,6 +2,8 @@ import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
+import { IDomClientConstructor, IDomNode } from '../../domclient/DomClient';
+import NativeClient from '../../domclient/NativeClient';
 
 /** Scrapes html content based on CSS selectors. Runs in browser. */
 export default class ExtractHtmlContentPlugin extends Plugin {
@@ -13,7 +15,6 @@ export default class ExtractHtmlContentPlugin extends Plugin {
       properties: {
         domRead: {
           type: 'boolean',
-          const: true,
           default: true,
         },
         selectorPairs: {
@@ -46,6 +47,8 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   /** in case of dynamic resource, content already scraped */
   content: Set<string>;
 
+  document: IDomNode;
+
   constructor(opts:SchemaType<typeof ExtractHtmlContentPlugin.schema> = {}) {
     super(opts);
 
@@ -61,7 +64,9 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     return (/html/i).test(resource.contentType);
   }
 
-  apply() {
+  apply(project: Project, resource: Resource, DomClient?: IDomClientConstructor) {
+    this.document = DomClient ? new DomClient(resource.data) : new NativeClient(document.querySelector('body'));
+
     const currentContent = this.extractContent();
     const content = this.diffAndMerge(currentContent);
     return { content };
@@ -74,7 +79,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     let selectorBase = null;
     if (this.opts.selectorPairs.length > 1) {
       const potentialSelectorBase = this.getSelectorBase(this.opts.selectorPairs);
-      if (potentialSelectorBase && Array.from(document.querySelectorAll(potentialSelectorBase)).length > 0) {
+      if (potentialSelectorBase && this.document.querySelectorAll(potentialSelectorBase).length > 0) {
         selectorBase = potentialSelectorBase;
       }
     }
@@ -85,15 +90,15 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     */
     if (selectorBase) {
       const suffixSelectors = this.opts.selectorPairs.map(selectorPair => selectorPair.contentSelector.replace(selectorBase, '').trim());
-      content = Array.from(document.querySelectorAll(selectorBase)).reduce(
-        (rows: string[][], baseElm: HTMLElement) => {
+      content = this.document.querySelectorAll(selectorBase).reduce(
+        (rows: string[][], baseElm: IDomNode) => {
           const contentBySelector:string[][] = Array(suffixSelectors.length).fill(0).map(() => []);
           for (let i = 0; i < suffixSelectors.length; i += 1) {
             const suffixSelector = suffixSelectors[i];
             const { contentProperty } = this.opts.selectorPairs[i];
 
-            contentBySelector[i] = Array.from(baseElm.querySelectorAll(suffixSelector))
-              .map(elm => this.getContent((elm as HTMLElement), contentProperty))
+            contentBySelector[i] = baseElm.querySelectorAll(suffixSelector)
+              .map(elm => elm.getAttribute(contentProperty))
               .filter(val => val);
           }
 
@@ -114,9 +119,8 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     // no common base detected
     else {
       const contentBySelector: string[][] = this.opts.selectorPairs.map(
-        selectorPair => Array
-          .from(document.querySelectorAll(selectorPair.contentSelector))
-          .map(elm => this.getContent(elm as HTMLElement, selectorPair.contentProperty)),
+        selectorPair => this.document.querySelectorAll(selectorPair.contentSelector)
+          .map(elm => elm.getAttribute(selectorPair.contentProperty)),
       );
 
       content = this.transformToContentRows(contentBySelector);
@@ -138,10 +142,6 @@ export default class ExtractHtmlContentPlugin extends Plugin {
       selectorBase = checkBase;
     }
     return selectorBase;
-  }
-
-  getContent(elm: HTMLElement, prop: string):string {
-    return elm[prop] !== undefined ? elm[prop] : elm.getAttribute(prop);
   }
 
   getContentKeys() {

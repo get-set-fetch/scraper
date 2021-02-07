@@ -1,15 +1,28 @@
+/* eslint-disable prefer-spread */
 import { assert } from 'chai';
-import { createSandbox } from 'sinon';
+import { createSandbox, SinonSandbox } from 'sinon';
 import ExtractHtmlContentPlugin from '../../../src/plugins/default/ExtractHtmlContentPlugin';
+import Resource from '../../../src/storage/base/Resource';
 
 describe('ExtractHtmlContentPlugin', () => {
-  let sandbox;
+  let sandbox:SinonSandbox;
   let stubQuerySelectorAll;
   let plugin: ExtractHtmlContentPlugin;
 
+  function nodes(elms: any[]) {
+    return elms.map(elm => Object.assign(elm, { getAttribute: () => null }));
+  }
+
   beforeEach(() => {
     sandbox = createSandbox();
+
     stubQuerySelectorAll = sandbox.stub(document, 'querySelectorAll');
+    sandbox.stub(document, 'querySelector').withArgs('body').returns(
+      <any>{
+        querySelectorAll: stubQuerySelectorAll,
+        getAttribute: () => null,
+      },
+    );
   });
 
   afterEach(() => {
@@ -42,54 +55,54 @@ describe('ExtractHtmlContentPlugin', () => {
   it('extract html content, single selector', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' } ] });
 
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
       { innerText: 'h1 valB' },
-    ]);
+    ]));
 
     const expectedContent = [
       [ 'h1 valA' ],
       [ 'h1 valB' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
   it('extract html content. missing values', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' } ] });
 
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
       { innerText: 'h1 valB' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h2').returns([
-    ]);
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
+    ]));
 
     const expectedContent = [
       [ 'h1 valA', '' ],
       [ 'h1 valB', '' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
   it('extract html content - multiple selectors, duplicate values', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' } ] });
 
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
       { innerText: 'h1 valA' },
       { innerText: 'h1 valC' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h2').returns([
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
       { innerText: 'h2 valA' },
       { innerText: 'h2 valB' },
       { innerText: 'h2 valC' },
-    ]);
+    ]));
 
     const expectedContent = [
       [ 'h1 valA', 'h2 valA' ],
@@ -97,32 +110,32 @@ describe('ExtractHtmlContentPlugin', () => {
       [ 'h1 valC', 'h2 valC' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
   it('extract html content - multiple selectors, different result length', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' }, { contentSelector: 'h3' } ] });
 
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
       { innerText: 'h1 valB' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h2').returns([
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
       { innerText: 'h2 valA' },
       { innerText: 'h2 valB' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h3').returns([
-    ]);
+    stubQuerySelectorAll.withArgs('h3').returns(nodes([
+    ]));
 
     const expectedContent = [
       [ 'h1 valA', 'h2 valA', '' ],
       [ 'h1 valB', 'h2 valB', '' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
@@ -131,7 +144,7 @@ describe('ExtractHtmlContentPlugin', () => {
       { selectorPairs: [ { contentSelector: '[class|="top"] h1' }, { contentSelector: '[class|="top"] h2' }, { contentSelector: '[class|="top"] h3' } ] },
     );
 
-    stubQuerySelectorAll.withArgs('[class|="top"]').returns([
+    stubQuerySelectorAll.withArgs('[class|="top"]').returns(nodes([
       {
         querySelectorAll: selector => {
           switch (selector) {
@@ -146,14 +159,14 @@ describe('ExtractHtmlContentPlugin', () => {
           }
         },
       },
-    ]);
+    ]));
 
     const expectedContent = [
       [ 'h1 val1', 'h2 val1', 'h3 val1' ],
       [ 'h1 val2', 'h2 val2', 'h3 val2' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
@@ -162,11 +175,11 @@ describe('ExtractHtmlContentPlugin', () => {
       { selectorPairs: [ { contentSelector: '[class|="top"] h1' }, { contentSelector: '[class|="top"] h2' }, { contentSelector: '[class|="top"] h3' } ] },
     );
 
-    stubQuerySelectorAll.withArgs('[class|="top"]').returns([
+    stubQuerySelectorAll.withArgs('[class|="top"]').returns(nodes([
       { querySelectorAll: selector => (selector === 'h3' ? [] : [ { innerText: `${selector} valA` } ]) },
       { querySelectorAll: selector => (selector === 'h2' ? [] : [ { innerText: `${selector} valB` } ]) },
       { querySelectorAll: selector => (selector === 'h1' ? [] : [ { innerText: `${selector} valC` } ]) },
-    ]);
+    ]));
 
     const expectedContent = [
       [ 'h1 valA', 'h2 valA', '' ],
@@ -174,7 +187,7 @@ describe('ExtractHtmlContentPlugin', () => {
       [ '', 'h2 valC', 'h3 valC' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
@@ -183,18 +196,17 @@ describe('ExtractHtmlContentPlugin', () => {
       { selectorPairs: [ { contentSelector: '[class|="top"] h1' }, { contentSelector: '[class|="top"] h2' }, { contentSelector: '[class|="top"] h3' } ] },
     );
 
-    stubQuerySelectorAll.withArgs('[class|="top"]').returns([
-      { querySelectorAll: () => [] },
+    stubQuerySelectorAll.withArgs('[class|="top"]').returns(nodes([
       { querySelectorAll: selector => (selector === 'h2' ? [] : [ { innerText: `${selector} valB` } ]) },
       { querySelectorAll: selector => (selector === 'h1' ? [] : [ { innerText: `${selector} valC` } ]) },
-    ]);
+    ]));
 
     const expectedContent = [
       [ 'h1 valB', '', 'h3 valB' ],
       [ '', 'h2 valC', 'h3 valC' ],
     ];
 
-    const { content } = plugin.apply();
+    const { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
   });
 
@@ -202,20 +214,20 @@ describe('ExtractHtmlContentPlugin', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' }, { contentSelector: 'h3' } ] });
 
     // 1st apply
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h2').returns([
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
       { innerText: 'h2 valA' },
       { innerText: 'h2 valB' },
       { innerText: 'h2 valC' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h3').returns([
+    stubQuerySelectorAll.withArgs('h3').returns(nodes([
       { innerText: 'h3 valA' },
       { innerText: 'h3 valB' },
-    ]);
+    ]));
 
     let expectedContent = [
       [ 'h1 valA', 'h2 valA', 'h3 valA' ],
@@ -223,29 +235,29 @@ describe('ExtractHtmlContentPlugin', () => {
       [ 'h1 valA', 'h2 valC', 'h3 valB' ],
     ];
 
-    let { content } = plugin.apply();
+    let { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
 
     // 2nd apply
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
       { innerText: 'h1 valD' },
-    ]);
+    ]));
 
     // also add duplicate values for selector arr content
-    stubQuerySelectorAll.withArgs('h2').returns([
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
       { innerText: 'h2 valA' },
       { innerText: 'h2 valB' },
       { innerText: 'h2 valC' },
       { innerText: 'h2 valD' },
       { innerText: 'h2 valD' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h3').returns([
+    stubQuerySelectorAll.withArgs('h3').returns(nodes([
       { innerText: 'h3 valA' },
       { innerText: 'h3 valB' },
       { innerText: 'h3 valD' },
-    ]);
+    ]));
 
     expectedContent = [
       [ 'h1 valD', 'h2 valB', 'h3 valB' ],
@@ -253,7 +265,7 @@ describe('ExtractHtmlContentPlugin', () => {
       [ 'h1 valD', 'h2 valD', 'h3 valD' ],
     ];
 
-    ({ content } = plugin.apply());
+    ({ content } = plugin.apply(null, <Resource>{}));
     assert.deepEqual(content, expectedContent);
   });
 
@@ -261,48 +273,48 @@ describe('ExtractHtmlContentPlugin', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' }, { contentSelector: 'h2' }, { contentSelector: 'h3' } ] });
 
     // 1st apply
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valA' },
       { innerText: 'h1 valB' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h2').returns([
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
       { innerText: 'h2 valA' },
       { innerText: 'h2 valB' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h3').returns([
-    ]);
+    stubQuerySelectorAll.withArgs('h3').returns(nodes([
+    ]));
 
     let expectedContent = [
       [ 'h1 valA', 'h2 valA', '' ],
       [ 'h1 valB', 'h2 valB', '' ],
     ];
 
-    let { content } = plugin.apply();
+    let { content } = plugin.apply(null, <Resource>{});
     assert.deepEqual(content, expectedContent);
 
     // 2nd apply
-    stubQuerySelectorAll.withArgs('h1').returns([
+    stubQuerySelectorAll.withArgs('h1').returns(nodes([
       { innerText: 'h1 valB' },
       { innerText: 'h1 valC' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h2').returns([
+    stubQuerySelectorAll.withArgs('h2').returns(nodes([
       { innerText: 'h2 valB' },
       { innerText: 'h2 valC' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h3').returns([
+    stubQuerySelectorAll.withArgs('h3').returns(nodes([
       { innerText: '' },
       { innerText: 'h3 valC' },
-    ]);
+    ]));
 
     expectedContent = [
       [ 'h1 valC', 'h2 valC', 'h3 valC' ],
     ];
 
-    ({ content } = plugin.apply());
+    ({ content } = plugin.apply(null, <Resource>{}));
     assert.deepEqual(content, expectedContent);
   });
 
