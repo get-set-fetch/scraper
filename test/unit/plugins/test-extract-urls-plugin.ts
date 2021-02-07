@@ -10,9 +10,20 @@ describe('ExtractUrlsPlugin', () => {
   let plugin: ExtractUrlsPlugin;
   const project:Project = <Project>{ resourceCount: 0 };
 
+  function nodes(elms: any[]) {
+    return elms.map(elm => Object.assign(elm, { getAttribute: () => null }));
+  }
+
   beforeEach(() => {
     sandbox = createSandbox();
+
     stubQuerySelectorAll = sandbox.stub(document, 'querySelectorAll');
+    sandbox.stub(document, 'querySelector').withArgs('body').returns(
+      <any>{
+        querySelectorAll: stubQuerySelectorAll,
+        getAttribute: () => null,
+      },
+    );
   });
 
   afterEach(() => {
@@ -29,12 +40,12 @@ describe('ExtractUrlsPlugin', () => {
   it('extract unique urls - default options', () => {
     plugin = new ExtractUrlsPlugin();
 
-    stubQuerySelectorAll.withArgs('a[href$=".html"]').returns([
+    stubQuerySelectorAll.withArgs('a[href$=".html"]').returns(nodes([
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
       { href: 'http://sitea.com/page1.html#fragment1', innerText: 'page1' },
       { href: 'http://sitea.com/page1.html#fragment2', innerText: 'page1' },
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
-    ]);
+    ]));
 
     const expectedValidUrls = [
       {
@@ -52,15 +63,15 @@ describe('ExtractUrlsPlugin', () => {
   it('extract unique urls - include images', () => {
     plugin = new ExtractUrlsPlugin({ selectorPairs: [ { urlSelector: 'a' }, { urlSelector: 'img' } ] });
 
-    stubQuerySelectorAll.withArgs('a').returns([
+    stubQuerySelectorAll.withArgs('a').returns(nodes([
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('img').returns([
+    stubQuerySelectorAll.withArgs('img').returns(nodes([
       { src: 'http://sitea.com/img1.png', alt: 'img1' },
       { src: 'http://sitea.com/img1.png', alt: 'img1' },
-    ]);
+    ]));
 
     const expectedValidUrls = [
       {
@@ -84,15 +95,15 @@ describe('ExtractUrlsPlugin', () => {
   it('extract unique urls - include title selector', () => {
     plugin = new ExtractUrlsPlugin({ selectorPairs: [ { urlSelector: 'a', titleSelector: 'h1.title' } ] });
 
-    stubQuerySelectorAll.withArgs('a').returns([
+    stubQuerySelectorAll.withArgs('a').returns(nodes([
       { href: 'http://sitea.com/page1.html', innerText: 'export' },
       { href: 'http://sitea.com/page2.html', innerText: 'export' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('h1.title').returns([
+    stubQuerySelectorAll.withArgs('h1.title').returns(nodes([
       { innerText: 'page1 title' },
       { innerText: 'page2 title' },
-    ]);
+    ]));
 
     const expectedValidUrls = [
       {
@@ -120,25 +131,23 @@ describe('ExtractUrlsPlugin', () => {
 
     stubQuerySelectorAll.withArgs('a#id1').returns([]);
 
-    const expectedValidUrls = [];
-    // eslint-disable-next-line prefer-spread
-    const { resourcesToAdd } = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
-    assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
+    const result = plugin.apply(project, <Resource>{ url: 'http://sitea.com/index.html', depth: 1 });
+    assert.isNull(result);
   });
 
   it('extract unique urls, cumulative apply', () => {
     plugin = new ExtractUrlsPlugin({ selectorPairs: [ { urlSelector: 'a' }, { urlSelector: 'img' } ] });
 
     // 1st apply
-    stubQuerySelectorAll.withArgs('a').returns([
+    stubQuerySelectorAll.withArgs('a').returns(nodes([
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('img').returns([
+    stubQuerySelectorAll.withArgs('img').returns(nodes([
       { src: 'http://sitea.com/img1.png', alt: 'img1' },
       { src: 'http://sitea.com/img1.png', alt: 'img1' },
-    ]);
+    ]));
 
     let expectedValidUrls = [
       {
@@ -159,19 +168,19 @@ describe('ExtractUrlsPlugin', () => {
     assert.sameDeepMembers(resourcesToAdd, expectedValidUrls);
 
     // 2nd apply
-    stubQuerySelectorAll.withArgs('a').returns([
+    stubQuerySelectorAll.withArgs('a').returns(nodes([
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
       { href: 'http://sitea.com/page1.html', innerText: 'page1' },
       { href: 'http://sitea.com/page2.html', innerText: 'page2' },
       { href: 'http://sitea.com/page2.html', innerText: 'page2' },
-    ]);
+    ]));
 
-    stubQuerySelectorAll.withArgs('img').returns([
+    stubQuerySelectorAll.withArgs('img').returns(nodes([
       { src: 'http://sitea.com/img1.png', alt: 'img1' },
       { src: 'http://sitea.com/img1.png', alt: 'img1' },
       { src: 'http://sitea.com/img2.png', alt: 'img2' },
       { src: 'http://sitea.com/img2.png', alt: 'img2' },
-    ]);
+    ]));
 
     expectedValidUrls = [
       {

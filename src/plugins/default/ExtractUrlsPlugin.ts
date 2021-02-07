@@ -2,6 +2,8 @@ import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
+import { IDomClientConstructor, IDomNode } from '../../domclient/DomClient';
+import NativeClient from '../../domclient/NativeClient';
 
 /** Extracts new URLs to be scraped based on CSS selectors. Runs in browser. */
 export default class ExtractUrlsPlugin extends Plugin {
@@ -36,7 +38,6 @@ export default class ExtractUrlsPlugin extends Plugin {
         },
         domRead: {
           type: 'boolean',
-          const: true,
           default: true,
         },
       },
@@ -47,6 +48,8 @@ export default class ExtractUrlsPlugin extends Plugin {
 
   /** in case of dynamic resource, urls already added */
   prevUrls: Set<string>;
+
+  document: IDomNode;
 
   constructor(opts: SchemaType<typeof ExtractUrlsPlugin.schema> = {}) {
     super(opts);
@@ -67,14 +70,16 @@ export default class ExtractUrlsPlugin extends Plugin {
     return true;
   }
 
-  apply(project: Project, resource: Resource) {
+  apply(project: Project, resource: Resource, DomClient?: IDomClientConstructor) {
+    this.document = DomClient ? new DomClient(resource.data) : new NativeClient(document.querySelector('body'));
+
     const allResourcesToAdd: Partial<Resource>[] = this.extractResources(resource);
     const resourcesToAdd = this.diffAndMerge(allResourcesToAdd);
 
-    return { resourcesToAdd };
+    return resourcesToAdd.length > 0 ? { resourcesToAdd } : null;
   }
 
-  extractResources(resource): Partial<Resource>[] {
+  extractResources(resource:Resource): Partial<Resource>[] {
     const currentUrl = new URL(resource.url);
 
     const resources = this.opts.selectorPairs.reduce(
@@ -117,23 +122,23 @@ export default class ExtractUrlsPlugin extends Plugin {
   }
 
   extractSelectorResources(urlSelector: string, titleSelector: string): Partial<Resource>[] {
-    const titles: string[] = titleSelector ? Array.from(document.querySelectorAll(titleSelector)).map((title:HTMLElement) => title.innerText.trim()) : [];
-    const resources: Partial<Resource>[] = Array.from(document.querySelectorAll(urlSelector)).map((elm:any, idx) => {
+    const titles: string[] = titleSelector ? Array.from(this.document.querySelectorAll(titleSelector)).map((titleNode:IDomNode) => titleNode.getAttribute('innerText').trim()) : [];
+    const resources: Partial<Resource>[] = Array.from(this.document.querySelectorAll(urlSelector)).map((elm:IDomNode, idx) => {
       let resource: Partial<Resource> = null;
-      if (elm.href) {
+      if (elm.getAttribute('href')) {
         resource = {
-          url: elm.href,
+          url: elm.getAttribute('href'),
           parent: {
-            linkText: elm.innerText,
+            linkText: elm.getAttribute('innerText'),
           },
         };
       }
 
-      if (elm.src) {
+      if (elm.getAttribute('src')) {
         resource = {
-          url: elm.src,
+          url: elm.getAttribute('src'),
           parent: {
-            imgAlt: elm.alt,
+            imgAlt: elm.getAttribute('alt'),
           },
         };
       }
