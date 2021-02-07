@@ -7,4 +7,4 @@ import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
 
 const storage:Storage = new KnexStorage(pgConn);
 const browserClient = new PuppeteerClient(puppeteerChromium);
-acceptanceSuite(storage, browserClient);
+acceptanceSuite('browser-static-content', storage, browserClient);

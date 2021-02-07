@@ -6,11 +6,13 @@ import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
 import Scraper from '../../src/scraper/Scraper';
 import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
+import { IDomClientConstructor } from '../../src/domclient/DomClient';
 
-export default function acceptanceSuite(storage: Storage, browserClient:BrowserClient) {
-  const browserType = browserClient.opts.browser.charAt(0).toUpperCase() + browserClient.opts.browser.slice(1);
+export default function acceptanceSuite(scenario:string, storage: Storage, client:BrowserClient|IDomClientConstructor) {
+  const browserType = client instanceof BrowserClient ? client.opts.browser.charAt(0).toUpperCase() + client.opts.browser.slice(1) : null;
+  const clientInfo = browserType ? `${client.constructor.name} - ${browserType}` : (<Function>client).name;
 
-  describe(`acceptance suite using ${storage.config.client} - ${browserClient.constructor.name} - ${browserType}`, () => {
+  describe(`acceptance suite using ${storage.config.client} - ${clientInfo}, scenario: ${scenario}`, () => {
     let srv: GsfServer;
     let Project: IStaticProject;
 
@@ -28,7 +30,10 @@ export default function acceptanceSuite(storage: Storage, browserClient:BrowserC
     });
 
     after(async () => {
-      await browserClient.close();
+      if (client instanceof BrowserClient) {
+        await client.close();
+      }
+
       await storage.close();
       srv.stop();
     });
@@ -36,19 +41,22 @@ export default function acceptanceSuite(storage: Storage, browserClient:BrowserC
     const tests = ScrapingSuite.getTests();
 
     tests.forEach((test:IScrapingTest) => {
-      it(`${storage.config.client} - ${browserClient.constructor.name} - ${browserType} - ${test.title}`, async () => {
+      // the current test definition doesn't apply to the scenario being tested
+      if (!test.definition.scenarios.includes(scenario)) return;
+
+      it(`${storage.config.client} - ${clientInfo} - ${test.title}`, async () => {
         srv.update(test.vhosts);
 
         // save a project for the current scraping test
         const project = new Project({
           name: test.title,
           url: test.definition.url,
-          pluginOpts: mergePluginOpts(scenarios[test.definition.scenario].defaultPluginOpts, test.definition.pluginOpts),
+          pluginOpts: mergePluginOpts(scenarios[scenario].defaultPluginOpts, test.definition.pluginOpts),
         });
         await project.save();
 
         // start scraping
-        const scraper = new Scraper(storage, browserClient);
+        const scraper = new Scraper(storage, client);
         await scraper.scrape(project);
 
         // compare results

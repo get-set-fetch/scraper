@@ -7,4 +7,4 @@ import PlaywrightClient from '../../src/browserclient/PlaywrightClient';
 
 const storage:Storage = new KnexStorage(sqliteConn);
 const browserClient = new PlaywrightClient(playwrightChromium);
-acceptanceSuite(storage, browserClient);
+acceptanceSuite('browser-static-content', storage, browserClient);
