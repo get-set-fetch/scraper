@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        client: [playwright-chromium, cheerio]
+        client: [playwright-chromium, cheerio, jsdom]
         include:
           - client: playwright-chromium
             client_label: Playwright - Chromium
@@ -112,6 +112,9 @@ jobs:
           - client: cheerio
             client_label: Cheerio
             npm_deps: cheerio
+          - client: jsdom
+            client_label: JSDOM
+            npm_deps: jsdom
 
     steps:
     - uses: actions/checkout@v2

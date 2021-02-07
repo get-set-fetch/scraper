@@ -40,6 +40,7 @@
     "@mozilla/readability": "^0.4.0",
     "@types/chai": "^4.2.13",
     "@types/cheerio": "^0.22.23",
+    "@types/jsdom": "^16.2.6",
     "@types/json-schema": "^7.0.6",
     "@types/jszip": "^3.4.1",
     "@types/mocha": "^8.0.3",
@@ -68,6 +69,7 @@
   },
   "peerDependencies": {
     "cheerio": "^1.0.0-rc.5",
+    "jsdom": "^16.4.0",
     "knex": ">=0.21.0 <0.22.0",
     "sqlite3": "^5.0.0",
     "mysql": "^2.18.1",
