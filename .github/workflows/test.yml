@@ -24,7 +24,7 @@ jobs:
       run: npm install cheerio
 
     - name: Non-storage unit tests
-      run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
+      run: npx nyc mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
@@ -74,21 +74,28 @@ jobs:
       run: npm install puppeteer@5.5.0 --save
 
     - name: ${{ matrix.storage_label }} unit tests
-      run: npx nyc --reporter=lcov mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
+      run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
+
+    - name: Coveralls for unit tests
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: ${{ matrix.storage_label }} - unit
+        parallel: true
 
     - name: ${{ matrix.storage_label }} - Puppeteer - Chromium acceptance tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
+      run: npx nyc --exclude=\"src/plugins/**/BrowserFetchPlugin.ts\" mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
+
+    - name: Coveralls for acceptance tests
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: ${{ matrix.storage_label }} - acceptance
+        parallel: true
 
     - name: ${{ matrix.storage_label }} down
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
      
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.storage_label }}
-        parallel: true
-
   clients_with_sqlite:
     name: ${{ matrix.client_label }} - Sqlite3
     runs-on: ubuntu-18.04
@@ -121,7 +128,14 @@ jobs:
       run: npm install ${{ matrix.npm_deps }} --save
 
     - name: Sqlite3 - ${{ matrix.client_label }} acceptance tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
+      run: npx nyc --exclude=\"src/plugins/**/BrowserFetchPlugin.ts\" mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
+
+    - name: Coveralls for acceptance tests
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: ${{ matrix.client_label }} - acceptance
+        parallel: true
 
   coverage:
     name: Coverage
