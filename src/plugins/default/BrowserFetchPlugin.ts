@@ -1,28 +1,14 @@
-/* eslint-disable max-classes-per-file */
 import { SchemaType } from '../../schema/SchemaHelper';
-import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import BrowserClient from '../../browserclient/BrowserClient';
 import { DomStabilityStatus, waitForDomStability } from '../utils';
 import * as MimeTypes from '../../export/MimeTypes.json';
 import { getLogger } from '../../logger/Logger';
-
-class FetchError extends Error {
-  status:number;
-  redirectStatus:number;
-  redirectUrl: string;
-
-  constructor(status: number, redirectStatus?:number, redirectUrl?:string) {
-    super();
-    this.status = status;
-    this.redirectStatus = redirectStatus;
-    this.redirectUrl = redirectUrl;
-  }
-}
+import BaseFetchPlugin, { FetchError } from './BaseFetchPlugin';
 
 /** Opens html resources in a browser tab. Downloads binary resources. */
-export default class FetchPlugin extends Plugin {
+export default class BrowserFetchPlugin extends BaseFetchPlugin {
   static get schema() {
     return {
       type: 'object',
@@ -46,21 +32,10 @@ export default class FetchPlugin extends Plugin {
   }
 
   logger = getLogger('FetchPlugin');
-  opts: SchemaType<typeof FetchPlugin.schema>;
+  opts: SchemaType<typeof BrowserFetchPlugin.schema>;
 
-  constructor(opts:SchemaType<typeof FetchPlugin.schema> = {}) {
+  constructor(opts:SchemaType<typeof BrowserFetchPlugin.schema> = {}) {
     super(opts);
-  }
-
-  test(project: Project, resource: Resource) {
-    if (!resource || !resource.url) return false;
-
-    // only fetch a resource that hasn't been fetched yet
-    if (resource.contentType) return false;
-
-    // only http/https supported
-    const { protocol } = new URL(resource.url);
-    return protocol === 'http:' || protocol === 'https:';
   }
 
   async apply(project: Project, resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
@@ -69,6 +44,7 @@ export default class FetchPlugin extends Plugin {
     try {
       // url is of html mime type, loaded it in a browser tab
       if (await this.isHtml(resource, client)) {
+        this.logger.debug('resource determined to be html');
         result = await this.openInTab(resource, client);
       }
       /*
@@ -80,43 +56,10 @@ export default class FetchPlugin extends Plugin {
       }
     }
     catch (err) {
-      if (err instanceof FetchError) {
-        const { status, redirectStatus, redirectUrl } = err;
-        /*
-        redirect detected
-        for the current resource return redirect status
-        also add the final url as a new resource to be scraped
-        don't return contentType as many plugin use it as testing condition and we don't want the original redirect url to be scraped
-        */
-        if (redirectStatus) {
-          return {
-            status: redirectStatus,
-            resourcesToAdd: [ { url: redirectUrl } ],
-          };
-        }
-
-        /*
-        all other fetch errors
-        don't return contentType as many plugin use it as testing condition and we don't want the original redirect url to be scraped
-        */
-        return {
-          status,
-        };
-      }
-
-      // errors not related to fetch status code
-      throw err;
+      return this.fetchErrResult(err);
     }
 
     return result;
-  }
-
-  /**
-   * 2xx and 304 (Not Modified) are valid
-   * @param status response status code
-   */
-  isStatusValid(status:number) {
-    return Math.floor(status / 100) === 2 || status === 304;
   }
 
   // fetch resource via builtin fetch
@@ -128,6 +71,7 @@ export default class FetchPlugin extends Plugin {
     this will request the resource twice, hopefully the 2nd time will be cached ...
     open just the external hostname as the full external url may trigger a browser download, not supported in chrome headless
     */
+
     if (this.isCorsActive(client.getUrl(), resource.url)) {
       await client.goto(new URL('/', resource.url).toString(), { waitUntil: 'load' });
     }
@@ -168,15 +112,15 @@ export default class FetchPlugin extends Plugin {
       { url: resource.url, opts },
     );
 
-    this.logger.trace(headers, 'retrieved fetch headers');
+    this.logger.trace({ redirected, status, headers }, 'retrieved fetch headers');
 
     // don't have access to initial redirect status can't chain back to the original redirect one, always put 301
     if (redirected) {
-      throw new FetchError(status, 301, url);
+      throw new FetchError(301, url);
     }
 
     // don't proceed further unless we have a valid status
-    if (!this.isStatusValid(status)) {
+    if (!this.isValidStatus(status)) {
       throw new FetchError(status);
     }
 
@@ -196,11 +140,13 @@ export default class FetchPlugin extends Plugin {
     const response = await client.goto(resource.url, { waitUntil: 'networkidle0' });
     const redirectResponse = await client.getRedirectResponse(response.request());
 
-    if (redirectResponse) {
-      throw new FetchError(response.status(), redirectResponse.status(), response.url());
-    }
+    this.logger.debug({ status: response.status() }, 'openInTab response');
 
-    if (!this.isStatusValid(response.status())) {
+    /*
+    if the url has no extension, fetch HEADER was invoked to determine contentType, opening the html resource in tab will result in 304
+    add the extra status to the allowed ones
+    */
+    if (!this.isValidStatus(response.status(), [ 304 ])) {
       throw new FetchError(response.status());
     }
 
@@ -214,7 +160,27 @@ export default class FetchPlugin extends Plugin {
       }
     }
 
-    return { contentType, status: response.status() };
+    const result:Partial<Resource> = {
+      status: response.status(),
+      contentType,
+    };
+
+    /*
+    both puppeteer and playwright follow redirects automatically
+    puppeteer can control/abort redirects via page.setRequestInterception
+    playwright can't: https://github.com/microsoft/playwright/issues/3993
+    the redirect origin needs to be saved as an already scraped resource so we don't keep visiting it
+    current valid resource will have the its url updated to the last redirect location
+    */
+    if (redirectResponse) {
+      result.resourcesToAdd = [ {
+        status: redirectResponse.status(),
+        url: redirectResponse.url(),
+      } ];
+      result.url = response.url();
+    }
+
+    return result;
   }
 
   isCorsActive(originUrl: string, toBeFetchedUrl: string):boolean {

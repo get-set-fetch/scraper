@@ -1,15 +1,15 @@
 import { assert } from 'chai';
 import { stub } from 'sinon';
-import FetchPlugin from '../../../src/plugins/default/FetchPlugin';
+import BrowserFetchPlugin from '../../../src/plugins/default/BrowserFetchPlugin';
 import Resource from '../../../src/storage/base/Resource';
 import Project from '../../../src/storage/base/Project';
 
-describe('FetchPlugin', () => {
-  let plugin: FetchPlugin;
+describe('BrowserFetchPlugin', () => {
+  let plugin: BrowserFetchPlugin;
   const project:Project = <Project>{ resourceCount: 0 };
 
   it('test conditions', () => {
-    plugin = new FetchPlugin();
+    plugin = new BrowserFetchPlugin();
     assert.isFalse(plugin.test(project, <Resource>{ contentType: 'text/html' }));
     assert.isFalse(plugin.test(project, null));
     assert.isFalse(plugin.test(project, <Resource>{}));
@@ -17,7 +17,7 @@ describe('FetchPlugin', () => {
   });
 
   it('getExtension', () => {
-    plugin = new FetchPlugin();
+    plugin = new BrowserFetchPlugin();
 
     assert.isNull(plugin.getExtension('http://www.a.com/dirA'));
     assert.strictEqual(plugin.getExtension('http://www.a.com/a.html?param'), 'html');
@@ -25,7 +25,7 @@ describe('FetchPlugin', () => {
   });
 
   it('isHtml', async () => {
-    plugin = new FetchPlugin();
+    plugin = new BrowserFetchPlugin();
 
     stub(plugin, 'fetch')
       .onCall(0)
@@ -41,7 +41,7 @@ describe('FetchPlugin', () => {
   });
 
   it('isCorsActive', () => {
-    plugin = new FetchPlugin();
+    plugin = new BrowserFetchPlugin();
     assert.isFalse(plugin.isCorsActive('http://sitea.com/index.html', 'http://sitea.com/imgA.png'));
     assert.isTrue(plugin.isCorsActive('http://sitea.com/index.html', 'http://img.sitea.com/imgA.png'));
   });// te iubesc
