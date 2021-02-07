@@ -26,7 +26,7 @@ const scrapeHash = 'eLsPRJVnpZJLDsIwDAXvwprUXAgh05o0okmrmBCx4O51DOIXKiGxyyb285v5
 
 const scrapingConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',

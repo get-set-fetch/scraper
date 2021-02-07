@@ -26,7 +26,7 @@ const scrapeHash = 'eLsPRJVnnZPNCsIwEIRfpXjSQ1Jb8KAH30RC2qzNYppIfho8+O5uQCiUFsHb
 
 const scrapingConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'SelectResourcePlugin',

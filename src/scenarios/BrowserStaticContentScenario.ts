@@ -6,7 +6,7 @@ const scenario:IScenario = {
       name: 'SelectResourcePlugin',
     },
     {
-      name: 'FetchPlugin',
+      name: 'BrowserFetchPlugin',
     },
     {
       name: 'ExtractUrlsPlugin',

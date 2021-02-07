@@ -27,7 +27,7 @@ const scraper = new Scraper(storage, client);
 const scrapeHash = 'eLsPRJVnQ09D5eXleklJyeCklJdaXqxfkpqckZefk59eSUmiQolPRLQYEhG50RlFqWkKcbYK6ugO0lWPBfkB4UtQioLGHNyyotSCnMRkAukbV2okLqpNgY4AAKH7dMw=';
 const scrapingConfig:ScrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',

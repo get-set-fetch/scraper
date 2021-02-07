@@ -1,5 +1,5 @@
 import { PluginOpts } from '../plugins/Plugin';
-import StaticContentScenario from './StaticContentScenario';
+import BrowserStaticContentScenario from './BrowserStaticContentScenario';
 
 interface IScenario {
   defaultPluginOpts:PluginOpts[];
@@ -14,7 +14,7 @@ export type Scenarios = {
  * Each one defines a series of plugins with default options to be executed against each to be scraped resource.
  */
 const scenarios: Scenarios = {
-  'static-content': StaticContentScenario,
+  'browser-static-content': BrowserStaticContentScenario,
 };
 
 /**

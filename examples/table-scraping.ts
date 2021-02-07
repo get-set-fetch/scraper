@@ -27,7 +27,7 @@ const scrapeHash = 'eLsPRJVnQ09DqXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpq
 
 const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
