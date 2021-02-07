@@ -25,7 +25,7 @@ describe('ConfigHash', () => {
     ],
   };
 
-  const expectedConfigHash = 'eLsPRJVnQ05DwCRUDHRVIjgdZealpFZQnJhIi8fojKLUNBVbdbC16rFKIA+gKsnMTQc5GyO9EJNoY4EaAYNFVQE=';
+  const expectedConfigHash = 'eLsG8L15Q051wERXDHRVIjjlZealpFYQnfwIpTXSojk6oyg1TcVWHWy9eqwSyCOoSjJz00HOx0hOxKTpWKBGAHanWDI=';
 
   it('encode', () => {
     const encodedDefinition = encode(expectedDefinition);

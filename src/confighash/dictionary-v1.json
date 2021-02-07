@@ -1,6 +1,6 @@
 {
   "url": "https://.com/.html",
-  "scenario": "static-content",
+  "scenario": "browser-static-content|dom-static-content",
   "pluginOpts": [
     {
       "name": "ExtractHtmlContentPlugin",
@@ -24,7 +24,7 @@
       "maxDepth": -1
     },
     {
-      "name": "FetchPlugin",
+      "name": "BrowserFetchPlugin|NodeFetchPlugin",
       "stabilityCheck": 0,
       "stabilityTimeout": 0
     },
