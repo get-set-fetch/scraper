@@ -4,7 +4,7 @@ import { PluginOpts } from '../../../src/plugins/Plugin';
 import { scenarios, mergePluginOpts } from '../../../src/scenarios/scenarios';
 
 describe('MergePluginOpts', () => {
-  const { defaultPluginOpts } = scenarios['static-content'];
+  const { defaultPluginOpts } = scenarios['browser-static-content'];
 
   it('before anchor', () => {
     const customOpts = [ {
@@ -37,7 +37,7 @@ describe('MergePluginOpts', () => {
   it('replace anchor', () => {
     const customOpts = [ {
       name: 'CustomReplacePlugin',
-      replace: 'FetchPlugin',
+      replace: 'BrowserFetchPlugin',
     } ];
 
     const mergedOpts = mergePluginOpts(defaultPluginOpts, customOpts);
@@ -100,7 +100,7 @@ describe('MergePluginOpts', () => {
         name: 'SelectResourcePlugin',
       },
       {
-        name: 'FetchPlugin',
+        name: 'BrowserFetchPlugin',
       },
       {
         name: 'ExtractUrlsPlugin',

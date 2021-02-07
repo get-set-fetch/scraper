@@ -4,7 +4,7 @@ import { encode, decode } from '../../../src/confighash/config-hash';
 describe('ConfigHash', () => {
   const expectedDefinition = {
     url: 'http://sitea.com/index.html',
-    scenario: 'static-content',
+    scenario: 'browser-static-content',
     pluginOpts: [
       {
         name: 'ExtractUrlsPlugin',

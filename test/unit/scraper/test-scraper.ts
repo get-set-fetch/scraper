@@ -41,6 +41,7 @@ describe('Scraper', () => {
 
   it('preScrape - do browserClient.launch', async () => {
     browserClient.isLaunched = false;
+    scraper.browserClient = browserClient;
     await scraper.preScrape();
 
     assert.isTrue(browserClient.launch.calledOnce);
