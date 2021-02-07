@@ -6,6 +6,7 @@ import SchemaHelper from '../schema/SchemaHelper';
 import Project from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import BrowserClient from '../browserclient/BrowserClient';
+import { IDomClientConstructor } from '../domclient/DomClient';
 
 export type PluginOpts = {
   name: string;
@@ -46,7 +47,7 @@ export default abstract class Plugin {
    * @param resource - current scraping resource
    * @param client - current browser client
    */
-  abstract apply(project: Project, resource: Resource, client: BrowserClient): Promise<void | Partial<Resource>> | void | Partial<Resource>;
+  abstract apply(project: Project, resource: Resource, client: BrowserClient|IDomClientConstructor): Promise<void | Partial<Resource>> | void | Partial<Resource>;
 }
 
 export interface IPlugin {

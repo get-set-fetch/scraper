@@ -14,6 +14,7 @@ import Exporter, { ExportOptions } from '../export/Exporter';
 import CsvExporter from '../export/CsvExporter';
 import ZipExporter from '../export/ZipExporter';
 import { decode } from '../confighash/config-hash';
+import { IDomClientConstructor } from '../domclient/DomClient';
 
 export type ScrapingConfig = {
   url: string,
@@ -33,11 +34,17 @@ export default class Scraper {
 
   storage: Storage;
   browserClient:BrowserClient;
+  domClientConstruct: IDomClientConstructor;
   project: Project;
 
-  constructor(storage: Storage, browserClient:BrowserClient) {
+  constructor(storage: Storage, client:BrowserClient|IDomClientConstructor) {
     this.storage = storage;
-    this.browserClient = browserClient;
+    if (client instanceof BrowserClient) {
+      this.browserClient = client;
+    }
+    else {
+      this.domClientConstruct = client;
+    }
   }
 
   /**
@@ -55,7 +62,7 @@ export default class Scraper {
       this.logger.info('Storage connected');
     }
 
-    if (!this.browserClient.isLaunched) {
+    if (this.browserClient && !this.browserClient.isLaunched) {
       await this.browserClient.launch();
     }
   }
@@ -94,7 +101,9 @@ export default class Scraper {
    * Closes the browser but keeps the storage connection open as scraping is often followed by data export actions.
    */
   async postScrape() {
-    await this.browserClient.close();
+    if (this.browserClient) {
+      await this.browserClient.close();
+    }
   }
 
   /**
@@ -173,7 +182,7 @@ export default class Scraper {
         - a new static resource: Resource from the db not yet scraped (ex: SelectResourcePlugin)
         - additional data/content to be merged with the current resource (ex: ExtractUrlsPlugin, ExtractHtmlContentPlugin, ...)
         */
-        this.logger.debug(result || undefined, 'Plugin result');
+        this.logger.debug(result || {}, 'Plugin result');
 
         // current plugin did not returned a result, move on to the next one
         if (!result) continue;
@@ -261,13 +270,17 @@ export default class Scraper {
     );
 
     if (plugin.opts && (plugin.opts.domRead || plugin.opts.domWrite)) {
-      return this.executePluginInDom(project, resource, plugin);
+      return resource && /html/.test(resource.contentType) ? this.executePluginInDom(project, resource, plugin) : null;
     }
 
     // test if plugin is aplicable
     const isApplicable = await plugin.test(project, resource);
+    this.logger.debug(
+      'Plugin %s isApplicable: %s',
+      plugin.constructor.name, isApplicable,
+    );
     if (isApplicable) {
-      return plugin.apply(project, resource, this.browserClient);
+      return plugin.apply(project, resource, this.browserClient || this.domClientConstruct);
     }
 
     return null;
@@ -279,6 +292,11 @@ export default class Scraper {
   avoiding conflicts, thus redeclaration errors
   */
   async executePluginInDom(project: Project, resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
+    // scraper doesn't rely on a browser client but a nodejs dom client, can't inject js in clients like cheerio
+    if (!this.browserClient) {
+      throw new Error('browserClient unavailable');
+    }
+
     // plugins running in DOM assume a valid resource has already been fetched
     if (!resource) return null;
 
