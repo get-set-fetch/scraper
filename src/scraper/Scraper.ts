@@ -81,6 +81,9 @@ export default class Scraper {
     }
     else {
       const scrapeDef:ScrapingConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
+      if (scrapeDef.scenario && !scenarios[scrapeDef.scenario]) {
+        throw new Error(`Scenario ${scrapeDef.scenario} not found. Available scenarios are:  ${Object.keys(scenarios).join(', ')}`);
+      }
       const { Project } = this.storage;
       project = new Project({
         name: new URL(scrapeDef.url).hostname,
@@ -101,7 +104,7 @@ export default class Scraper {
    * Closes the browser but keeps the storage connection open as scraping is often followed by data export actions.
    */
   async postScrape() {
-    if (this.browserClient) {
+    if (this.browserClient && this.browserClient.isLaunched) {
       await this.browserClient.close();
     }
   }
@@ -113,25 +116,30 @@ export default class Scraper {
   async scrape(project: Project):Promise<Project>
   async scrape(scrapingConfig: ScrapingConfig):Promise<Project>
   async scrape(scrapeHash: string):Promise<Project>
-  async scrape(scrapingConfig: Project|ScrapingConfig|string) {
+  async scrape(scrapingConfig: Project|ScrapingConfig|string):Promise<Project|void> {
     try {
       await this.preScrape();
-      this.project = await this.initProject(scrapingConfig);
     }
     catch (err) {
-      this.logger.error(err, 'Error preScraping operations');
+      this.logger.error(err);
       // no project > no scrape process > abort
-      throw err;
+      return this.postScrape();
     }
 
     this.logger.debug(this.project, 'Scraping project');
     try {
+      this.project = await this.initProject(scrapingConfig);
       this.project.plugins = this.project.initPlugins();
+
+      const domPlugins = this.project.plugins.filter(plugin => plugin.opts.domRead || plugin.opts.domWrite);
+      if (domPlugins.length > 0 && !this.browserClient) {
+        throw new Error(`Attempting to run plugins in browser DOM (${domPlugins.map(plugin => plugin.constructor.name).join(', ')}) without a browser`);
+      }
     }
     catch (err) {
-      this.logger.error(err, 'Error instantiating plugin definitions for project %s', this.project.name);
+      this.logger.error(err);
       // no plugins > no scrape process > abort
-      throw err;
+      return this.postScrape();
     }
 
     /*
