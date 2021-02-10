@@ -77,8 +77,8 @@ describe('Scraper', () => {
 
     const preScrapeProject = await scraper.initProject({
       url: 'http://a.com/index.html',
-      scenario: 'static',
-      pluginOpts: [ { name: 'pluginA' } ],
+      scenario: 'browser-static-content',
+      pluginOpts: [ { name: 'ExtractUrlsPlugin' } ],
     });
 
     assert.isTrue(saveStub.calledOnce);
