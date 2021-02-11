@@ -74,6 +74,7 @@ describe('Scraper', () => {
     storage.Project = sandbox.stub().callsFake(
       () => ({ save: saveStub, ...expectedProject }),
     );
+    storage.Project.get = sandbox.stub();
 
     const preScrapeProject = await scraper.initProject({
       url: 'http://a.com/index.html',

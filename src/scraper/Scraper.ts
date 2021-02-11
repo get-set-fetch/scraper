@@ -80,8 +80,6 @@ export default class Scraper {
    * @param scrapingConfig - project, scraping configuration or base64 deflated scraping configuration
    */
   async initProject(scrapingConfig: Project|ScrapingConfig|string):Promise<Project> {
-    const { Project } = this.storage;
-
     if (scrapingConfig instanceof Project) {
       return <Project>scrapingConfig;
     }
@@ -92,13 +90,13 @@ export default class Scraper {
     }
 
     const projectName = new URL(scrapeDef.url).hostname;
-    let project = await Project.get(projectName);
+    let project = await this.storage.Project.get(projectName);
     if (project) {
       this.logger.info(`Existing project ${project.name} detected.`);
       return project;
     }
 
-    project = new Project({
+    project = new this.storage.Project({
       name: projectName,
       url: scrapeDef.url,
       pluginOpts: scenarios[scrapeDef.scenario]
