@@ -72,7 +72,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
 
         // don't have access to initial redirect status can't chain back to the original redirect one, always put 301
         if (this.isRedirectStatus(statusCode)) {
-          reject(new FetchError(statusCode, headers.location));
+          reject(new FetchError(statusCode, new URL(headers.location, resource.url).toString()));
         }
 
         // don't proceed further unless we have a valid status
