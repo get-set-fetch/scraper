@@ -7,9 +7,9 @@
 
 # Node.js web scraper
 
-get-set, Fetch! is a plugin based, batteries included, node.js web scraper. It scrapes, stores and exports data.
+get-set, Fetch! is a plugin based, batteries included, open source nodejs web scraper. It scrapes, stores and exports data.
 
-An ordered list of plugins (builtin or custom) are executed against each to be scraped web resource. Supports multiple storage options: sqlite, mysql, postgresql. Supports headless Chrome via Puppeteer. 
+An ordered list of plugins (builtin or custom) are executed against each to be scraped web resource. Supports multiple storage options: SQLite, MySQL, PostgreSQL. Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom. 
 
 - [Getting Started](#getting-started)
   * [Install](#install-the-scraper)
@@ -21,12 +21,21 @@ An ordered list of plugins (builtin or custom) are executed against each to be s
   * [MySQL](#mysql)
   * [PostgreSQL](#postgresql)
 - [Scenarios](#scenarios)
-  * [Static-Content Plugin Options](#static-content-plugin-options)
-  * [Static-Content Usage Examples](#static-content-usage-examples)
+  * [Static-Content](#static-content-scenario)
+    * [Browser Plugin Options](#browser-static-content-plugin-options)
+    * [DOM Plugin Options](#dom-static-content-plugin-options)
+    * [Examples](#static-content-usage-examples)
+- [Browser Clients](#browser-clients)
+  * [Puppeteer](#puppeteer)
+  * [Playwright](#playwright)
+- [DOM Clients](#dom-clients)
+  * [Cheerio](#cheerio)
+  * [Jsdom](#jsdom)
 - [PluginStore](#pluginstore)
 - [Plugins](#plugins)
   * [SelectResourcePlugin](#selectresourceplugin)
-  * [FetchPlugin](#fetchplugin)
+  * [NodeFetchPlugin](#nodefetchplugin)
+  * [BrowserFetchPlugin](#browserfetchplugin)
   * [ExtractUrlsPlugin](#extracturlsplugin)
   * [ExtractHtmlContentPlugin](#extracthtmlcontentplugin)
   * [InsertResourcesPlugin](#insertresourcesplugin)
@@ -68,8 +77,6 @@ Supported storage options are defined as peer dependencies. You need to install 
 $ npm install puppeteer
 ```
 Supported browser clients are defined as peer dependencies.
-Right now only puppeteer is supported. Playwright full support and jsdom partial support are on the roadmap. 
-
 ### Init storage
 ```js
 const { KnexStorage } = require('@get-set-fetch/scraper');
@@ -103,7 +110,7 @@ const scraper = new Scraper(storage, client);
 ```js
 await scraper.scrape({
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'SelectResourcePlugin',
@@ -211,27 +218,49 @@ Each scenario contains a series of plugins with predefined values for all plugin
 
 Take a look at [Examples](#examples) for real world scraping configurations.
 
-### static-content plugin options
+### Static Content Scenario
+Use to scrape static data, does not rely on javascript to either read or alter the html content. 
+
+Comes in two variants [browser-static-content](#browser-static-content-plugin-options), [dom-static-content](#dom-static-content-plugin-options). First one runs in browser, second one makes use of a dom-like parsing library such as cheerio.
+### browser-static-content plugin options
 
  Plugin | Option | Default value |
 | ----------- | ----------- | -- |
 | SelectResourcePlugin | frequency | -1
 |                      | delay     | 1000
-| FetchPlugin          | stabilityCheck | 0
+| BrowserFetchPlugin          | stabilityCheck | 0
 |                      | stabilityTimeout     | 0
-| ExtractUrlsPlugin    | maxDepth | -1
+| ExtractUrlsPlugin    | domRead | true
+|                      | maxDepth | -1
 |                      | selectorPairs     | [ { urlSelector: 'a[href$=".html"]' } ]
-| ExtractHtmlContentPlugin | selectorPairs | []
+| ExtractHtmlContentPlugin | domRead | true
+|                          | selectorPairs | []
 | InsertResourcesPlugin | maxResources | -1
-| UpsertResourcePlugin |  | 
+| UpsertResourcePlugin | keepHtmlData  | false
 
-### static-content usage examples
+
+### dom-static-content plugin options
+
+ Plugin | Option | Default value |
+| ----------- | ----------- | -- |
+| SelectResourcePlugin | frequency | -1
+|                      | delay     | 1000
+| NodeFetchPlugin      | proxyPool | [] 
+| ExtractUrlsPlugin    | domRead | false
+|                      | maxDepth | -1
+|                      | selectorPairs     | [ { urlSelector: 'a[href$=".html"]' } ]
+| ExtractHtmlContentPlugin | domRead | false
+|                          | selectorPairs | []
+| InsertResourcesPlugin | maxResources | -1
+| UpsertResourcePlugin | keepHtmlData  | false
+
+### Static Content usage examples
 
 Limit scraping to a single page by setting `ExtractUrlsPlugin.maxDepth` to `0`.
 ```js
 await scraper.scrape({
   url: 'startUrl',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -245,7 +274,7 @@ Scrape from each html page all elements found by the `h1.title` CSS selector.
 ```js
 await scraper.scrape({
   url: 'startUrl',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractHtmlContentPlugin',
@@ -264,7 +293,7 @@ Add a new `ScrollPlugin` to the scenario and scroll html pages to reveal further
 ```js
 await scraper.scrape({
   url: 'startUrl',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ScrollPlugin',
@@ -274,6 +303,66 @@ await scraper.scrape({
   ]
 })
 ```
+
+## Browser Clients
+Clients controlling an actual browser. You can use such clients with predefined scenarios prefixed by 'browser' like [browser-static-content](#browser-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them. 
+
+If not specified, a default `headless:true` flag is added to the `launchOpts`.
+
+### Puppeteer
+```
+$ npm install puppeteer
+```
+
+```js
+const { Scraper, PuppeteerClient } = require('@get-set-fetch/scraper');
+// assumes launchOpts, storage are already defined
+const client = new PuppeteerClient(launchOpts);
+const scraper = new Scraper(storage, client);
+```
+
+### Playwright
+```
+$ npm install playwright-core playwright-chromium
+```
+The above installs playwright for Chromium. If targeting Webkit or Firefox keep `playwright-core` and either install `playwright-webkit` or `playwright-firefox`.
+
+```js
+const { Scraper, PlaywrightClient } = require('@get-set-fetch/scraper');
+// assumes launchOpts, storage are already defined
+const client = new PlaywrightClient(launchOpts);
+const scraper = new Scraper(storage, client);
+```
+
+## DOM Clients
+Clients capable of parsing and querying html content exposing DOM like functionality such as `querySelectorAll`, `getAttribute`.  You can use such clients with predefined scenarios prefixed by 'dom' like [dom-static-content](#dom-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them.
+
+When defining your own plugins you can directly use your favorite html parsing library, you don't have to use any of the clients described below. They are designed as a compatibility layer between DOM like libraries and browser DOM API so that predefined plugins like [ExtractHtmlContentPlugin](#extracthtmlcontentplugin), [ExtractUrlsPlugin](#extracturlsplugin) can use either one interchangeably. 
+
+For html resources, access to html content is done via `resource.data.toString('utf8')`. Each plugin is called with a `resource` argument, see [Custom Plugins](#custom-plugins) for further info.
+
+### Cheerio
+```
+$ npm install cheerio
+```
+
+```js
+const { Scraper, CheerioClient } = require('@get-set-fetch/scraper');
+// assumes storage is already defined
+const scraper = new Scraper(storage, CheerioClient);
+```
+
+### Jsdom
+```
+$ npm install jsdom
+```
+
+```js
+const { Scraper, JsdomClient } = require('@get-set-fetch/scraper');
+// assumes storage is already defined
+const scraper = new Scraper(storage, JsdomClient);
+```
+
 
 ## PluginStore 
 Prior to scraping, available plugins are registered into a plugin store via their filepaths. Each plugin is a javascript module with a default export declaration containing a class extending [Plugin](./src/plugins/Plugin.ts). Class `constructor.name` is used to uniquely identify a plugin. Each plugin together with its dependencies is bundled as a single module to be run either in DOM or node.js.
@@ -293,18 +382,26 @@ Selects a resource to scrape from the current project | [schema](./src/plugins/d
   - Delay in milliseconds between fetching two consecutive resources.
   - default: 1000
 
+### NodeFetchPlugin
+Uses nodejs `http.request` / `https.request` to fetch html and binary data. Response content is available under Uint8Array `resource.data`.  Html content can be retrieved via `resource.data.toString('utf8')`.
+- `proxyPool`
+  - Proxies to be used when performing http/https requests. Each array entry is an `{host, port}` object. At the moment there is no proxy management. All requests will use the first pool entry if available.
+  - default: `[]`
 
-### FetchPlugin
+### BrowserFetchPlugin
 Depending on resource type (binary, html), either downloads or opens in the scraping tab the resource url | [schema](./src/plugins/default/FetchPlugin.ts)
 - `stabilityCheck`
   - Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Only applies to html resources. Useful for bypassing preloader content.
   - default: 0
 - `stabilityTimeout`
-  - Maximum waiting time (miliseconds) for achieving DOM stability in case of a continuously updated DOM (ex: timers, countdowns).
+  - Maximum waiting time (milliseconds) for achieving DOM stability in case of a continuously updated DOM (ex: timers, countdowns).
   - default: 0
 
 ### ExtractUrlsPlugin
 Extracts new (html or binary) resource urls using CSS selectors | [schema](./src/plugins/default/ExtractUrlsPlugin.ts)
+- `domRead`
+  - Whether or not the plugin runs in browser DOM or makes use of a DOM-like parsing library like cheerio
+  - default: `true`
 - `maxDepth`
   - Maximum depth of resources to be scraped. The starting resource has depth 0. Resources discovered from it have depth 1 and so on. A value of -1 disables this check.
   - default: -1
@@ -314,6 +411,8 @@ Extracts new (html or binary) resource urls using CSS selectors | [schema](./src
 
 ### ExtractHtmlContentPlugin
 Scrapes html content using CSS selectors | [schema](./src/plugins/default/ExtractHtmlContentPlugin.ts)
+- `domRead`
+  - Whether or not the plugin runs in browser DOM or makes use of a DOM-like parsing library like cheerio
 - `selectorPairs`
   - Array of CSS selectors to be applied. Each entry is a `{ contentSelector, contentProperty, label }` object. contentSelector: selects DOM elements while contentProperty specifies the DOM element property that holds the value to be scraped defaulting to `innerText`. label is used as column name when exporting as csv.
   - default: none
@@ -326,6 +425,8 @@ Saves new resources within the current project based on newly identified urls | 
 
 ### UpsertResourcePlugin
 Updates a static resource or inserts a dynamic one after being scraped by previous plugins | [schema](./src/plugins/default/UpsertResourcePlugin.ts)
+- `keepHtmlData`
+  - Whether or not to save html buffer response (if present) under resource.data
 
 ### ScrollPlugin
 Performs infinite scrolling in order to load additional content | [schema](./src/plugins/default/ScrollPlugin.ts)
@@ -339,7 +440,7 @@ Performs infinite scrolling in order to load additional content | [schema](./src
   - Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Useful for bypassing preloader content.
   - default: 1000
 - `stabilityTimeout`
-  - Maximum waiting time (miliseconds) for achieving DOM stability in case of a continuously updated DOM (ex: timers, countdowns).
+  - Maximum waiting time (milliseconds) for achieving DOM stability in case of a continuously updated DOM (ex: timers, countdowns).
   - default: 3000
 
 ## Scrape
@@ -356,7 +457,7 @@ const scraper = new Scraper(storage, client);
 
 await scraper.scrape({
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -389,7 +490,7 @@ const storage = new KnexStorage();
 const client = new PuppeteerClient();
 const scraper = new Scraper(storage, client);
 
-const scrapingHash = 'eLt7R4n7pZNBCsIwEEWvkmWLmoruuvAE3iFMzTQNTdLQpBVv79QSrEpBKCEw+Yv5zPyXb2rQ8btutUepgXe9KqZXcdUhiq4WBpwaQGEQ1UO4wVbYT7IjokYUwSO0SBFt4O0j+Hd+x19E/iNzgSOFapBbjCAhAtsxT3cWpyFfFYuydLE53BptZHbK2YVBWVOzOEvkkVhPu1ilfL/R/Zwv3NJuWWaJTIIjX/9ddJ43QKbJ';
+const scrapingHash = 'eLsG8L15Q091qXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpqcXxSZXxeaW5SahFIOA+Y7MpS44sLUhOzU4ExR0R6JZQ4UdIFInoNMFMQcckYM+0C4zgnVS83tSQxJbEkUUFboQCIIYIgP4NZCiUpVnklGbrJGZk5KRpGmgp2ColWaUAzSyBCQKtg+QMWNEogF1LDNmNNJNNhQaugkQtMmMC0oQmKvdhaAABDn0g=';
 
 console.log(decode(scrapingHash));
 // outputs the scraping configuration from the above "Scrape starting from a scraping configuration" section
@@ -410,7 +511,7 @@ const project = new Project({
   name: 'projA.com',
   url: 'http://projA.com',
   pluginOpts: mergePluginOpts(
-    scenarios['static-content'].defaultPluginOpts,
+    scenarios['browser-static-content'].defaultPluginOpts,
     [
       {
         name: 'ExtractUrlsPlugin',
@@ -521,7 +622,7 @@ Top languages by population. Extract tabular data from a single static html page
 ```js
 const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -549,7 +650,7 @@ Book details with author, title, rating value, review count. Also scrapes the bo
 ```js
 const scrapingConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'SelectResourcePlugin',
@@ -600,7 +701,7 @@ World Health Organization COVID-19 Updates during last month. Opens each report 
 ```js
 const scrapingConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'SelectResourcePlugin',
@@ -628,7 +729,7 @@ UEFA Champions League top goalscorers. Keeps scrolling and loading new content u
 ```js
 const scrapingConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -692,7 +793,7 @@ With the help of this plugin one can extract article excerpts from news sites su
 ```js
 const scrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
-  scenario: 'static-content',
+  scenario: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
