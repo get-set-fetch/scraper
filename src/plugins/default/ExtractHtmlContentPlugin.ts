@@ -98,7 +98,10 @@ export default class ExtractHtmlContentPlugin extends Plugin {
             const { contentProperty } = this.opts.selectorPairs[i];
 
             contentBySelector[i] = baseElm.querySelectorAll(suffixSelector)
-              .map(elm => elm.getAttribute(contentProperty))
+              .map(elm => {
+                const attr = elm.getAttribute(contentProperty);
+                return attr ? attr.trim() : attr;
+              })
               .filter(val => val);
           }
 
@@ -120,7 +123,10 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     else {
       const contentBySelector: string[][] = this.opts.selectorPairs.map(
         selectorPair => this.document.querySelectorAll(selectorPair.contentSelector)
-          .map(elm => elm.getAttribute(selectorPair.contentProperty)),
+          .map(elm => {
+            const attr = elm.getAttribute(selectorPair.contentProperty);
+            return attr ? attr.trim() : attr;
+          }),
       );
 
       content = this.transformToContentRows(contentBySelector);

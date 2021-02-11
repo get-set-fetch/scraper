@@ -56,8 +56,8 @@ describe('ExtractHtmlContentPlugin', () => {
     plugin = new ExtractHtmlContentPlugin({ selectorPairs: [ { contentSelector: 'h1' } ] });
 
     stubQuerySelectorAll.withArgs('h1').returns(nodes([
-      { innerText: 'h1 valA' },
-      { innerText: 'h1 valB' },
+      { innerText: 'h1 valA\n' },
+      { innerText: '\nh1 valB' },
     ]));
 
     const expectedContent = [
