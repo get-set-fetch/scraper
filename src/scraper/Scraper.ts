@@ -39,6 +39,12 @@ export default class Scraper {
 
   constructor(storage: Storage, client:BrowserClient|IDomClientConstructor) {
     this.storage = storage;
+    if (!client) {
+      const err = new Error('A browser or DOM client need to be provided');
+      this.logger.error(err);
+      throw err;
+    }
+
     if (client instanceof BrowserClient) {
       this.browserClient = client;
     }
@@ -74,27 +80,33 @@ export default class Scraper {
    * @param scrapingConfig - project, scraping configuration or base64 deflated scraping configuration
    */
   async initProject(scrapingConfig: Project|ScrapingConfig|string):Promise<Project> {
-    let project:Project;
+    const { Project } = this.storage;
 
     if (scrapingConfig instanceof Project) {
-      project = scrapingConfig;
+      return <Project>scrapingConfig;
     }
-    else {
-      const scrapeDef:ScrapingConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
-      if (scrapeDef.scenario && !scenarios[scrapeDef.scenario]) {
-        throw new Error(`Scenario ${scrapeDef.scenario} not found. Available scenarios are:  ${Object.keys(scenarios).join(', ')}`);
-      }
-      const { Project } = this.storage;
-      project = new Project({
-        name: new URL(scrapeDef.url).hostname,
-        url: scrapeDef.url,
-        pluginOpts: scenarios[scrapeDef.scenario]
-          ? mergePluginOpts(scenarios[scrapeDef.scenario].defaultPluginOpts, scrapeDef.pluginOpts)
-          : scrapeDef.pluginOpts,
-      });
-      await project.save();
-      this.logger.info(`new Project ${project.name} saved`);
+
+    const scrapeDef:ScrapingConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
+    if (scrapeDef.scenario && !scenarios[scrapeDef.scenario]) {
+      throw new Error(`Scenario ${scrapeDef.scenario} not found. Available scenarios are:  ${Object.keys(scenarios).join(', ')}`);
     }
+
+    const projectName = new URL(scrapeDef.url).hostname;
+    let project = await Project.get(projectName);
+    if (project) {
+      this.logger.info(`Existing project ${project.name} detected.`);
+      return project;
+    }
+
+    project = new Project({
+      name: projectName,
+      url: scrapeDef.url,
+      pluginOpts: scenarios[scrapeDef.scenario]
+        ? mergePluginOpts(scenarios[scrapeDef.scenario].defaultPluginOpts, scrapeDef.pluginOpts)
+        : scrapeDef.pluginOpts,
+    });
+    await project.save();
+    this.logger.info(`new Project ${project.name} saved`);
 
     return project;
   }
