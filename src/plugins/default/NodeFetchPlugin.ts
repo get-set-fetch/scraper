@@ -12,6 +12,23 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
       title: 'Node Fetch Plugin',
       description: 'fetch resources via node fetch',
       properties: {
+        proxyPool: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              host: {
+                type: 'string',
+              },
+              port: {
+                type: 'string',
+              },
+            },
+            required: [ 'host', 'port' ],
+          },
+          default: [ ],
+          description: 'Proxies to be used when performing http/https requests.',
+        },
       },
     } as const;
   }
@@ -25,7 +42,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
 
   async fetch(resource: Resource):Promise<Partial<Resource>> {
     return new Promise((resolve, reject) => {
-      const { hostname, protocol } = new URL(resource.url);
+      const { hostname, protocol, pathname } = new URL(resource.url);
 
       let requestFnc:(options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest;
       switch (protocol) {
@@ -39,14 +56,12 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
           reject(new Error('protocol must be either https or http'));
       }
 
-      const proxyOpts = {
-        host: '127.0.0.1',
-        port: 8080,
-      };
+      const proxyOpts = this.opts.proxyPool.length > 0 ? this.opts.proxyPool[0] : null;
 
       const opts: RequestOptions = {
         method: 'GET',
-        path: resource.url,
+        path: pathname,
+        host: hostname,
         headers: {
           Host: hostname,
         },

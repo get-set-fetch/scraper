@@ -47,11 +47,22 @@ export default function acceptanceSuite(scenario:string, storage: Storage, clien
       it(`${storage.config.client} - ${clientInfo} - ${test.title}`, async () => {
         srv.update(test.vhosts);
 
+        const pluginOpts = mergePluginOpts(scenarios[scenario].defaultPluginOpts, test.definition.pluginOpts);
+
+        // make all NodeFetchPlugin requests against the local web srv serving acceptance-suite web pages
+        const nodeFetchPlugin = pluginOpts.find(pluginOpts => pluginOpts.name === 'NodeFetchPlugin');
+        if (nodeFetchPlugin) {
+          nodeFetchPlugin.proxyPool = [ {
+            host: '127.0.0.1',
+            port: 8080,
+          } ];
+        }
+
         // save a project for the current scraping test
         const project = new Project({
           name: test.title,
           url: test.definition.url,
-          pluginOpts: mergePluginOpts(scenarios[scenario].defaultPluginOpts, test.definition.pluginOpts),
+          pluginOpts,
         });
         await project.save();
 
