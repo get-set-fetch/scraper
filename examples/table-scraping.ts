@@ -23,7 +23,7 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsPRJVnQ09DqXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpqcXxSZXxeaW5SahFIOA+YvspS44sLUhOzU4FRREHqQ4l4RPwZYCYR4tIpZuIExm1Oql5uakliSmJJooK2QgEQQwRBfgWzFEpSrPJKMnSTMzJzUjSMNBXsFBKt0oBmlkCEgFbBMgAsSJRALqSGbcaaSKbDglRBIxeYIIFpQhMUa7G1AIulnBc=';
+const scrapeHash = 'eLsG8L15Q091qXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpqcXxSZXxeaW5SahFIOA+Y7MpS44sLUhOzU4ExR0R6JZQ4UdIFInoNMFMQcckYM+0C4zgnVS83tSQxJbEkUUFboQCIIYIgP4NZCiUpVnklGbrJGZk5KRpGmgp2ColWaUAzSyBCQKtg+QMWNEogF1LDNmNNJNNhQaugkQtMmMC0oQmKvdhaAABDn0g=';
 
 const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',

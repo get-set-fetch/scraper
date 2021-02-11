@@ -24,7 +24,7 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsPRJVnQ09D5eXleklJyeCklJdaXqxfkpqckZefk59eSUmiQolPRLQYEhG50RlFqWkKcbYK6ugO0lWPBfkB4UtQioLGHNyyotSCnMRkAukbV2okLqpNgY4AAKH7dMw=';
+const scrapeHash = 'eLsG8L15Q0915eXleklJyeDEl5daXqxfkpqckZefk59eSUwyJJTmUKIbEWuGRMR9dEZRappCnK2COrrDdNVjQX5B+BaU4KAxCLesKLUgJzGZQPLHlViJi3JToCMAsg13/Q==';
 const scrapingConfig:ScrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
   scenario: 'browser-static-content',

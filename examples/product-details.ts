@@ -22,7 +22,7 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsPRJVnnVOxTsMwEP0VKywwxFESJqSCqk5IlWBioRW6JFZs1bErO3HVAb6du1iI0qaiMNrn53fv7r1jD+G6jFaVA7fn1rUZDL20zmdPy/K2KPJ59ugB6re5V50ND1toxSz/l9vOqJluf8oV38stf7fIlRfgaol0mBzPPhjH1pUBmjO7Z8AX0lovnlHPnellWkulm+viJqEmfn4lS15ZuxkNh0AXv5x4CJjHINwSHyOF6tp4prGfKLssdKdJkznfWbdJx24Q8xXLeCaeCUzBRaNIeVrttTKo4gAZF34GOmjUC41wPqU1e9SlFYfQpg5HaVq68Fswr2jujrI/WyWx8gJ6EKtkfcAUCyxQ5S98UxwiKLFb2MH0RxxjgdVUocGv3z8BVSMJ1g==';
+const scrapeHash = 'eLsG8L15lVTLbsMgEPwV5F7ag7GMe6qUVlFOlSK1p16aqFrbyKBgiMAmyqH99i6mVfOwlfQIyzDM7gynrsMpaiVLC3ZPjW0y6DthrMtelsU9Y/k8e3YA1cfcydb4py00fJZf489JM06o+pHBjmWMmeZv9sVlB904DrYSSIeZc+SLUJQgNYR+k0cCdCGMcfwVdT3oTqSVkKq+ZXdJeMTxVaKgpTGbwY8ItPHKkYOASfbcLvEwUsi2ievQ/jNl12XyPIgipztjN+nwGsT8pjauA88IhlFey6A8LfdKalRxgIyDn4D2CvVCza0bxuxQl5IUfJNabKVuwobbgn5Hk7fha5itklh5A9XzVbI+YIoF4kPlP3xjHNxLvluYXncnHEOBVKESGr/+/Aakgg0I';
 const scrapingConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
   scenario: 'browser-static-content',

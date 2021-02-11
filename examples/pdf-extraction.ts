@@ -22,7 +22,7 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsPRJVnnZPNCsIwEIRfpXjSQ1Jb8KAH30RC2qzNYppIfho8+O5uQCiUFsHbHpbJzM6XJUM5Z56142hjDSP4gZQRQq0wgAw0WDeBIZa8s3JCnwJrj825DhiTLK6Zh6fzRNY/CG5EXM+0hsrcePubGx7ubASIaIeva2YwxIuNmvUajdqfDtW1kht7QlCF4644Wuh2KUa6RGcSsE72j8G7ZFWRWiFVN1y9KNJ8HiE0fQ16rTR0e38AKoKWGA==';
+const scrapeHash = 'eLsG8L15jZPPCsIwDMZfZXjSQzs38KAH30RKt8Y12LXSPysefHdTEAZjQ285hC/fl/yypC7nzLN2HG2sYQQ/kDJCqBUGkIEK6yYwhJh3Vk7oU2DtsTnXAWOSxTXz8HSegPsD2k1CN6KuZ1sjaQai/Y0VD3c2AkS0w9c9MxjixUbNeo1G7U+H6lrJjT4h6JTjrjha6HYpRtpIZxKwTvaPwbtkVZFaAVk3XL0o0rweITR9Dk0rl7q9P1bImUk=';
 
 const scrapingConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
