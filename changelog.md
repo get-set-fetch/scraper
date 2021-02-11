@@ -1,6 +1,6 @@
 ## Changelog
 
-### next-version (not yet published)
+### 0.2.0
 - Storage
   - Added resource.status
 - Browser Clients:
@@ -9,6 +9,7 @@
   - Cheerio
   - Jsdom
 - Plugins:
+  - NodeFetchPlugin: basic proxy support
   - NodeFetchPlugin, BrowserFetchPlugin: improved fetch error handling for redirect, not found, internal error status
   - ExtractHtmlContentPlugin, ExtractUrlsPlugin: can either run in browser or make use of a dom client
   - UpsertResourcePlugin: new keepHtmlData flag
