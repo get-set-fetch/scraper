@@ -31,7 +31,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     } as const;
   }
 
-  logger = getLogger('FetchPlugin');
+  logger = getLogger('BrowserFetchPlugin');
   opts: SchemaType<typeof BrowserFetchPlugin.schema>;
 
   constructor(opts:SchemaType<typeof BrowserFetchPlugin.schema> = {}) {
@@ -155,7 +155,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
 
     if (/html/.test(contentType) && this.opts.stabilityCheck > 0) {
       const stabilityStatus:DomStabilityStatus = await client.evaluate(waitForDomStability, { stabilityCheck: this.opts.stabilityCheck, stabilityTimeout: this.opts.stabilityTimeout });
-      if (stabilityStatus !== DomStabilityStatus.Stable) {
+      if (stabilityStatus === DomStabilityStatus.Unstable) {
         throw new Error(`DOM not stable after stabilityTimeout of ${this.opts.stabilityTimeout}`);
       }
     }

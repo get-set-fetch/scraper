@@ -1,4 +1,4 @@
-export enum DomStabilityStatus {
+export const enum DomStabilityStatus {
   Stable,
   Unstable,
   Unchanged
@@ -13,18 +13,14 @@ export enum DomStabilityStatus {
 function waitForDomStability({ stabilityCheck, stabilityTimeout }:{stabilityCheck: number, stabilityTimeout: number}):Promise<DomStabilityStatus> {
   return new Promise(resolve => {
     let stabilityCheckId:number;
+    let stabilityTimeoutId:number;
     let domChanged = false;
 
+    // if this is reached, DOM is stable
     const waitStableResolve = observer => {
-      // dom has changed and is stable
-      if (domChanged) {
-        observer.disconnect();
-        resolve(DomStabilityStatus.Stable);
-      }
-      // re-start stability check countdown
-      else {
-        stabilityCheckId = window.setTimeout(waitStableResolve, stabilityCheck, observer);
-      }
+      window.clearTimeout(stabilityTimeoutId);
+      observer.disconnect();
+      resolve(domChanged ? DomStabilityStatus.Stable : DomStabilityStatus.Unchanged);
     };
 
     const observer = new MutationObserver((mutationList, observer) => {
@@ -47,13 +43,13 @@ function waitForDomStability({ stabilityCheck, stabilityTimeout }:{stabilityChec
     observer.observe(document.body, { attributes: true, childList: true, subtree: true });
 
     // enforce stability timeout
-    window.setTimeout(
+    stabilityTimeoutId = window.setTimeout(
       () => {
         // clear in progress stability check
         window.clearTimeout(stabilityCheckId);
 
         observer.disconnect();
-        resolve(domChanged ? DomStabilityStatus.Unstable : DomStabilityStatus.Unchanged);
+        resolve(DomStabilityStatus.Unstable);
       },
       stabilityTimeout,
     );
