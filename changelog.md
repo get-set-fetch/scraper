@@ -1,6 +1,10 @@
 ## Changelog
 
-### 0.2.0
+### Unreleased
+- Plugins:
+  - BrowserFetchPlugin: improved DOM stability check support
+
+### 0.2.0 - 2021-02-11
 - Storage
   - Added resource.status
 - Browser Clients:
@@ -20,7 +24,7 @@
   * Settings and output destination can now be customized
   * Binary data no longer appears in logs, even on TRACE level
 
-### 0.1.4 (initial version)
+### 0.1.4 (initial version) - 2021-01-20
 - Storage:
   * Sqlite
   * MySQL
