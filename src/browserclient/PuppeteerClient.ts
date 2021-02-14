@@ -47,8 +47,39 @@ export default class PuppeteerClient extends BrowserClient {
     }
   }
 
-  evaluate(pageFunction, argObj?) {
-    this.logger.trace({ pageFunction: pageFunction.toString(), argObj }, 'evaluate call');
-    return this.page.evaluate(pageFunction, argObj);
+  async evaluate(pageFunction, argObj?) {
+    // if there's an error in the async fnc to be evaluated the page.evaluate return promise may never resolve
+    // listen to page errors and reject accordingly
+    return new Promise(async (resolve, reject) => {
+      const logConsole = this.logger.logger.level === 'trace' || this.logger.logger.level === 'debug';
+      const consoleHandler = msg => {
+        for (let i = 0; i < msg.args().length; i += 1) {
+          this.logger.debug(`DOM console: ${msg.args()[i]}`);
+        }
+      };
+
+      if (logConsole) {
+        this.page.on('console', consoleHandler);
+      }
+
+      const errorHandler = err => {
+        this.logger.error(err);
+        reject(err);
+        this.page.off('pageerror', errorHandler);
+        this.page.off('error', errorHandler);
+        if (logConsole) {
+          this.page.off('console', consoleHandler);
+        }
+      };
+      this.page.on('pageerror', errorHandler);
+      this.page.on('error', errorHandler);
+
+      this.logger.trace({ pageFunction: pageFunction.toString(), argObj }, 'evaluate call');
+      const result = await this.page.evaluate(pageFunction, argObj);
+      resolve(result);
+      this.page.off('pageerror', errorHandler);
+      this.page.off('error', errorHandler);
+      this.page.off('console', consoleHandler);
+    });
   }
 }
