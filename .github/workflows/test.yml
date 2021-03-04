@@ -80,7 +80,7 @@ jobs:
 
     steps:
     - name: Acceptance Tests
-      uses: actions/acceptance
+      uses: ./.github/actions/acceptance
       with:
         storage: ${{ matrix.storage }}
         storage_deps: ${{ matrix.storage_deps }}
