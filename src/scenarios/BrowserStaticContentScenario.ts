@@ -3,9 +3,6 @@ import { IScenario } from './scenarios';
 const scenario:IScenario = {
   defaultPluginOpts: [
     {
-      name: 'SelectResourcePlugin',
-    },
-    {
       name: 'BrowserFetchPlugin',
     },
     {

@@ -5,4 +5,16 @@ import * as sqliteConn from '../config/storage/sqlite/sqlite-conn.json';
 import JsdomClient from '../../src/domclient/JsdomClient';
 
 const storage:Storage = new KnexStorage(sqliteConn);
-acceptanceSuite('dom-static-content', storage, JsdomClient);
+acceptanceSuite(
+  'dom-static-content',
+  storage,
+  JsdomClient,
+  [
+    {
+      proxyPool: [ {
+        host: '127.0.0.1',
+        port: 8080,
+      } ],
+    },
+  ],
+);

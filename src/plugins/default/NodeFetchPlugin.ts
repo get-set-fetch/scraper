@@ -8,28 +8,8 @@ import BaseFetchPlugin, { FetchError } from './BaseFetchPlugin';
 export default class NodeFetchPlugin extends BaseFetchPlugin {
   static get schema() {
     return {
-      type: 'object',
       title: 'Node Fetch Plugin',
-      description: 'fetch resources via node fetch',
-      properties: {
-        proxyPool: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              host: {
-                type: 'string',
-              },
-              port: {
-                type: 'string',
-              },
-            },
-            required: [ 'host', 'port' ],
-          },
-          default: [ ],
-          description: 'Proxies to be used when performing http/https requests.',
-        },
-      },
+      description: 'fetch resources via nodejs https/http',
     } as const;
   }
 
@@ -56,8 +36,6 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
           reject(new Error('protocol must be either https or http'));
       }
 
-      const proxyOpts = this.opts.proxyPool.length > 0 ? this.opts.proxyPool[0] : null;
-
       const opts: RequestOptions = {
         method: 'GET',
         path: pathname,
@@ -67,7 +45,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         },
       };
 
-      const req = requestFnc({ ...opts, ...proxyOpts }, (res:IncomingMessage) => {
+      const req = requestFnc({ ...opts, ...resource.proxy }, (res:IncomingMessage) => {
         const { statusCode, headers } = res;
 
         // don't have access to initial redirect status can't chain back to the original redirect one, always put 301

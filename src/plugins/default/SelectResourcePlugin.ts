@@ -39,6 +39,6 @@ export default class SelectResourcePlugin extends Plugin {
 
   async apply(project: Project, resource: Resource):Promise<Resource> {
     await new Promise(resolve => setTimeout(resolve, this.opts.delay));
-    return project.getResourceToCrawl();
+    return project.getResourceToScrape();
   }
 }

@@ -33,11 +33,18 @@ export default abstract class Project extends Entity {
     this.url = new URL(this.url).toString();
   }
 
-  initPlugins():Plugin[] {
-    return this.pluginOpts.map((pluginOpt:PluginOpts) => {
+  initPlugins(browserClientPresent:boolean):Plugin[] {
+    const plugins = this.pluginOpts.map((pluginOpt:PluginOpts) => {
       const PluginCls = PluginStore.get(pluginOpt.name).Cls;
       return new PluginCls(pluginOpt);
     });
+
+    const domPlugins = plugins.filter(plugin => plugin.opts && (plugin.opts.domRead || plugin.opts.domWrite));
+    if (domPlugins.length > 0 && !browserClientPresent) {
+      throw new Error(`Attempting to run plugins in browser DOM (${domPlugins.map(plugin => plugin.constructor.name).join(', ')}) without a browser`);
+    }
+
+    return plugins;
   }
 
   abstract countResources():Promise<number>;

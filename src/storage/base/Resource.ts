@@ -1,9 +1,14 @@
 import Entity, { IStaticEntity } from './Entity';
 
-export interface IResourceParent {
+export type IResourceParent = {
   linkText?: string;
   imgAlt?: string;
   title?: string;
+}
+
+export type Proxy = {
+  host: string;
+  port: number;
 }
 
 /** Each url (web page, image, API endpoint, ...) represents a Resource. */
@@ -36,6 +41,9 @@ export default abstract class Resource extends Entity {
 
   /** not stored, populated by the ExtractUrlsPlugin and saved as new resources by the InsertResourcesPlugin */
   resourcesToAdd: Partial<Resource>[];
+
+  /** not stored, populated by ConcurrencyManager based on the available proxy pool. If present, plugins should use this proxy when making requests. */
+  proxy: Proxy;
 
   constructor(kwArgs: Partial<Resource> = {}) {
     super(kwArgs);

@@ -7,4 +7,16 @@ import PuppeteerClient from '../../src/browserclient/PuppeteerClient';
 
 const storage:Storage = new KnexStorage(pgConn);
 const browserClient = new PuppeteerClient(puppeteerChromium);
-acceptanceSuite('browser-static-content', storage, browserClient);
+acceptanceSuite(
+  'browser-static-content',
+  storage,
+  browserClient,
+  [
+    {
+      proxyPool: [ {
+        host: '127.0.0.1',
+        port: 8080,
+      } ],
+    },
+  ],
+);

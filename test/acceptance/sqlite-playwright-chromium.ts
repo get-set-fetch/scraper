@@ -7,4 +7,16 @@ import PlaywrightClient from '../../src/browserclient/PlaywrightClient';
 
 const storage:Storage = new KnexStorage(sqliteConn);
 const browserClient = new PlaywrightClient(playwrightChromium);
-acceptanceSuite('browser-static-content', storage, browserClient);
+acceptanceSuite(
+  'browser-static-content',
+  storage,
+  browserClient,
+  [
+    {
+      proxyPool: [ {
+        host: '127.0.0.1',
+        port: 8080,
+      } ],
+    },
+  ],
+);

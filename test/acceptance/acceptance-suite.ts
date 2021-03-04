@@ -7,8 +7,15 @@ import Scraper from '../../src/scraper/Scraper';
 import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
+import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
+import ScrapeEvent from '../../src/scraper/ScrapeEvents';
 
-export default function acceptanceSuite(scenario:string, storage: Storage, client:BrowserClient|IDomClientConstructor) {
+export default function acceptanceSuite(
+  scenario:string,
+  storage: Storage,
+  client:BrowserClient|IDomClientConstructor,
+  concurrencyOpts: Partial<ConcurrencyOptions>[],
+) {
   const browserType = client instanceof BrowserClient ? client.opts.browser.charAt(0).toUpperCase() + client.opts.browser.slice(1) : null;
   const clientInfo = browserType ? `${client.constructor.name} - ${browserType}` : (<Function>client).name;
 
@@ -38,25 +45,23 @@ export default function acceptanceSuite(scenario:string, storage: Storage, clien
       srv.stop();
     });
 
-    const tests = ScrapingSuite.getTests();
+    const scrapingTest = (
+      test:IScrapingTest,
+      concurrencyOpts:Partial<ConcurrencyOptions>,
+    ) => {
+      let concurrencyLabel = [ 'project', 'proxy', 'domain', 'session' ]
+        .filter(key => concurrencyOpts[key])
+        .map(key => `${key}:${JSON.stringify(concurrencyOpts[key])}`)
+        .join(', ');
+      concurrencyLabel = concurrencyLabel ? `Concurrency: ${concurrencyLabel}` : 'Concurrency: Default (sequential)';
+      if (!concurrencyLabel) {
+        concurrencyLabel = 'Sequential';
+      }
 
-    tests.forEach((test:IScrapingTest) => {
-      // the current test definition doesn't apply to the scenario being tested
-      if (!test.definition.scenarios.includes(scenario)) return;
-
-      it(`${storage.config.client} - ${clientInfo} - ${test.title}`, async () => {
+      return it(`${storage.config.client} - ${clientInfo} - ${test.title} - ${concurrencyLabel}`, async () => {
         srv.update(test.vhosts);
 
         const pluginOpts = mergePluginOpts(scenarios[scenario].defaultPluginOpts, test.definition.pluginOpts);
-
-        // make all NodeFetchPlugin requests against the local web srv serving acceptance-suite web pages
-        const nodeFetchPlugin = pluginOpts.find(pluginOpts => pluginOpts.name === 'NodeFetchPlugin');
-        if (nodeFetchPlugin) {
-          nodeFetchPlugin.proxyPool = [ {
-            host: '127.0.0.1',
-            port: 8080,
-          } ];
-        }
 
         // save a project for the current scraping test
         const project = new Project({
@@ -67,8 +72,21 @@ export default function acceptanceSuite(scenario:string, storage: Storage, clien
         await project.save();
 
         // start scraping
+        const concurrencyOpts:Partial<ConcurrencyOptions> = {
+          proxyPool: [ {
+            host: '127.0.0.1',
+            port: 8080,
+          } ],
+        };
         const scraper = new Scraper(storage, client);
-        await scraper.scrape(project);
+        const scrapeComplete = new Promise((resolve, reject) => {
+          scraper.addListener(ScrapeEvent.ProjectScraped, resolve);
+          scraper.addListener(ScrapeEvent.ProjectError, err => {
+            reject(err);
+          });
+        });
+        scraper.scrape(project, concurrencyOpts);
+        await scrapeComplete;
 
         // compare results
         const resources = await project.getResources();
@@ -87,6 +105,17 @@ export default function acceptanceSuite(scenario:string, storage: Storage, clien
           // delete it
           unlinkSync(archivePath);
         }
+      });
+    };
+
+    const tests = ScrapingSuite.getTests();
+
+    concurrencyOpts.forEach(concurrencyOpt => {
+      tests.forEach((test:IScrapingTest) => {
+        // the current test definition doesn't apply to the scenario being tested
+        if (!test.definition.scenarios.includes(scenario)) return;
+
+        scrapingTest(test, concurrencyOpt);
       });
     });
   });
