@@ -49,7 +49,7 @@ jobs:
   acceptance:
     name: ${{ matrix.client }} - ${{ matrix.storage }} - ${{ matrix.concurrency }}
     runs-on: ubuntu-18.04
-    needs: non_storage
+    needs: unit
 
     strategy:
       fail-fast: false
