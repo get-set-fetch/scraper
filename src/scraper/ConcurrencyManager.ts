@@ -3,7 +3,6 @@
 import { Project, Resource } from '..';
 import { Proxy } from '../storage/base/Resource';
 
-
 export const enum ConcurrencyLevel {
   Project = 'project', Proxy = 'proxy', Domain = 'domain', Session = 'session'
 }
