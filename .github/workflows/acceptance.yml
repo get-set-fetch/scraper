@@ -1,0 +1,85 @@
+name: 'Acceptance Tests'
+description: 'Acceptance Tests using dynamic inputs: storage, client, docker file, ..'
+inputs:
+  storage:
+    description: oneOf - sqlite, mysql, pg
+    required: true
+  storage_deps:
+    description: storage npm dependencies
+    required: true
+  client:
+    description: oneOf - cheerio, jsdom, puppeteer_chromium, playwright_chromium
+    required: true
+  client_deps:
+    description: client npm dependencies
+    required: true
+  concurrency:
+    description: oneOf - sequential, parallel
+    required: true
+  docker_file:
+    description: if present starts/stops a corresponding docker container
+  coveralls_token:
+    required: true
+  run_storage_unit_tests:
+    description: whether or not to also run unit tests for the selected storage
+    required: true
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v2
+
+    - name: Cache node modules
+      uses: actions/cache@v2
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+
+    - name: Docker ${{ inputs.storage }} up
+      if: ${{ inputs.docker_file }}
+      run: /bin/sh -c 'docker_file="${{ inputs.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ inputs.docker_file }} up -d; else echo "ignored, no docker file"; fi'
+
+    - name: Setup node 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install storage peer dependencies for ${{ inputs.storage }}
+      run: npm install ${{ inputs.storage_deps }} --save
+
+    - name: Install client peer dependencies for ${{ inputs.client }}
+      run: npm install ${{ inputs.client_deps }} --save
+
+    - name: ${{ inputs.storage }} unit tests
+      if: ${{ inputs.run_storage_unit_tests }}
+      run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ inputs.storage }}-unit-suite.ts\"
+
+    - name: Coveralls for unit tests
+      if: ${{ inputs.run_storage_unit_tests }}
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ inputs.coveralls_token }}
+        flag-name: unit - ${{ inputs.storage }}
+        parallel: true
+
+    - name: Acceptance tests - ${{ inputs.client }} - ${{ inputs.storage }} - ${{ inputs.concurrency }}
+      run: | 
+        npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/utils.ts mocha --config test/.mocharc.js test/acceptance/${{ inputs.client }}.ts --grep '${{ inputs.storage }} - concurrency: ${{ inputs.concurrency }}'",
+
+    - name: Coveralls for acceptance tests
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ inputs.coveralls_token }}
+        flag-name: acceptance - ${{ inputs.storage }} - ${{ inputs.client }} - ${{ inputs.concurrency }}
+        parallel: true
+
+    - name: Docker ${{ inputs.storage }} down
+      if: ${{ inputs.docker_file }}
+      run: /bin/sh -c 'docker_file="${{ inputs.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ inputs.docker_file }} down; else echo "ignored, no docker file"; fi'
+

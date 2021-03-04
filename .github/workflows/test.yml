@@ -7,21 +7,34 @@ on:
     branches: [ main ]
 
 jobs:
-  non_storage:
-    name: Non-Storage
+  unit:
+    name: unit tests
     runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Cache node modules
+      uses: actions/cache@v2
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+
     - name: Setup node 14
       uses: actions/setup-node@v1
       with:
         node-version: 14.x
+
     - name: Install dependencies
       run: npm ci
 
-    - name: Install dom clients
-      run: npm install cheerio
+    - name: Install peer dependencies
+      run: npm install cheerio jsdom puppeteer@5.5.0 playwright-core playwright-chromium knex sqlite3@4 mysql pg
+
+    - name: Lint check
+      run: npm run lint
 
     - name: Non-storage unit tests
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
@@ -33,117 +46,56 @@ jobs:
         flag-name: non_storage_unit_tests
         parallel: true
 
-  storage_with_puppeteer:
-    name: Puppeteer - Chromium - ${{ matrix.storage_label }}
+  acceptance:
+    name: ${{ matrix.client }} - ${{ matrix.storage }} - ${{ matrix.concurrency }}
     runs-on: ubuntu-18.04
     needs: non_storage
 
     strategy:
       fail-fast: false
       matrix:
-        storage: [sqlite, mysql, pg]
+        client: [cheerio, jsdom, puppeteer_chromium, playwright_chromium]
+        storage: [sqlite, mysql, postgresql]
+        concurrency: [sequential]
         include:
+          - client: cheerio
+            concurrency: parallel
+            client_deps: cheerio
+          - client: jsdom
+            concurrency: parallel
+            client_deps: jsdom
+          - client: puppeteer_chromium
+            client_deps: puppeteer
+          - client: playwright_chromium
+            client_deps: playwright-core playwright-chromium
           - storage: sqlite
-            storage_label: Sqlite3
-            npm_deps: knex sqlite3@4
+            storage_deps: knex
             docker_file: 
           - storage: mysql
-            storage_label: MySQL
-            npm_deps: knex mysql
-            docker_file: ./test/config/storage/mysql/mysql.yml 
+            docker_file: ./test/config/storage/mysql/mysql.yml
+            storage_deps: knex mysql
           - storage: pg
-            storage_label: PostgreSQL
-            npm_deps: knex pg
             docker_file: ./test/config/storage/pg/pg.yml 
+            storage_deps: knex pg
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup node 14
-      uses: actions/setup-node@v1
+    - name: Acceptance Tests
+      uses: actions/acceptance
       with:
-        node-version: 14.x
-
-    - name: ${{ matrix.storage_label }} up
-      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
-      
-    - name: Install dependencies
-      run: npm ci
-    - name: Install ${{ matrix.storage_label }} peer dependencies
-      run: npm install ${{ matrix.npm_deps }} --save
-    - name: Install Puppeteer
-      run: npm install puppeteer@5.5.0 --save
-
-    - name: ${{ matrix.storage_label }} unit tests
-      run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
-
-    - name: Coveralls for unit tests
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.storage_label }} - unit
-        parallel: true
-
-    - name: ${{ matrix.storage_label }} - Puppeteer - Chromium acceptance tests
-      run: npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/utils.ts mocha --config test/.mocharc.js \"test/acceptance/${{ matrix.storage }}-puppeteer-chromium.ts\"
-
-    - name: Coveralls for acceptance tests
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.storage_label }} - acceptance
-        parallel: true
-
-    - name: ${{ matrix.storage_label }} down
-      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
-     
-  clients_with_sqlite:
-    name: ${{ matrix.client_label }} - Sqlite3
-    runs-on: ubuntu-18.04
-    needs: non_storage
-
-    strategy:
-      fail-fast: false
-      matrix:
-        client: [playwright-chromium, cheerio, jsdom]
-        include:
-          - client: playwright-chromium
-            client_label: Playwright - Chromium
-            npm_deps: playwright-core playwright-chromium
-          - client: cheerio
-            client_label: Cheerio
-            npm_deps: cheerio
-          - client: jsdom
-            client_label: JSDOM
-            npm_deps: jsdom
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup node 14
-      uses: actions/setup-node@v1
-      with:
-        node-version: 14.x
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Sqlite3 peer dependencies
-      run: npm install knex sqlite3@4 --save
-
-    - name: Install ${{ matrix.client_label }}
-      run: npm install ${{ matrix.npm_deps }} --save
-
-    - name: Sqlite3 - ${{ matrix.client_label }} acceptance tests
-      run: npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/utils.ts mocha --config test/.mocharc.js \"test/acceptance/sqlite-${{ matrix.client }}.ts\"
-
-    - name: Coveralls for acceptance tests
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.client_label }} - acceptance
-        parallel: true
-
+        storage: ${{ matrix.storage }}
+        storage_deps: ${{ matrix.storage_deps }}
+        client: ${{ matrix.client }}
+        client_deps: ${{ matrix.client_deps }}
+        concurrency: ${{ matrix.concurrency }}
+        docker_file: ${{ matrix.docker_file }}
+        coveralls_token: ${{ secrets.GITHUB_TOKEN }} 
+        # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
+        run_storage_unit_tests: ${{ matrix.puppeteer_chromium == 'puppeteer_chromium' }}
+   
   coverage:
-    name: Coverage
+    name: coverage
     runs-on: ubuntu-18.04
-    needs: [storage_with_puppeteer, clients_with_sqlite]
+    needs: [acceptance]
     
     steps:
     - name: Coveralls
