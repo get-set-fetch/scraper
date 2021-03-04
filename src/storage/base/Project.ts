@@ -3,7 +3,7 @@ import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 
-/** Groups resources sharing the same scraping configuration and discovered from the same initial URL. */
+/** Groups resources sharing the same scraping configuration and discovered from the same initial URLs. */
 export default abstract class Project extends Entity {
   id: number;
   name: string;
@@ -49,7 +49,7 @@ export default abstract class Project extends Entity {
 
   abstract countResources():Promise<number>;
 
-  abstract getResourceToCrawl():Promise<Resource>;
+  abstract getResourceToScrape():Promise<Resource>;
 
   abstract getResource(url: string):Promise<Resource>;
 

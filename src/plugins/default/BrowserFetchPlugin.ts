@@ -12,7 +12,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
   static get schema() {
     return {
       type: 'object',
-      title: 'Fetch Plugin',
+      title: 'Browser Fetch Plugin',
       description: 'depending on resource type (binary, html), either downloads or opens in the scraping tab the resource url.',
       properties: {
         stabilityCheck: {

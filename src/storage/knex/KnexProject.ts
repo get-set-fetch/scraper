@@ -92,8 +92,8 @@ export default class KnexProject extends Project {
     return this.Constructor.storage.Resource.getPagedResources(query);
   }
 
-  getResourceToCrawl() {
-    return this.Constructor.storage.Resource.getResourceToCrawl(this.id);
+  getResourceToScrape() {
+    return this.Constructor.storage.Resource.getResourceToScrape(this.id);
   }
 
   createResource(resource: Partial<Resource>) {

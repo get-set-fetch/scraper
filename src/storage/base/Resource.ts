@@ -104,5 +104,5 @@ export interface IStaticResource extends IStaticEntity {
   getResource(projectId:number, url: string):Promise<Resource>;
   getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
   getAll(projectId: number):Promise<any[]>;
-  getResourceToCrawl(projectId:number):Promise<Resource>;
+  getResourceToScrape(projectId:number):Promise<Resource>;
 }

@@ -88,7 +88,7 @@ export default class KnexResource extends Resource {
   }
 
   // find a resource to crawl and set its scrapeInProgress flag
-  static async getResourceToCrawl(projectId:number):Promise<Resource> {
+  static async getResourceToScrape(projectId:number):Promise<Resource> {
     let resource:Resource = null;
 
     await this.storage.knex.transaction(async trx => {
