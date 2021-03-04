@@ -9,7 +9,7 @@ describe('MergePluginOpts', () => {
   it('before anchor', () => {
     const customOpts = [ {
       name: 'CustomBeforePlugin',
-      before: 'SelectResourcePlugin',
+      before: 'BrowserFetchPlugin',
     } ];
 
     const mergedOpts = mergePluginOpts(defaultPluginOpts, customOpts);
@@ -42,7 +42,7 @@ describe('MergePluginOpts', () => {
 
     const mergedOpts = mergePluginOpts(defaultPluginOpts, customOpts);
     const expectedOpts = [ ...defaultPluginOpts ];
-    expectedOpts[1] = customOpts[0];
+    expectedOpts[0] = customOpts[0];
 
     assert.sameDeepOrderedMembers(
       mergedOpts,
@@ -58,7 +58,7 @@ describe('MergePluginOpts', () => {
 
     const mergedOpts = mergePluginOpts(defaultPluginOpts, customOpts);
     const expectedOpts = [ ...defaultPluginOpts ];
-    expectedOpts[2] = customOpts[0];
+    expectedOpts[1] = customOpts[0];
 
     assert.sameDeepOrderedMembers(
       mergedOpts,
@@ -70,11 +70,11 @@ describe('MergePluginOpts', () => {
     const customOpts = [
       {
         name: 'CustomBefore1Plugin',
-        before: 'SelectResourcePlugin',
+        before: 'BrowserFetchPlugin',
       },
       {
         name: 'CustomBefore2Plugin',
-        before: 'SelectResourcePlugin',
+        before: 'BrowserFetchPlugin',
       },
       {
         name: 'CustomAfter1Plugin',
@@ -90,14 +90,11 @@ describe('MergePluginOpts', () => {
     const expectedOpts:PluginOpts[] = [
       {
         name: 'CustomBefore1Plugin',
-        before: 'SelectResourcePlugin',
+        before: 'BrowserFetchPlugin',
       },
       {
         name: 'CustomBefore2Plugin',
-        before: 'SelectResourcePlugin',
-      },
-      {
-        name: 'SelectResourcePlugin',
+        before: 'BrowserFetchPlugin',
       },
       {
         name: 'BrowserFetchPlugin',
