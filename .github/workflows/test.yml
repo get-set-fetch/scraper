@@ -59,10 +59,18 @@ jobs:
         concurrency: [sequential]
         include:
           - client: cheerio
+            storage: sqlite
             concurrency: parallel
             client_deps: cheerio
+            storage_deps: knex sqlite3@5
           - client: jsdom
+            storage: sqlite
             concurrency: parallel
+            client_deps: jsdom
+            storage_deps: knex sqlite3@5
+          - client: cheerio
+            client_deps: cheerio
+          - client: jsdom
             client_deps: jsdom
           - client: puppeteer_chromium
             client_deps: puppeteer
