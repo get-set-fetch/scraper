@@ -31,7 +31,7 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies
-      run: npm install cheerio jsdom puppeteer@5.5.0 playwright-core playwright-chromium knex sqlite3@4 mysql pg
+      run: npm install cheerio jsdom puppeteer@5.5.0 playwright-core playwright-chromium knex sqlite3@5 mysql pg
 
     - name: Lint check
       run: npm run lint
