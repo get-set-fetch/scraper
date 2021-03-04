@@ -69,7 +69,7 @@ jobs:
           - client: playwright_chromium
             client_deps: playwright-core playwright-chromium
           - storage: sqlite
-            storage_deps: knex
+            storage_deps: knex sqlite3@5
             docker_file: 
           - storage: mysql
             docker_file: ./test/config/storage/mysql/mysql.yml
@@ -79,6 +79,8 @@ jobs:
             storage_deps: knex pg
 
     steps:
+    - uses: actions/checkout@v2
+    
     - name: Acceptance Tests
       uses: ./.github/actions/acceptance
       with:
