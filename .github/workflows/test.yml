@@ -80,19 +80,60 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    
-    - name: Acceptance Tests
-      uses: ./.github/actions/acceptance
+
+    - name: Cache node modules
+      uses: actions/cache@v2
       with:
-        storage: ${{ matrix.storage }}
-        storage_deps: ${{ matrix.storage_deps }}
-        client: ${{ matrix.client }}
-        client_deps: ${{ matrix.client_deps }}
-        concurrency: ${{ matrix.concurrency }}
-        docker_file: ${{ matrix.docker_file }}
-        coveralls_token: ${{ secrets.GITHUB_TOKEN }} 
-        # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-        run_storage_unit_tests: ${{ matrix.puppeteer_chromium == 'puppeteer_chromium' }}
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+
+    - name: Docker ${{ matrix.storage }} up
+      if: ${{ matrix.docker_file }}
+      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
+
+    - name: Setup node 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install storage peer dependencies for ${{ matrix.storage }}
+      run: npm install ${{ matrix.storage_deps }} --save
+
+    - name: Install client peer dependencies for ${{ matrix.client }}
+      run: npm install ${{ matrix.client_deps }} --save
+
+    - name: ${{ matrix.storage }} unit tests
+      # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
+      if: ${{ matrix.puppeteer_chromium == 'puppeteer_chromium' }}
+      run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
+
+    - name: Coveralls for unit tests
+      if: ${{ matrix.run_storage_unit_tests }}
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: unit - ${{ matrix.storage }}
+        parallel: true
+
+    - name: Acceptance tests - ${{ matrix.client }} - ${{ matrix.storage }} - ${{ matrix.concurrency }}
+      run: | 
+        npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'",
+
+    - name: Coveralls for acceptance tests
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: acceptance - ${{ matrix.storage }} - ${{ matrix.client }} - ${{ matrix.concurrency }}
+        parallel: true
+
+    - name: Docker ${{ matrix.storage }} down
+      if: ${{ matrix.docker_file }}
+      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
    
   coverage:
     name: coverage
