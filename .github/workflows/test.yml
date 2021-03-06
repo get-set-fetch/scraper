@@ -82,7 +82,7 @@ jobs:
           - storage: mysql
             docker_file: ./test/config/storage/mysql/mysql.yml
             storage_deps: knex mysql
-          - storage: pg
+          - storage: postgresql
             docker_file: ./test/config/storage/pg/pg.yml 
             storage_deps: knex pg
 
@@ -117,7 +117,7 @@ jobs:
 
     - name: ${{ matrix.storage }} unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-      if: ${{ matrix.puppeteer_chromium == 'puppeteer_chromium' }}
+      if: ${{ matrix.client == 'puppeteer_chromium' }}
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
     - name: Coveralls for unit tests
