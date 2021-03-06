@@ -1,7 +1,9 @@
 /* eslint-disable max-classes-per-file */
 /* eslint-disable consistent-return */
-import { Project, Resource } from '..';
-import { Proxy } from '../storage/base/Resource';
+import Project from '../storage/base/Project';
+import { getLogger } from '../logger/Logger';
+import Resource, { Proxy } from '../storage/base/Resource';
+
 
 export const enum ConcurrencyLevel {
   Project = 'project', Proxy = 'proxy', Domain = 'domain', Session = 'session'
@@ -92,6 +94,8 @@ export default class ConcurrencyManager {
       delay: 1000,
     },
   };
+
+  logger = getLogger('ConcurrencyManager');
 
   opts: ConcurrencyOptions;
   status: Status;
@@ -221,6 +225,7 @@ export default class ConcurrencyManager {
 
     // update status
     this.addResource(proxy, hostname);
+    this.logger.debug({ proxy, url: resource.url }, 'resource added');
 
     return resource;
   }
@@ -338,6 +343,7 @@ export default class ConcurrencyManager {
   resourceScraped(project: Project, resource: Resource) {
     const { hostname } = new URL(resource.url);
     this.removeResource(resource.proxy, hostname);
+    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped and removed');
   }
 
   /**
@@ -350,5 +356,6 @@ export default class ConcurrencyManager {
   resourceError(project: Project, resource: Resource) {
     const { hostname } = new URL(resource.url);
     this.removeResource(resource.proxy, hostname);
+    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped in error and removed');
   }
 }
