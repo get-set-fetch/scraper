@@ -16,6 +16,7 @@ jobs:
 
     - name: Cache node modules
       uses: actions/cache@v2
+      id: cache
       with:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
@@ -31,6 +32,7 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
       run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
 
     - name: Lint check
@@ -59,12 +61,14 @@ jobs:
         concurrency: [sequential]
         include:
           - client: cheerio
-            storage: sqlite
+            storage: sqlite3
+            storage_label: sqlite
             concurrency: parallel
             client_deps: cheerio
             storage_deps: knex sqlite3
           - client: jsdom
-            storage: sqlite
+            storage: sqlite3
+            storage_label: sqlite
             concurrency: parallel
             client_deps: jsdom
             storage_deps: knex sqlite3
