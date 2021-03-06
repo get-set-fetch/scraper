@@ -1,4 +1,4 @@
-import { Browser, LaunchOptions, launch as plaunch, Page, DirectNavigationOptions, Response, Request } from 'puppeteer';
+import { Browser, LaunchOptions, launch as plaunch, Page, WaitForOptions, HTTPResponse, HTTPRequest, BrowserLaunchArgumentOptions, BrowserConnectOptions } from 'puppeteer';
 import { getLogger } from '../logger/Logger';
 import BrowserClient from './BrowserClient';
 
@@ -10,7 +10,7 @@ export default class PuppeteerClient extends BrowserClient {
   page: Page;
   opts: LaunchOptions;
 
-  constructor(opts:LaunchOptions = {}) {
+  constructor(opts:LaunchOptions & BrowserLaunchArgumentOptions & BrowserConnectOptions = {}) {
     super({ headlesss: true, ...opts });
   }
 
@@ -27,11 +27,11 @@ export default class PuppeteerClient extends BrowserClient {
     this.isLaunched = false;
   }
 
-  goto(url: string, opts: DirectNavigationOptions):Promise<Response> {
+  goto(url: string, opts: WaitForOptions):Promise<HTTPResponse> {
     return this.page.goto(url, opts);
   }
 
-  async getRedirectResponse(req:Request):Promise<Response|null> {
+  async getRedirectResponse(req:HTTPRequest):Promise<HTTPResponse|null> {
     const redirectChain = req.redirectChain();
     return redirectChain.length > 0 ? redirectChain[0].response() : null;
   }
