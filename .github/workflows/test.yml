@@ -47,7 +47,7 @@ jobs:
         parallel: true
 
   acceptance:
-    name: ${{ matrix.client }} - ${{ matrix.storage }} - ${{ matrix.concurrency }}
+    name: ${{ matrix.client }} - ${{ matrix.storage_label }} - ${{ matrix.concurrency }}
     runs-on: ubuntu-18.04
     needs: unit
 
@@ -55,7 +55,7 @@ jobs:
       fail-fast: false
       matrix:
         client: [cheerio, jsdom, puppeteer_chromium, playwright_chromium]
-        storage: [sqlite, mysql, postgresql]
+        storage: [sqlite3, mysql, pg]
         concurrency: [sequential]
         include:
           - client: cheerio
@@ -76,15 +76,18 @@ jobs:
             client_deps: puppeteer
           - client: playwright_chromium
             client_deps: playwright-core playwright-chromium
-          - storage: sqlite
+          - storage: sqlite3
+            storage_label: sqlite
             storage_deps: knex sqlite3
             docker_file: 
           - storage: mysql
-            docker_file: ./test/config/storage/mysql/mysql.yml
+            storage_label: mysql
             storage_deps: knex mysql
-          - storage: postgresql
-            docker_file: ./test/config/storage/pg/pg.yml 
+            docker_file: ./test/config/storage/mysql/mysql.yml
+          - storage: pg
+            storage_label: postgresql
             storage_deps: knex pg
+            docker_file: ./test/config/storage/pg/pg.yml
 
     steps:
     - uses: actions/checkout@v2
@@ -97,7 +100,7 @@ jobs:
         path: ~/.npm
         key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
 
-    - name: Docker ${{ matrix.storage }} up
+    - name: Docker ${{ matrix.storage_label }} up
       if: ${{ matrix.docker_file }}
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
 
@@ -109,13 +112,13 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Install storage peer dependencies for ${{ matrix.storage }}
+    - name: Install storage peer dependencies for ${{ matrix.storage_label }}
       run: npm install ${{ matrix.storage_deps }} --save
 
     - name: Install client peer dependencies for ${{ matrix.client }}
       run: npm install ${{ matrix.client_deps }} --save
 
-    - name: ${{ matrix.storage }} unit tests
+    - name: ${{ matrix.storage_label }} unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
       if: ${{ matrix.client == 'puppeteer_chromium' }}
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
@@ -125,10 +128,10 @@ jobs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: unit - ${{ matrix.storage }}
+        flag-name: unit - ${{ matrix.storage_label }}
         parallel: true
 
-    - name: Acceptance tests - ${{ matrix.client }} - ${{ matrix.storage }} - ${{ matrix.concurrency }}
+    - name: Acceptance tests - ${{ matrix.client }} - ${{ matrix.storage_label }} - ${{ matrix.concurrency }}
       run: | 
         npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'
 
@@ -136,10 +139,10 @@ jobs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: acceptance - ${{ matrix.storage }} - ${{ matrix.client }} - ${{ matrix.concurrency }}
+        flag-name: acceptance - ${{ matrix.storage_label }} - ${{ matrix.client }} - ${{ matrix.concurrency }}
         parallel: true
 
-    - name: Docker ${{ matrix.storage }} down
+    - name: Docker ${{ matrix.storage_label }} down
       if: ${{ matrix.docker_file }}
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
    
