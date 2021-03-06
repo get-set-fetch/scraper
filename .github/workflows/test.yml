@@ -31,7 +31,7 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies
-      run: npm install cheerio jsdom puppeteer@5.5.0 playwright-core playwright-chromium knex sqlite3@5 mysql pg
+      run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
 
     - name: Lint check
       run: npm run lint
@@ -62,12 +62,12 @@ jobs:
             storage: sqlite
             concurrency: parallel
             client_deps: cheerio
-            storage_deps: knex sqlite3@5
+            storage_deps: knex sqlite3
           - client: jsdom
             storage: sqlite
             concurrency: parallel
             client_deps: jsdom
-            storage_deps: knex sqlite3@5
+            storage_deps: knex sqlite3
           - client: cheerio
             client_deps: cheerio
           - client: jsdom
@@ -77,7 +77,7 @@ jobs:
           - client: playwright_chromium
             client_deps: playwright-core playwright-chromium
           - storage: sqlite
-            storage_deps: knex sqlite3@5
+            storage_deps: knex sqlite3
             docker_file: 
           - storage: mysql
             docker_file: ./test/config/storage/mysql/mysql.yml
