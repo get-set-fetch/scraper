@@ -4,7 +4,7 @@
 import { URL } from 'url';
 import EventEmitter from 'events';
 import BrowserClient from '../browserclient/BrowserClient';
-import Project from '../storage/base/Project';
+import Project, { IStaticProject } from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import Plugin, { PluginOpts } from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
@@ -116,7 +116,7 @@ export default class Scraper extends EventEmitter {
       return project;
     }
 
-    project = new this.storage.Project({
+    project = new (<IStaticProject> this.storage.Project)({
       name: projectName,
       url: scrapeDef.url,
       pluginOpts: scenarios[scrapeDef.scenario]
@@ -140,6 +140,7 @@ export default class Scraper extends EventEmitter {
 
     // scraping stopped, if resumed a new concurrencyManager will be created
     if (this.concurrency) {
+      clearInterval(this.checkTimeout);
       this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
       this.off(ScrapeEvent.ResourceError, this.concurrency.resourceError);
       delete this.concurrency;
@@ -205,7 +206,6 @@ export default class Scraper extends EventEmitter {
       // invalid concurrency state, abort the entire scraping process
       else {
         this.logger.error(err, 'concurrency error');
-        clearInterval(this.checkTimeout);
         await this.postScrape();
         this.emit(ScrapeEvent.ProjectError, err);
       }
@@ -271,11 +271,13 @@ export default class Scraper extends EventEmitter {
       }
 
       this.emit(ScrapeEvent.ResourceError, this.project, resource);
+      return;
     }
 
     /*
     resource is a dynamic one, successfully modified by a dynamic action: scroll, click, ..
     scrape the newly generated content by re-triggering the scrape plugins
+    keep the same proxy as chained dynamic actions only make sense within the same session
     */
     if (
       resource
@@ -283,7 +285,7 @@ export default class Scraper extends EventEmitter {
     && resource.actions.length > 0
     ) {
       const dynamicResource:Resource = (
-        ({ url, depth, contentType, parent, actions }) => this.project.createResource({ url, depth, contentType, parent, actions })
+        ({ url, depth, contentType, parent, actions, proxy }) => this.project.createResource({ url, depth, contentType, parent, actions, proxy })
       )(resource);
       this.scrapeResource(dynamicResource);
     }
