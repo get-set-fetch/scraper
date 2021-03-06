@@ -31,7 +31,7 @@ export default function crudProject(storage: Storage) {
       const projectByName = await Project.get(expectedProject.name);
       assert.deepEqual(projectByName, expectedProject);
 
-      const resourceToCrawl = await projectByName.getResourceToCrawl();
+      const resourceToCrawl = await projectByName.getResourceToScrape();
       assert.strictEqual(resourceToCrawl.projectId, projectById.id);
       assert.strictEqual(resourceToCrawl.url, projectById.url);
       assert.isTrue(resourceToCrawl.scrapeInProgress);
