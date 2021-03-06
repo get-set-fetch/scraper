@@ -4,7 +4,6 @@ import Project from '../storage/base/Project';
 import { getLogger } from '../logger/Logger';
 import Resource, { Proxy } from '../storage/base/Resource';
 
-
 export const enum ConcurrencyLevel {
   Project = 'project', Proxy = 'proxy', Domain = 'domain', Session = 'session'
 }
