@@ -32,7 +32,8 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
+      # in order to lint all files peerDependencies must be installed
+      # if: steps.cache.outputs.cache-hit != 'true'
       run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
 
     - name: Lint check
