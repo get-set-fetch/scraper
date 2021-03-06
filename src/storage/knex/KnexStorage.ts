@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import Knex from 'knex';
+import { Knex, knex } from 'knex';
 import Entity from '../base/Entity';
 import { IStaticResource } from '../base/Resource';
 import { IStaticProject } from '../base/Project';
@@ -32,7 +32,7 @@ export default class KnexStorage extends Storage {
   }
 
   async connect() {
-    this.knex = Knex(this.config);
+    this.knex = knex(this.config);
 
     // create Entity classes with current connection
     const DynamicKnexResource = class extends KnexResource {};
