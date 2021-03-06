@@ -47,7 +47,6 @@
     "@types/node": "^14.14.25",
     "@types/pako": "^1.0.1",
     "@types/pino": "^6.3.4",
-    "@types/puppeteer": "^3.0.2",
     "@types/sinon": "^9.0.9",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
     "@typescript-eslint/parser": "^4.3.0",
@@ -65,18 +64,18 @@
     "nyc": "^15.1.0",
     "sinon": "^9.2.1",
     "ts-loader": "^8.0.4",
-    "ts-node": "^9.0.0"
+    "ts-node": "^9.1.1"
   },
   "peerDependencies": {
-    "cheerio": "^1.0.0-rc.5",
-    "jsdom": "^16.4.0",
-    "knex": ">=0.21.0 <0.22.0",
-    "sqlite3": "^5.0.2",
-    "mysql": "^2.18.1",
-    "pg": "^8.5.1",
-    "playwright-chromium": "^1.8.0",
-    "playwright-core": "^1.8.0",
-    "puppeteer": "^5.5.0"
+    "cheerio": "1.0.0-rc.5",
+    "jsdom": ">= 16.4.0",
+    "knex": ">= 0.95",
+    "sqlite3": ">= 5.0",
+    "mysql": ">= 2.18.1",
+    "pg": ">= 8.5.1",
+    "playwright-chromium": ">= 1.8.0",
+    "playwright-core": ">= 1.8.0",
+    "puppeteer": ">= 8.0"
   },
   "dependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
