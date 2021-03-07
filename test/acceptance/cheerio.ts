@@ -6,6 +6,9 @@ import * as mysqlConn from '../config/storage/mysql/mysql-conn.json';
 import * as pgConn from '../config/storage/pg/pg-conn.json';
 import CheerioClient from '../../src/domclient/CheerioClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
+import { setLogger } from '../../src';
+
+setLogger({ level: 'debug' });
 
 const storage:Storage[] = [
   new KnexStorage(sqliteConn),
