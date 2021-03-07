@@ -191,6 +191,7 @@ export default class Scraper extends EventEmitter {
       // no more available resources to be scraped, project scraping complete
       if (!resource) {
         await this.postScrape();
+        this.logger.info(`Project ${this.project.name} scraping complete`);
         this.emit(ScrapeEvent.ProjectScraped, this.project);
       }
       else {

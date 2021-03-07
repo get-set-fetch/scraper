@@ -224,7 +224,7 @@ export default class ConcurrencyManager {
 
     // update status
     this.addResource(proxy, hostname);
-    this.logger.debug({ proxy, url: resource.url }, 'resource added');
+    this.logger.debug({ proxy, url: resource.url }, 'resource added to concurrency status');
 
     return resource;
   }
@@ -342,7 +342,7 @@ export default class ConcurrencyManager {
   resourceScraped(project: Project, resource: Resource) {
     const { hostname } = new URL(resource.url);
     this.removeResource(resource.proxy, hostname);
-    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped and removed');
+    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped and removed from concurrency status');
   }
 
   /**
@@ -355,6 +355,6 @@ export default class ConcurrencyManager {
   resourceError(project: Project, resource: Resource) {
     const { hostname } = new URL(resource.url);
     this.removeResource(resource.proxy, hostname);
-    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped in error and removed');
+    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped in error and removed from concurrency status');
   }
 }
