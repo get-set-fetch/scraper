@@ -124,8 +124,8 @@ export default class KnexResource extends Resource {
     return this.id;
   }
 
-  update():Promise<void> {
-    return this.Constructor.builder.where('id', this.id).update(this.toJSON());
+  async update():Promise<void> {
+    await this.Constructor.builder.where('id', this.id).update(this.toJSON());
   }
 
   del() {
