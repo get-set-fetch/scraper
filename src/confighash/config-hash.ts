@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer';
-import { deflate, inflate } from 'pako';
+import { deflateSync, inflateSync } from 'zlib';
 import * as dictionaryV1 from './dictionary-v1.json';
 
 /**
@@ -7,7 +7,7 @@ import * as dictionaryV1 from './dictionary-v1.json';
  * @param input - scraping configuration
  */
 function encode(input: object):string {
-  const deflatedIntArr = deflate(JSON.stringify(input), { dictionary: JSON.stringify(dictionaryV1) });
+  const deflatedIntArr = deflateSync(JSON.stringify(input), { dictionary: Buffer.from(JSON.stringify(dictionaryV1)) });
   return Buffer.from(deflatedIntArr).toString('base64');
 }
 
@@ -20,8 +20,8 @@ function decode(deflatedBase64String: string) {
 
   let inflatedInstance = null;
   const buffer = Buffer.from(deflatedBase64String, 'base64');
-  const inflatedString = inflate(buffer, <any>{ dictionary: JSON.stringify(dictionaryV1), to: 'string' });
-  inflatedInstance = JSON.parse(inflatedString);
+  const inflatedString = inflateSync(buffer, { dictionary: Buffer.from(JSON.stringify(dictionaryV1)) });
+  inflatedInstance = JSON.parse(inflatedString.toString('utf-8'));
 
   return inflatedInstance;
 }
