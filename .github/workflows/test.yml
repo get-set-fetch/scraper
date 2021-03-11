@@ -95,10 +95,6 @@ jobs:
             docker_file: ./test/config/storage/pg/pg.yml
 
     steps:
-    - name: Docker ${{ matrix.storage_label }} up
-      if: ${{ matrix.docker_file }}
-      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
-
     - uses: actions/checkout@v2
 
     - name: Cache node modules
@@ -108,6 +104,10 @@ jobs:
         # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
         path: ~/.npm
         key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+
+    - name: Docker ${{ matrix.storage_label }} up
+      if: ${{ matrix.docker_file }}
+      run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
     
     - name: Setup node 12
       uses: actions/setup-node@v1
