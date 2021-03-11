@@ -99,7 +99,7 @@ export default class PlaywrightClient extends BrowserClient {
         this.page.on('console', consoleHandler);
       }
 
-      const errorHandler = (err?:any) => {
+      const errorHandler = err => {
         this.logger.error(err);
         reject(err);
         this.page.off('pageerror', errorHandler);

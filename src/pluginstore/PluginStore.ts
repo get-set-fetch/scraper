@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { rollup, Plugin as RollupPlugin } from 'rollup';
+import { rollup, Plugin as RollupPlugin, OutputOptions } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
@@ -109,19 +109,19 @@ export default class PluginStore {
         moduleSideEffects: false,
       },
       onwarn: msg => {
+        // PluginStore.logger.warn(msg);
         // to do: store and return warnings/errors ?
         // if not overwritten, warnings are written to console
       },
     };
-    const outputOpts = {
+    const outputOpts:OutputOptions = {
       format: 'es',
-      silent: true,
-      sourceMap: false,
+      sourcemap: false,
     };
 
     const exportToGlobalPlugin = ():RollupPlugin => ({
       name: 'dynamic-import-polyfill',
-      renderChunk: (code, chunk) => {
+      renderChunk: code => {
         const codeWithoutExport = code.replace(/^export .+$/gm, '');
         return codeWithoutExport;
       },
@@ -157,7 +157,7 @@ export default class PluginStore {
 
     const bundle = await rollup({ ...inputOpts, plugins });
 
-    const { output } = await bundle.generate(<any>outputOpts);
+    const { output } = await bundle.generate(outputOpts);
     const { code } = output[0];
 
     return code;
