@@ -39,11 +39,6 @@
       "maxActions": -1
     },
     {
-      "name": "SelectResourcePlugin",
-      "frequency": -1,
-      "delay": 1000
-    },
-    {
       "name": "UpsertResourcePlugin"
     }
   ]
