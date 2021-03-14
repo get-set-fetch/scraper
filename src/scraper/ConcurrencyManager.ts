@@ -26,7 +26,7 @@ export type ConcurrencyOptionsEntry = {
 }
 
 export type ConcurrencyOptions = {
-  [key in 'project' | 'proxy' | 'domain' | 'session']?: ConcurrencyOptionsEntry;
+  [key in 'project' | 'proxy' | 'domain' | 'session']?: Partial<ConcurrencyOptionsEntry>;
 } & {
   proxyPool: Proxy[];
 }
@@ -283,7 +283,7 @@ export default class ConcurrencyManager {
     return proxy;
   }
 
-  conditionsMet(status: StatusEntry, opts: ConcurrencyOptionsEntry) {
+  conditionsMet(status: StatusEntry, opts: Partial<ConcurrencyOptionsEntry>) {
     // no recorded requests for the current status, no threshold to compare against
     if (!status) return true;
 
@@ -291,10 +291,10 @@ export default class ConcurrencyManager {
     if (!opts) return true;
 
     // max number of allowed parallel requests reached
-    if (status.requests >= opts.maxRequests) return false;
+    if (opts.maxRequests && status.requests >= opts.maxRequests) return false;
 
     // still need to wait before making a new request
-    if ((Date.now() - status.lastStartTime) < opts.delay) return false;
+    if (opts.delay && (Date.now() - status.lastStartTime) < opts.delay) return false;
 
     return true;
   }
