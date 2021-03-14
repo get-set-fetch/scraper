@@ -179,7 +179,7 @@ export default class Scraper extends EventEmitter {
       this.logger.error(err);
       // no project > no scrape process > abort
       await this.postScrape();
-      this.emit(ScrapeEvent.ProjectError, err);
+      this.emit(ScrapeEvent.ProjectError, this.project, err);
     }
   }
 
@@ -214,7 +214,7 @@ export default class Scraper extends EventEmitter {
       else {
         this.logger.error(err, 'concurrency error');
         await this.postScrape();
-        this.emit(ScrapeEvent.ProjectError, err);
+        this.emit(ScrapeEvent.ProjectError, this.project, err);
       }
     }
   }
@@ -277,7 +277,7 @@ export default class Scraper extends EventEmitter {
         await resource.update();
       }
 
-      this.emit(ScrapeEvent.ResourceError, this.project, resource);
+      this.emit(ScrapeEvent.ResourceError, this.project, resource, err);
       return;
     }
 
