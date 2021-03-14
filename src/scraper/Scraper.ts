@@ -80,8 +80,14 @@ export default class Scraper extends EventEmitter {
       throw new Error('scraping already in progress');
     }
     else {
-      this.concurrency = new ConcurrencyManager(concurrencyOpts);
+      // only sequential scraping is supported for browser clients like Puppeteer, Playwright
+      if (this.browserClient && concurrencyOpts && Object.keys(concurrencyOpts).find(
+        level => concurrencyOpts[level] && concurrencyOpts[level].maxRequests && concurrencyOpts[level].maxRequests !== 1,
+      )) {
+        throw new Error('concurrency condition maxRequests is not supported on browser clients');
+      }
 
+      this.concurrency = new ConcurrencyManager(concurrencyOpts);
       // concurrencyManager needs to update its status based on resource error/complete
       this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped.bind(this.concurrency));
       this.on(ScrapeEvent.ResourceError, this.concurrency.resourceError.bind(this.concurrency));
