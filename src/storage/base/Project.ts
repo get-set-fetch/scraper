@@ -59,6 +59,8 @@ export default abstract class Project extends Entity {
 
   abstract saveResources(resources: Partial<Resource>[]):Promise<void>;
 
+  abstract batchSaveResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean):Promise<void>;
+
   abstract createResource(resource: Partial<Resource>):Resource;
 
   get dbCols() {

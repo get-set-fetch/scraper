@@ -22,9 +22,9 @@ export default class KnexResource extends Resource {
         builder.increments('id').primary();
         builder.integer('projectId');
         builder.string('url');
-        builder.integer('depth');
+        builder.integer('depth').defaultTo(0);
         builder.dateTime('scrapedAt');
-        builder.boolean('scrapeInProgress');
+        builder.boolean('scrapeInProgress').defaultTo(false);
         builder.integer('status');
         builder.string('contentType');
 

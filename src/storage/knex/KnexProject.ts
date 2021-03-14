@@ -63,8 +63,7 @@ export default class KnexProject extends Project {
     [ this.id ] = result;
 
     // save the project url as a new resource, scraping will start with this resource
-    const resource = new this.Constructor.storage.Resource({ projectId: this.id, url: this.url });
-    await resource.save();
+    await this.batchSaveResources([ { url: this.url } ]);
 
     return this.id;
   }
@@ -100,6 +99,36 @@ export default class KnexProject extends Project {
     return new this.Constructor.storage.Resource({ ...resource, projectId: this.id });
   }
 
+  /**
+   * Assumes resources contain only url and optionally depth.
+   * All json and binary fields are undefined requiring no tranformation (JSON.strinfigy, Buffer.from, ...)
+   * @param resources - resources to be saved
+   * @param chunkSize - number of resources within a transaction
+   * @param uriNormalization - if set perform URI normalization on each url
+   */
+  async batchSaveResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean) {
+    // assign projectId in place for faster processing
+    resources.forEach(resource => {
+      // eslint-disable-next-line no-param-reassign
+      (<Resource>resource).projectId = this.id;
+      if (uriNormalization) {
+        /*
+        URI normalization
+        make sure we don't end up with equivalent but syntactically different URIs
+        ex: http://sitea.com, http://sitea.com/, http://SitEa.com
+        */
+        // eslint-disable-next-line no-param-reassign
+        (<Resource>resource).url = new URL(resource.url).toString();
+      }
+    });
+
+    await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
+  }
+
+  /**
+   * Each resource is further transformed based on sql dialect requirements (JSON.strinfigy, Buffer.from, ...)
+   * @param resources - resources to be saved
+   */
   async saveResources(resources: Partial<Resource>[]) {
     for (let i = 0; i < resources.length; i += 1) {
       const resource = new this.Constructor.storage.Resource(
