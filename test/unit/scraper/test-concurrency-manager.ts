@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
-import { Project, Resource } from '../../../src';
+import Resource, { Proxy } from '../../../src/storage/base/Resource';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyLevel } from '../../../src/scraper/ConcurrencyManager';
-import { Proxy } from '../../../src/storage/base/Resource';
 
 describe('ConcurrencyManager', () => {
   let sandbox:SinonSandbox;
@@ -31,6 +30,35 @@ describe('ConcurrencyManager', () => {
           delay: 3000,
         },
         session: undefined,
+        proxyPool: [ null ],
+      },
+      concurrency.opts,
+    );
+  });
+
+  it('defaultOpts merge', () => {
+    concurrency = new ConcurrencyManager({
+      project: { delay: 300 },
+      proxy: { maxRequests: 5 },
+      domain: { delay: 7000 },
+      session: { maxRequests: 11 },
+    });
+    assert.deepEqual(
+      {
+        project: {
+          delay: 300,
+        },
+        proxy: {
+          maxRequests: 5,
+          delay: 1000,
+        },
+        domain: {
+          maxRequests: 1,
+          delay: 7000,
+        },
+        session: {
+          maxRequests: 11,
+        },
         proxyPool: [ null ],
       },
       concurrency.opts,
