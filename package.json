@@ -1,7 +1,7 @@
 {
   "name": "@get-set-fetch/scraper",
   "version": "0.2.0",
-  "description": "Plugin based,  batteries  included, open source nodejs web scraper. It scrapes, stores and exports data. Supports multiple storage options: SQLite, MySQL, PostgreSQL. Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom.",
+  "description": "Plugin based, batteries included, open source nodejs web scraper. It scrapes, stores and exports data. Supports multiple storage options: SQLite, MySQL, PostgreSQL. Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom.",
   "keywords": [
     "scraper",
     "nodejs",
@@ -20,12 +20,11 @@
     "patch": "patch-package",
     "link:gsf": "npm link ../test-utils",
     "lint": "eslint src/**/*.ts",
-    "test:single": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --grep \"sqlite3 - PlaywrightClient - Chromium - Static - Binary - URI Normalization - No Extensions\" --exclude test/unit/storage/**/*",
-    "test:single:acceptance": "mocha --config test/.mocharc.js \"test/acceptance/sqlite-puppeteer-chromium.ts\" --grep \"sqlite3 - PuppeteerClient - Chromium - Dynamic - Scroll\"",
-    "test:unit:non-storage": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* ",
-    "test:unit:sqlite": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite-unit-suite.ts\"",
-    "test:acceptance:sqlite-puppeteer-chromium": "nyc mocha --config test/.mocharc.js \"test/acceptance/sqlite-puppeteer-chromium.ts\"",
-    "example": "ts-node  examples/custom-plugin-readability.ts",
+    "test:unit:single": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --grep \"ConfigHash\" --exclude test/unit/storage/**/*",
+    "test:cheerio": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3 - concurrency: parallel'",
+    "test:unit:non-storage": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/*",
+    "test:unit:sqlite": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite3-unit-suite.ts\"",
+    "example": "ts-node examples/custom-plugin-readability.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json"
   },
   "author": "Andrei Sabau",
