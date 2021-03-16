@@ -23,11 +23,11 @@ describe('ConcurrencyManager', () => {
         project: undefined,
         proxy: {
           maxRequests: 1,
-          delay: 1000,
+          delay: 500,
         },
         domain: {
           maxRequests: 1,
-          delay: 3000,
+          delay: 1000,
         },
         session: undefined,
         proxyPool: [ null ],
@@ -50,7 +50,7 @@ describe('ConcurrencyManager', () => {
         },
         proxy: {
           maxRequests: 5,
-          delay: 1000,
+          delay: 500,
         },
         domain: {
           maxRequests: 1,
