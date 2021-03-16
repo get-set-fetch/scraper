@@ -86,11 +86,11 @@ export default class ConcurrencyManager {
   static DEFAULT_OPTS:Partial<ConcurrencyOptions> = {
     domain: {
       maxRequests: 1,
-      delay: 3000,
+      delay: 1000,
     },
     proxy: {
       maxRequests: 1,
-      delay: 1000,
+      delay: 500,
     },
   };
 
