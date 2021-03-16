@@ -1,6 +1,6 @@
-import { IScenario } from './scenarios';
+import { Pipeline } from './pipelines';
 
-const scenario:IScenario = {
+const pipeline:Pipeline = {
   defaultPluginOpts: [
     {
       name: 'NodeFetchPlugin',
@@ -23,4 +23,4 @@ const scenario:IScenario = {
 
 };
 
-export default scenario;
+export default pipeline;

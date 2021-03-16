@@ -1,6 +1,6 @@
 {
   "url": "https://.com/.html",
-  "scenario": "browser-static-content|dom-static-content",
+  "pipeline": "browser-static-content|dom-static-content",
   "pluginOpts": [
     {
       "name": "ExtractHtmlContentPlugin",

@@ -4,7 +4,7 @@ import { encode, decode } from '../../../src/confighash/config-hash';
 describe('ConfigHash', () => {
   const expectedDefinition = {
     url: 'http://sitea.com/index.html',
-    scenario: 'browser-static-content',
+    pipeline: 'browser-static-content',
     pluginOpts: [
       {
         name: 'ExtractUrlsPlugin',
@@ -25,7 +25,7 @@ describe('ConfigHash', () => {
     ],
   };
 
-  const expectedConfigHash = 'eLuvV5WVQ045wIRTDDQ5EZx6MvNSUiuITkKE0gtpURWdUZSapmKrDrZePVYJ5BFUJZm56SDnYyQJYtJlLFAjAHanWDI=';
+  const expectedConfigHash = 'ePm8oZWZQ045wIRTDDQ5EZx6MvNSUiuITkKE0gtpURWdUZSapmKrDrZePVYJ5BFUJZm56SDn65CTLmOBGgF4cVg0';
 
   it('encode', () => {
     const encodedDefinition = encode(expectedDefinition);

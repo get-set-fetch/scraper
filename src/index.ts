@@ -35,4 +35,4 @@ export { getLogger, setLogger } from './logger/Logger';
 export { encode, decode } from './confighash/config-hash';
 export { default as CsvExporter } from './export/CsvExporter';
 export { default as ZipExporter } from './export/ZipExporter';
-export { scenarios, mergePluginOpts } from './scenarios/scenarios';
+export { pipelines, mergePluginOpts } from './pipelines/pipelines';

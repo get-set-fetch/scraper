@@ -1,10 +1,10 @@
 /* eslint-disable prefer-destructuring */
 import { assert } from 'chai';
 import { PluginOpts } from '../../../src/plugins/Plugin';
-import { scenarios, mergePluginOpts } from '../../../src/scenarios/scenarios';
+import { pipelines, mergePluginOpts } from '../../../src/pipelines/pipelines';
 
 describe('MergePluginOpts', () => {
-  const { defaultPluginOpts } = scenarios['browser-static-content'];
+  const { defaultPluginOpts } = pipelines['browser-static-content'];
 
   it('before anchor', () => {
     const customOpts = [ {

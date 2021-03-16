@@ -1,7 +1,7 @@
 import { unlinkSync } from 'fs';
 import { GsfServer, ScrapingSuite, IScrapingTest } from '@get-set-fetch/test-utils';
 import BrowserClient from '../../src/browserclient/BrowserClient';
-import { scenarios, mergePluginOpts } from '../../src/scenarios/scenarios';
+import { pipelines, mergePluginOpts } from '../../src/pipelines/pipelines';
 
 import Scraper from '../../src/scraper/Scraper';
 import { IStaticProject } from '../../src/storage/base/Project';
@@ -11,7 +11,7 @@ import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
 import ScrapeEvent from '../../src/scraper/ScrapeEvent';
 
 export default function acceptanceSuite(
-  scenario:string,
+  pipeline:string,
   storage: Storage,
   client:BrowserClient|IDomClientConstructor,
   concurrencyOpts: Partial<ConcurrencyOptions>,
@@ -25,7 +25,7 @@ export default function acceptanceSuite(
     .join(', ');
   concurrencyInfo = concurrencyInfo ? `concurrency: parallel using {${concurrencyInfo}}` : 'concurrency: sequential';
 
-  describe(`${clientInfo} - ${storage.config.client} - ${concurrencyInfo} - scenario: ${scenario}`, () => {
+  describe(`${clientInfo} - ${storage.config.client} - ${concurrencyInfo} - pipeline: ${pipeline}`, () => {
     let srv: GsfServer;
     let Project: IStaticProject;
 
@@ -57,7 +57,7 @@ export default function acceptanceSuite(
     ) => it(test.title, async () => {
       srv.update(test.vhosts);
 
-      const pluginOpts = mergePluginOpts(scenarios[scenario].defaultPluginOpts, test.definition.pluginOpts);
+      const pluginOpts = mergePluginOpts(pipelines[pipeline].defaultPluginOpts, test.definition.pluginOpts);
 
       // save a project for the current scraping test
       const project = new Project({
@@ -100,8 +100,8 @@ export default function acceptanceSuite(
     const tests = ScrapingSuite.getTests();
 
     tests.forEach((test:IScrapingTest) => {
-      // the current test definition doesn't apply to the scenario being tested
-      if (!test.definition.scenarios.includes(scenario)) return;
+      // the current test definition doesn't apply to the pipeline being tested
+      if (!test.definition.pipelines.includes(pipeline)) return;
 
       scrapingTest(test, concurrencyOpts);
     });

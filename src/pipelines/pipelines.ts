@@ -1,22 +1,22 @@
 import { PluginOpts } from '../plugins/Plugin';
-import BrowserStaticContentScenario from './BrowserStaticContentScenario';
-import DomStaticContentScenario from './DomStaticContentScenario';
+import BrowserStaticContentPipeline from './BrowserStaticContentPipeline';
+import DomStaticContentPipeline from './DomStaticContentPipeline';
 
-interface IScenario {
+export type Pipeline = {
   defaultPluginOpts:PluginOpts[];
 }
 
-export type Scenarios = {
-  [key: string] : IScenario
+export type Pipelines = {
+  [key: string] : Pipeline
 }
 
 /**
- * Built-in, predefined scenarios.
+ * Built-in, predefined pipelines.
  * Each one defines a series of plugins with default options to be executed against each to be scraped resource.
  */
-const scenarios: Scenarios = {
-  'browser-static-content': BrowserStaticContentScenario,
-  'dom-static-content': DomStaticContentScenario,
+const pipelines: Pipelines = {
+  'browser-static-content': BrowserStaticContentPipeline,
+  'dom-static-content': DomStaticContentPipeline,
 };
 
 /**
@@ -57,7 +57,6 @@ const mergePluginOpts = (defaultOpts: PluginOpts[], customOpts: PluginOpts[] = [
 };
 
 export {
-  IScenario,
   mergePluginOpts,
-  scenarios,
+  pipelines,
 };

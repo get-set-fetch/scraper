@@ -10,7 +10,7 @@ import Plugin, { PluginOpts } from '../plugins/Plugin';
 import PluginStore from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
 import Storage from '../storage/base/Storage';
-import { scenarios, mergePluginOpts } from '../scenarios/scenarios';
+import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
 import Exporter, { ExportOptions } from '../export/Exporter';
 import CsvExporter from '../export/CsvExporter';
 import ZipExporter from '../export/ZipExporter';
@@ -21,7 +21,7 @@ import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './Conc
 
 export type ScrapingConfig = {
   url: string,
-  scenario: string,
+  pipeline: string,
   pluginOpts: PluginOpts[]
 }
 
@@ -111,8 +111,8 @@ export default class Scraper extends EventEmitter {
     }
 
     const scrapeDef:ScrapingConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
-    if (scrapeDef.scenario && !scenarios[scrapeDef.scenario]) {
-      throw new Error(`Scenario ${scrapeDef.scenario} not found. Available scenarios are:  ${Object.keys(scenarios).join(', ')}`);
+    if (scrapeDef.pipeline && !pipelines[scrapeDef.pipeline]) {
+      throw new Error(`Pipeline ${scrapeDef.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
 
     const projectName = new URL(scrapeDef.url).hostname;
@@ -125,8 +125,8 @@ export default class Scraper extends EventEmitter {
     project = new (<IStaticProject> this.storage.Project)({
       name: projectName,
       url: scrapeDef.url,
-      pluginOpts: scenarios[scrapeDef.scenario]
-        ? mergePluginOpts(scenarios[scrapeDef.scenario].defaultPluginOpts, scrapeDef.pluginOpts)
+      pluginOpts: pipelines[scrapeDef.pipeline]
+        ? mergePluginOpts(pipelines[scrapeDef.pipeline].defaultPluginOpts, scrapeDef.pluginOpts)
         : scrapeDef.pluginOpts,
     });
     await project.save();
@@ -208,7 +208,7 @@ export default class Scraper extends EventEmitter {
     catch (err) {
       // normal concurrency errors based on the existing concurrency options
       if (err instanceof ConcurrencyError) {
-        this.logger.info(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
+        this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
       }
       // invalid concurrency state, abort the entire scraping process
       else {

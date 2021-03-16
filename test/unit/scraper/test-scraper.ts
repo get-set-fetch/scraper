@@ -4,7 +4,7 @@ import Scraper from '../../../src/scraper/Scraper';
 import Project from '../../../src/storage/base/Project';
 import BrowserClient from '../../../src/browserclient/BrowserClient';
 import Storage from '../../../src/storage/base/Storage';
-import ScrapeEvent from '../../../src/scraper/ScrapeEvents';
+import ScrapeEvent from '../../../src/scraper/ScrapeEvent';
 
 describe('Scraper', () => {
   let sandbox:SinonSandbox;
@@ -128,7 +128,7 @@ describe('Scraper', () => {
 
     const preScrapeProject = await scraper.initProject({
       url: 'http://a.com/index.html',
-      scenario: 'browser-static-content',
+      pipeline: 'browser-static-content',
       pluginOpts: [ { name: 'ExtractUrlsPlugin' } ],
     });
 
