@@ -1,5 +1,5 @@
 /* eslint-disable object-curly-newline */
-import { encode, KnexStorage, PuppeteerClient, Scraper, setLogger } from '../src/index';
+import { encode, KnexStorage, PuppeteerClient, Scraper, setLogger, ScrapeEvent } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -23,11 +23,11 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsG8L15Q091qXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpqcXxSZXxeaW5SahFIOA+Y7MpS44sLUhOzU4ExR0R6JZQ4UdIFInoNMFMQcckYM+0C4zgnVS83tSQxJbEkUUFboQCIIYIgP4NZCiUpVnklGbrJGZk5KRpGmgp2ColWaUAzSyBCQKtg+QMWNEogF1LDNmNNJNNhQaugkQtMmMC0oQmKvdhaAABDn0g=';
+const scrapeHash = 'ePm8oZWZQ085qXl65ZnZwBSTkpmol1+Urg/i6ftkFpfE56fF5yTmpZcmpqcWxydVxueV5ialFoGE84BJpyw1vrggNTE7FRj6RKQ5QgkMJW4RUWSAmQqIS4qY6Q8YTzmpermpJYkpiSWJCtoKBUAMEQT5GcxSKEmxyivJ0E3OyMxJ0TDSVLBTSLRKA5pZAhECWgVL47CgUQK5kBq2GWsimQ4LWgWNXGDiAsavJij2YmsBAzufSg==';
 
 const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -49,10 +49,10 @@ const scrapingConfig = {
   ],
 };
 
-(async () => {
-  await scraper.scrape(scrapeHash);
+scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/languages.csv', { type: 'csv' });
   await storage.close();
+  console.log(encode(scrapingConfig));
+});
 
-  encode(scrapingConfig);
-})();
+scraper.scrape(scrapeHash);

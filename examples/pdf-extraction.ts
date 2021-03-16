@@ -1,5 +1,5 @@
 /* eslint-disable object-curly-newline */
-import { KnexStorage, PuppeteerClient, Scraper, setLogger } from '../src/index';
+import { KnexStorage, PuppeteerClient, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -22,16 +22,12 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsG8L15jZPPCsIwDMZfZXjSQzs38KAH30RKt8Y12LXSPysefHdTEAZjQ285hC/fl/yypC7nzLN2HG2sYQQ/kDJCqBUGkIEK6yYwhJh3Vk7oU2DtsTnXAWOSxTXz8HSegPsD2k1CN6KuZ1sjaQai/Y0VD3c2AkS0w9c9MxjixUbNeo1G7U+H6lrJjT4h6JTjrjha6HYpRtpIZxKwTvaPwbtkVZFaAVk3XL0o0rweITR9Dk0rl7q9P1bImUk=';
+const scrapeHash = 'ePm8oZWZjZLNCsIwEIRfpXjSQ1Jb8KAH30RC2qzNYppIfho8+O5uQCgWpd72sOzszHxLcnLOPGvH0cYaRvAD2B4h1AoDyECDdRMYwsQ7Kyf0KbB23xzrgDHJosw83J0naP4Ab42yj4Lnntr1tnm4shEgoh3eDzGDIZ5s1KzXaNT2sKvOlfyxJwQlPG5KgIu7XYqRTHYmAetkfxu8S1aVU1/40g1XD7I0OxZCE9CkVsK/PF+cwooz';
 
 const scrapingConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
-    {
-      name: 'SelectResourcePlugin',
-      delay: 1000,
-    },
     {
       name: 'ExtractUrlsPlugin',
       maxDepth: 2,
@@ -48,8 +44,10 @@ const scrapingConfig = {
   ],
 };
 
-(async () => {
-  await scraper.scrape(scrapingConfig);
+scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/resources.zip', { type: 'zip' });
   await storage.close();
-})();
+  console.log(encode(scrapingConfig));
+});
+
+scraper.scrape(scrapingConfig, { domain: { delay: 1000 } });

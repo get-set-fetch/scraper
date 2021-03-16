@@ -1,5 +1,5 @@
 /* eslint-disable object-curly-newline */
-import { KnexStorage, PuppeteerClient, Scraper, setLogger } from '../src/index';
+import { KnexStorage, PuppeteerClient, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -22,11 +22,11 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsG8L15jdJNEsIgDAXgu7iWxgs5TmwjZSy0Q0TGhXc3RMc/7NgdG0h47/tWl3NukpBUfeXQ9uinss1AaBNB71iCv0DEcHTBMkwyjyKDHXHgHbdjpA6WkP3n84PGq+FNjWiZ5Jpv586N7sSyFhtpxBujT6+f7u/fW5Whvx94BGJC8nvJ4e2qJlJSnoWAhxPFuXpqmlrq9noDAHydfg==';
+const scrapeHash = 'ePm8oZWZjZJBEsIgDEXv4loab+TENlLGQjtEZLy9CTq2ih27Y5Of8P77Nifn3CTRqhikj7ZHP2niQGgTQe9Y4N0hYri4YBkm2U+RwY448JHbMVIHW7T759hHvXNLh1qEbTbWCnbu1pSbWM5iI1S9MSV6/3b3+b2dLv0d8AJiQvIn4bAYLUSU8mqZeL5SXKun1ktLlrgHA1idgA==';
 
 const scrapingConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -53,8 +53,10 @@ const scrapingConfig = {
   ],
 };
 
-(async () => {
-  await scraper.scrape(scrapingConfig);
+scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/infinite-scrolling.csv', { type: 'csv' });
   await storage.close();
-})();
+  console.log(encode(scrapingConfig));
+});
+
+scraper.scrape(scrapingConfig, { domain: { delay: 1000 } });

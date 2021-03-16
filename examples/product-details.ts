@@ -1,5 +1,5 @@
 /* eslint-disable object-curly-newline */
-import { KnexStorage, PuppeteerClient, Scraper, setLogger } from '../src/index';
+import { KnexStorage, PuppeteerClient, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -22,15 +22,11 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsG8L15lVTLbsMgEPwV5F7ag7GMe6qUVlFOlSK1p16aqFrbyKBgiMAmyqH99i6mVfOwlfQIyzDM7gynrsMpaiVLC3ZPjW0y6DthrMtelsU9Y/k8e3YA1cfcydb4py00fJZf489JM06o+pHBjmWMmeZv9sVlB904DrYSSIeZc+SLUJQgNYR+k0cCdCGMcfwVdT3oTqSVkKq+ZXdJeMTxVaKgpTGbwY8ItPHKkYOASfbcLvEwUsi2ievQ/jNl12XyPIgipztjN+nwGsT8pjauA88IhlFey6A8LfdKalRxgIyDn4D2CvVCza0bxuxQl5IUfJNabKVuwobbgn5Hk7fha5itklh5A9XzVbI+YIoF4kPlP3xjHNxLvluYXncnHEOBVKESGr/+/Aakgg0I';
+const scrapeHash = 'ePm8oZWZnVNBTsMwEPyKFS4gEUdJOCEVVPWEVAlOXGiFNollW3Xsyk5S9QBvZzcWoi1BBY72ejy7Mzunm4NOWKMrD37PnZcZ9J1yPmSPy/KmKPJ59hAA6td50K0b7rcgxSz/zY6dW6gjL78sKc8bexEE+FrhbBiFwN4Zx660BZKB3THgC+VcEE/Y6q3tVForbZrL4ioheY6/UiWvnNuMa4JAH7+ceAgYsEH4JT5GCt3KeCZFr/8Xle/5UDnfOb9Jx24Q8xmmeCaeCUzBRaNp8rTakx8MDpDRyx+gvcF5oRE+jM4FnMtoDoNMPUppJV2ELdgX3L2WEjtbJbHyDKYXq2R9wBQLbKDKX/imOMSgxW7hetudcIwFVlOFhF+/fQCpef3i';
 const scrapingConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
-    {
-      name: 'SelectResourcePlugin',
-      delay: 1000,
-    },
     {
       name: 'ExtractUrlsPlugin',
       maxDepth: 3,
@@ -70,9 +66,11 @@ const scrapingConfig = {
   ],
 };
 
-(async () => {
-  await scraper.scrape(scrapingConfig);
+scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/books.csv', { type: 'csv' });
   await scraper.export('./examples/data/book-covers.zip', { type: 'zip' });
   await storage.close();
-})();
+  console.log(encode(scrapingConfig));
+});
+
+scraper.scrape(scrapingConfig, { domain: { delay: 1000 } });

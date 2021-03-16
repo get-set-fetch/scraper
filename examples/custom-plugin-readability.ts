@@ -1,6 +1,6 @@
 /* eslint-disable object-curly-newline */
 import { join } from 'path';
-import { KnexStorage, PluginStore, PuppeteerClient, ScrapingConfig, Scraper, setLogger } from '../src/index';
+import { KnexStorage, PluginStore, PuppeteerClient, ScrapingConfig, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -24,10 +24,10 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'eLsG8L15Q0915eXleklJyeDEl5daXqxfkpqckZefk59eSUwyJJTmUKIbEWuGRMR9dEZRappCnK2COrrDdNVjQX5B+BaU4KAxCLesKLUgJzGZQPLHlViJi3JToCMAsg13/Q==';
+const scrapeHash = 'ePm8oZWZQ0855eXleklJyeAElJdaXqxfkpqckZefk59eSUxSIpRuUKIMEfKGRMRfdEZRappCnK2COrrDdNVjQX5B+BaUaKCxALesKLUgJzGZQBLGleCIizZToCMAtHl3/w==';
 const scrapingConfig:ScrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -52,7 +52,11 @@ const scrapingConfig:ScrapingConfig = {
   await PluginStore.init();
   await PluginStore.addEntry(join(__dirname, 'plugins', 'ReadabilityPlugin.ts'));
 
-  await scraper.scrape(scrapingConfig);
-  await scraper.export('./examples/data/readability.csv', { type: 'csv' });
-  await storage.close();
+  scraper.on(ScrapeEvent.ProjectScraped, async () => {
+    await scraper.export('./examples/data/readability.csv', { type: 'csv' });
+    await storage.close();
+    console.log(encode(scrapingConfig));
+  });
+
+  scraper.scrape(scrapingConfig, { domain: { delay: 1000 } });
 })();
