@@ -29,6 +29,7 @@ export { default as Resource } from './storage/base/Resource';
 export { default as Plugin, PluginOpts } from './plugins/Plugin';
 export { default as PluginStore, StoreEntry } from './pluginstore/PluginStore';
 export { default as Scraper, ScrapingConfig } from './scraper/Scraper';
+export { default as ScrapeEvent } from './scraper/ScrapeEvent';
 
 export { getLogger, setLogger } from './logger/Logger';
 export { encode, decode } from './confighash/config-hash';

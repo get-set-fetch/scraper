@@ -16,7 +16,7 @@ import CsvExporter from '../export/CsvExporter';
 import ZipExporter from '../export/ZipExporter';
 import { decode } from '../confighash/config-hash';
 import { IDomClientConstructor } from '../domclient/DomClient';
-import ScrapeEvent from './ScrapeEvents';
+import ScrapeEvent from './ScrapeEvent';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
 
 export type ScrapingConfig = {

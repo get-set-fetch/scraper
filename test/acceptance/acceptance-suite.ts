@@ -8,7 +8,7 @@ import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
-import ScrapeEvent from '../../src/scraper/ScrapeEvents';
+import ScrapeEvent from '../../src/scraper/ScrapeEvent';
 
 export default function acceptanceSuite(
   scenario:string,
