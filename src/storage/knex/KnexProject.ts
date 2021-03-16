@@ -63,7 +63,7 @@ export default class KnexProject extends Project {
     [ this.id ] = result;
 
     // save the project url as a new resource, scraping will start with this resource
-    await this.batchSaveResources([ { url: this.url } ]);
+    await this.batchInsertResources([ { url: this.url } ]);
 
     return this.id;
   }
@@ -106,7 +106,7 @@ export default class KnexProject extends Project {
    * @param chunkSize - number of resources within a transaction
    * @param uriNormalization - if set perform URI normalization on each url
    */
-  async batchSaveResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean) {
+  async batchInsertResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean) {
     // assign projectId in place for faster processing
     resources.forEach(resource => {
       // eslint-disable-next-line no-param-reassign
