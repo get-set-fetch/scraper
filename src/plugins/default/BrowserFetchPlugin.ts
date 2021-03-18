@@ -15,6 +15,22 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
       title: 'Browser Fetch Plugin',
       description: 'depending on resource type (binary, html), either downloads or opens in the scraping tab the resource url.',
       properties: {
+        gotoOptions: {
+          type: 'object',
+          description: 'navigation parameters',
+          properties: {
+            timeout: {
+              description: 'maximum navigation time in milliseconds',
+              type: 'integer',
+              default: 30000,
+            },
+            waitUntil: {
+              description: 'when to consider navigation succeeded',
+              type: 'string',
+              default: 'domcontentloaded',
+            },
+          },
+        },
         stabilityCheck: {
           type: 'integer',
           default: 0,
@@ -137,7 +153,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
   }
 
   async openInTab(resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
-    const response = await client.goto(resource.url, { waitUntil: 'networkidle0' });
+    const response = await client.goto(resource.url, this.opts.gotoOptions);
     const redirectResponse = await client.getRedirectResponse(response.request());
 
     this.logger.debug({ status: response.status() }, 'openInTab response');

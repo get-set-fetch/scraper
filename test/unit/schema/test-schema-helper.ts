@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { JSONSchema7 } from 'json-schema';
 import SchemaHelper from '../../../src/schema/SchemaHelper';
 
-describe('Schema Helper', () => {
+describe('SchemaHelper', () => {
   it('instantiate string', async () => {
     const schemaWithDefault:JSONSchema7 = {
       type: 'string',
@@ -164,6 +164,19 @@ describe('Schema Helper', () => {
             },
           },
         },
+        propE: {
+          type: 'object',
+          properties: {
+            propE1: {
+              type: 'string',
+              default: 'e1',
+            },
+            propE2: {
+              type: 'integer',
+              default: 10,
+            },
+          },
+        },
       },
     };
 
@@ -173,6 +186,30 @@ describe('Schema Helper', () => {
       propB: 3,
       propC: true,
       propD: [],
+      propE: {
+        propE1: 'e1',
+        propE2: 10,
+      },
+    });
+
+    const partialObj = {
+      propA: 'valA1',
+      propB: 4,
+      propD: [ { d2: 3 } ],
+      propE: {
+        propE1: 'e2',
+      },
+    };
+    inst = SchemaHelper.instantiate(schemaWithDefault, partialObj);
+    assert.deepEqual(inst, {
+      propA: 'valA1',
+      propB: 4,
+      propC: true,
+      propD: [ { d1: undefined, d2: 3 } ],
+      propE: {
+        propE1: 'e2',
+        propE2: 10,
+      },
     });
 
     const fullObj = {
@@ -180,6 +217,10 @@ describe('Schema Helper', () => {
       propB: 4,
       propC: false,
       propD: [ { d1: 'a', d2: 3 } ],
+      propE: {
+        propE1: 'e2',
+        propE2: 20,
+      },
     };
     inst = SchemaHelper.instantiate(schemaWithDefault, fullObj);
     assert.deepEqual(inst, fullObj);
