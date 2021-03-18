@@ -10,7 +10,8 @@
     "rootDir": "src",
     "outDir": "dist/cjs",
     "declaration": true,
-    "newLine": "LF"
+    "newLine": "LF",
+    "preserveConstEnums": true
   },
   "include": [
     "src"
