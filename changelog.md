@@ -4,7 +4,8 @@
 - Storage:
   - Project: batchInsertResources allows fast resource saving with just url and depth properties
 - Plugins:
-  - BrowserFetchPlugin: improved DOM stability check support
+  - SelectResourcePlugin: removed, resources are now selected for scraping via ConcurrencyManager
+  - BrowserFetchPlugin: improved DOM stability check support, added gotoOptions
 - Scenarios:
   - are now renamed to pipelines
 - Concurrency:
@@ -12,10 +13,7 @@
   - control sequential and parralel scraping behaviour at project/proxy/domain/session level
   - available options: proxyPool, delay, maxRequests
   - browser clients support only sequential scraping with maxRequests = 1
-- Plugins:
-  - SelectResourcePlugin: removed, resources are now selected for scraping via ConcurrencyManager
-
-
+  
 ### 0.2.0 - 2021-02-11
 - Storage
   - Added resource.status
