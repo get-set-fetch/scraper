@@ -9,19 +9,21 @@
 
 get-set, Fetch! is a plugin based, batteries included, open source nodejs web scraper. It scrapes, stores and exports data.
 
-An ordered list of plugins (builtin or custom) are executed against each to be scraped web resource. Supports multiple storage options: SQLite, MySQL, PostgreSQL. Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom. 
+An ordered list of plugins (builtin or custom) is executed against each to be scraped web resource. Supports multiple storage options: SQLite, MySQL, PostgreSQL. Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom. 
 
 - [Getting Started](#getting-started)
   * [Install](#install-the-scraper)
   * [Init](#init-storage)
+  * [Define a Scraping Configuration](#define-a-scraping-configuration)
+  * [Define Concurrency Options](#define-concurrency-options)
   * [Scrape](#start-scraping)
   * [Export](#export-results)
 - [Storage](#storage)
   * [SQLite](#sqlite)
   * [MySQL](#mysql)
   * [PostgreSQL](#postgresql)
-- [Scenarios](#scenarios)
-  * [Static-Content](#static-content-scenario)
+- [Pipelines](#pipelines)
+  * [Static-Content](#static-content-pipeline)
     * [Browser Plugin Options](#browser-static-content-plugin-options)
     * [DOM Plugin Options](#dom-static-content-plugin-options)
     * [Examples](#static-content-usage-examples)
@@ -33,7 +35,6 @@ An ordered list of plugins (builtin or custom) are executed against each to be s
   * [Jsdom](#jsdom)
 - [PluginStore](#pluginstore)
 - [Plugins](#plugins)
-  * [SelectResourcePlugin](#selectresourceplugin)
   * [NodeFetchPlugin](#nodefetchplugin)
   * [BrowserFetchPlugin](#browserfetchplugin)
   * [ExtractUrlsPlugin](#extracturlsplugin)
@@ -46,6 +47,8 @@ An ordered list of plugins (builtin or custom) are executed against each to be s
   * [Start from a Scraping Hash](#start-from-a-scraping-hash)
   * [Start from a Predefined Project](#start-from-a-predefined-project)
   * [Resume Scraping](#resume-scraping)
+  * [Scrape Events](#scrape-events)
+  * [Concurrency Options](#concurrency-options)
 - [Export](#export)
   * [CSV Exporter](#csv-exporter)
   * [ZIP Exporter](#zip-exporter)
@@ -68,15 +71,15 @@ $ npm install @get-set-fetch/scraper
 
 ### Install a storage solution
 ```
-$ npm install knex sqlite3@4
+$ npm install knex sqlite3
 ```
-Supported storage options are defined as peer dependencies. You need to install at least one of them. Currently available: sqlite3, mysql, postgresql. All of them require Knex.js query builder to be installed as well. MongoDB storage is on the roadmap.
+Supported storage options are defined as peer dependencies. You need to install at least one of them. Currently available: SQLite, MySQL, PostgreSQL. All of them require Knex.js query builder to be installed as well. NoSQL support is on the roadmap.
 
 ### Install a browser client
 ```
 $ npm install puppeteer
 ```
-Supported browser clients are defined as peer dependencies.
+Supported browser clients are defined as peer dependencies. Supported browser clients: Puppeteer, Playwright. Supported DOM clients: Cheerio, JSDom.
 ### Init storage
 ```js
 const { KnexStorage } = require('@get-set-fetch/scraper');
@@ -89,7 +92,7 @@ const conn = {
 }
 const storage = new KnexStorage(conn);
 ```
-See [Storage](#storage) on full configurations for supported sqlite, mysql, postgresql.
+See [Storage](#storage) on full configurations for supported SQLite, MySQL, PostgreSQL.
 
 ### Init browser client
 ```js
@@ -106,16 +109,12 @@ const { Scraper } = require('@get-set-fetch/scraper');
 const scraper = new Scraper(storage, client);
 ```
 
-### Start scraping
+### Define a scraping configuration
 ```js
-await scraper.scrape({
+const scrapingConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
-    {
-      name: 'SelectResourcePlugin',
-      delay: 2000,
-    },
     {
       name: 'ExtractUrlsPlugin',
       maxDepth: 3,
@@ -153,30 +152,53 @@ await scraper.scrape({
       ],
     },
   ],
-});
+};
 ```
 You can define a scraping configuration in multiple ways. The above example is the most direct one.
-You define a starting url, a predefined scenario that defines a series of scraping plugins with default options, and any plugin options you want to override. See [scenarios](#scenarios) and [plugins](#plugins) for all available options.
-
-SelectResourcePlugin.delay will add a delay between scraping two consecutive resources (web pages, images, pdfs ...).
+You define a starting url, a predefined pipeline containing a series of scraping plugins with default options, and any plugin options you want to override. See [pipelines](#pipelines) and [plugins](#plugins) for all available options.
 
 ExtractUrlsPlugin.maxDepth defines a maximum depth of resources to be scraped. The starting resource has depth 0. Resources discovered from it have depth 1 and so on. A value of -1 disables this check.
 
-ExtractUrlsPlugin.selectorPairs defines CSS selectors for discovering new resources. urlSelector property selects the links while the optional titleSelector can be used for renaming binary resources like images or pdfs. In order, the define selectorPairs extract pagination urls, book detail urls, img cover urls.
+ExtractUrlsPlugin.selectorPairs defines CSS selectors for discovering new resources. urlSelector property selects the links while the optional titleSelector can be used for renaming binary resources like images or pdfs. In order, the define selectorPairs extract pagination URLs, book detail URLs, image cover URLs.
 
 ExtractHtmlContentPlugin.selectorPairs scrapes content via CSS selectors. Optional labels can be used for specifying columns when exporting results as csv.
 
+### Define concurrency options
+```js
+const concurrencyOpts = {
+  project: {
+    delay: 1000
+  }
+  domain: {
+    delay: 5000
+  }
+}
+```
+A minimum delay of 5000 ms will be enforced between scraping consecutive resources from the same domain. At project level, across all domains, any two resources will be scraped with a minimum 1000 ms delay between requests. See [concurrency options](#concurrency-options) for all available options.
+
+### Start scraping
+```js
+scraper.scrape(scrapingConfig, concurrencyOpts);
+```
+The entire process is asynchronous. Listen to the emitted [scrape events](#scrape-events) to monitor progress.
+
 ### Export results
 ```js
-await scraper.export('books.csv', { type: 'csv' });
-await scraper.export('book-covers.zip', { type: 'zip' });
+const { ScrapeEvent } = require('@get-set-fetch/scraper');
+
+scraper.on(ScrapeEvent.ProjectScraped, async (project) => {
+  await scraper.export('books.csv', { type: 'csv' });
+  await scraper.export('book-covers.zip', { type: 'zip' });
+})
 ```
+Wait for scraping to complete by listening to `ProjectScraped` event.
+
 Export scraped html content as csv. Export scraped images under a zip archive. See [Export](#export) for all supported parameters.
 
 
 ## Storage
 
-Each url (web page, image, API endpoint, ...) represents a [Resource](./src/storage/base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping configuration and discovered from the same initial url are grouped in a [Project](./src/storage/base/Project.ts). 
+Each URL (web page, image, API endpoint, ...) represents a [Resource](./src/storage/base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping configuration and discovered from the same initial URL(s) are grouped in a [Project](./src/storage/base/Project.ts). 
 Projects represent the starting point for any scraping operation.
 
 You can add additional storage support by implementing the above two abstract classes and [Storage](./src/storage/base/Storage.ts).
@@ -193,7 +215,7 @@ Database credentials from the connection examples below match the ones from the 
 ### SQLite
 Default storage option if none provided consuming the least amount of resources. Requires knex and sqlite driver. I'm recommending sqlite3@4 as it seems latest 5.0.x versions don't yet have pre-built binaries for all major node versions. 
 ```
-$ npm install knex sqlite3@4
+$ npm install knex sqlite3
 ```
 Examples: [SQLite connection](./test/config/storage/sqlite/sqlite-conn.json)
 
@@ -212,13 +234,13 @@ $ npm install knex pg
 ```
 Examples: [PostgreSQL connection](./test/config/storage/pg/pg-conn.json) | [PostgreSQL docker file](./test/config/storage/pg/pg.yml)
 
-## Scenarios
+## Pipelines
 
-Each scenario contains a series of plugins with predefined values for all plugin options. A scraping configuration extends a scenario by replacing/adding new plugins or overriding the predefined plugin options.
+Each pipeline contains a series of plugins with predefined values for all plugin options. A scraping configuration extends a pipeline by replacing/adding new plugins or overriding the predefined plugin options.
 
 Take a look at [Examples](#examples) for real world scraping configurations.
 
-### Static Content Scenario
+### Static Content Pipeline
 Use to scrape static data, does not rely on javascript to either read or alter the html content. 
 
 Comes in two variants [browser-static-content](#browser-static-content-plugin-options), [dom-static-content](#dom-static-content-plugin-options). First one runs in browser, second one makes use of a dom-like parsing library such as cheerio.
@@ -226,9 +248,9 @@ Comes in two variants [browser-static-content](#browser-static-content-plugin-op
 
  Plugin | Option | Default value |
 | ----------- | ----------- | -- |
-| SelectResourcePlugin | frequency | -1
-|                      | delay     | 1000
-| BrowserFetchPlugin          | stabilityCheck | 0
+| BrowserFetchPlugin   | gotoOptions.timeout | 30000 
+|                      | gotoOptions.waitUntil | domcontentloaded       
+|                      | stabilityCheck | 0
 |                      | stabilityTimeout     | 0
 | ExtractUrlsPlugin    | domRead | true
 |                      | maxDepth | -1
@@ -243,8 +265,6 @@ Comes in two variants [browser-static-content](#browser-static-content-plugin-op
 
  Plugin | Option | Default value |
 | ----------- | ----------- | -- |
-| SelectResourcePlugin | frequency | -1
-|                      | delay     | 1000
 | NodeFetchPlugin      | proxyPool | [] 
 | ExtractUrlsPlugin    | domRead | false
 |                      | maxDepth | -1
@@ -258,9 +278,9 @@ Comes in two variants [browser-static-content](#browser-static-content-plugin-op
 
 Limit scraping to a single page by setting `ExtractUrlsPlugin.maxDepth` to `0`.
 ```js
-await scraper.scrape({
+scraper.scrape({
   url: 'startUrl',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -272,9 +292,9 @@ await scraper.scrape({
 
 Scrape from each html page all elements found by the `h1.title` CSS selector.
 ```js
-await scraper.scrape({
+scraper.scrape({
   url: 'startUrl',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractHtmlContentPlugin',
@@ -289,11 +309,11 @@ await scraper.scrape({
 })
 ```
 
-Add a new `ScrollPlugin` to the scenario and scroll html pages to reveal further dynamically loaded content.
+Add a new `ScrollPlugin` to the pipeline and scroll html pages to reveal further dynamically loaded content.
 ```js
-await scraper.scrape({
+scraper.scrape({
   url: 'startUrl',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ScrollPlugin',
@@ -305,7 +325,7 @@ await scraper.scrape({
 ```
 
 ## Browser Clients
-Clients controlling an actual browser. You can use such clients with predefined scenarios prefixed by 'browser' like [browser-static-content](#browser-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them. 
+Clients controlling an actual browser. You can use such clients with predefined pipelines prefixed by 'browser' like [browser-static-content](#browser-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them. 
 
 If not specified, a default `headless:true` flag is added to the `launchOpts`.
 
@@ -335,7 +355,7 @@ const scraper = new Scraper(storage, client);
 ```
 
 ## DOM Clients
-Clients capable of parsing and querying html content exposing DOM like functionality such as `querySelectorAll`, `getAttribute`.  You can use such clients with predefined scenarios prefixed by 'dom' like [dom-static-content](#dom-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them.
+Clients capable of parsing and querying html content exposing DOM like functionality such as `querySelectorAll`, `getAttribute`.  You can use such clients with predefined pipelines prefixed by 'dom' like [dom-static-content](#dom-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them.
 
 When defining your own plugins you can directly use your favorite html parsing library, you don't have to use any of the clients described below. They are designed as a compatibility layer between DOM like libraries and browser DOM API so that predefined plugins like [ExtractHtmlContentPlugin](#extracthtmlcontentplugin), [ExtractUrlsPlugin](#extracturlsplugin) can use either one interchangeably. 
 
@@ -376,12 +396,6 @@ await PluginStore.add(fileOrDirPath);
 
 The entire scraping process is plugin based. A scraping configuration (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
 
-### SelectResourcePlugin
-Selects a resource to scrape from the current project | [schema](./src/plugins/default/SelectResourcePlugin.ts)
-- `delay`
-  - Delay in milliseconds between fetching two consecutive resources.
-  - default: 1000
-
 ### NodeFetchPlugin
 Uses nodejs `http.request` / `https.request` to fetch html and binary data. Response content is available under Uint8Array `resource.data`.  Html content can be retrieved via `resource.data.toString('utf8')`.
 - `proxyPool`
@@ -389,7 +403,15 @@ Uses nodejs `http.request` / `https.request` to fetch html and binary data. Resp
   - default: `[]`
 
 ### BrowserFetchPlugin
-Depending on resource type (binary, html), either downloads or opens in the scraping tab the resource url | [schema](./src/plugins/default/FetchPlugin.ts)
+Depending on resource type (binary, html), either downloads or opens in the scraping tab the resource URL | [schema](./src/plugins/default/FetchPlugin.ts)
+- `gotoOptions`
+  - navigation parameters for Puppeteer/Playwright page.goto API.
+  - `timeout`
+    - maximum navigation time in milliseconds
+    - default: 30000
+  - `waitUntil`
+    - when to consider navigation succeeded
+    - default: domcontentloaded
 - `stabilityCheck`
   - Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds). Only applies to html resources. Useful for bypassing preloader content.
   - default: 0
@@ -398,7 +420,7 @@ Depending on resource type (binary, html), either downloads or opens in the scra
   - default: 0
 
 ### ExtractUrlsPlugin
-Extracts new (html or binary) resource urls using CSS selectors | [schema](./src/plugins/default/ExtractUrlsPlugin.ts)
+Extracts new (html or binary) resource URLs using CSS selectors | [schema](./src/plugins/default/ExtractUrlsPlugin.ts)
 - `domRead`
   - Whether or not the plugin runs in browser DOM or makes use of a DOM-like parsing library like cheerio
   - default: `true`
@@ -418,7 +440,7 @@ Scrapes html content using CSS selectors | [schema](./src/plugins/default/Extrac
   - default: none
 
 ### InsertResourcesPlugin
-Saves new resources within the current project based on newly identified urls | [schema](./src/plugins/default/InsertResourcesPlugin.ts)
+Saves new resources within the current project based on newly identified URLs | [schema](./src/plugins/default/InsertResourcesPlugin.ts)
 - `maxResources`
   - Maximum number of resources to be saved and scraped. A value of -1 disables this check.
   - default: -1
@@ -446,7 +468,7 @@ Performs infinite scrolling in order to load additional content | [schema](./src
 ## Scrape
 
 ### Start from a Scraping Configuration
-No need to specify a starting scraping project. One will be automatically created based on input url and plugin definitions. The project name resolves to the starting url hostname.
+No need to specify a starting scraping project. One will be automatically created based on input URL and plugin definitions. The project name resolves to the starting URL hostname.
 
 ```js
 const { KnexStorage, PuppeteerClient, Scraper} = require('@get-set-fetch/scraper');
@@ -455,9 +477,9 @@ const storage = new KnexStorage();
 const client = new PuppeteerClient();
 const scraper = new Scraper(storage, client);
 
-await scraper.scrape({
+scraper.scrape({
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -490,20 +512,20 @@ const storage = new KnexStorage();
 const client = new PuppeteerClient();
 const scraper = new Scraper(storage, client);
 
-const scrapingHash = 'eLsG8L15Q091qXl65ZnZmQWpKZmJevlF6fognr5PZnFJfH5afE5iXnppYnpqcXxSZXxeaW5SahFIOA+Y7MpS44sLUhOzU4ExR0R6JZQ4UdIFInoNMFMQcckYM+0C4zgnVS83tSQxJbEkUUFboQCIIYIgP4NZCiUpVnklGbrJGZk5KRpGmgp2ColWaUAzSyBCQKtg+QMWNEogF1LDNmNNJNNhQaugkQtMmMC0oQmKvdhaAABDn0g=';
+const scrapingHash = 'ePm8oZWZQ085qXl65ZnZwBSTkpmol1+Urg/i6ftkFpfE56fF5yTmpZcmpqcWxydVxueV5ialFoGE84BJpyw1vrggNTE7FRj6RKQ5QgkMJW4RUWSAmQqIS4qY6Q8YTzmpermpJYkpiSWJCtoKBUAMEQT5GcxSKEmxyivJ0E3OyMxJ0TDSVLBTSLRKA5pZAhECWgVL47CgUQK5kBq2GWsimQ4LWgWNXGDiAsavJij2YmsBAzufSg==';
 
-console.log(decode(scrapingHash));
 // outputs the scraping configuration from the above "Scrape starting from a scraping configuration" section
 // use encode to generate a scraping hash
+console.log(decode(scrapingHash));
 
-await scraper.scrape(scrapingHash);
+scraper.scrape(scrapingHash);
 ```
 
 ### Start from a Predefined Project
-A new project is defined with plugin options overriding default ones from `static-content` scenario.
+A new project is defined with plugin options overriding default ones from `static-content` pipeline.
 
 ```js
-const { KnexStorage, scenarios, mergePluginOpts, PuppeteerClient, Scraper } = require('@get-set-fetch/scraper');
+const { KnexStorage, pipelines, mergePluginOpts, PuppeteerClient, Scraper } = require('@get-set-fetch/scraper');
 
 const storage = new KnexStorage();
 const { Project } = await storage.connect();
@@ -511,7 +533,7 @@ const project = new Project({
   name: 'projA.com',
   url: 'http://projA.com',
   pluginOpts: mergePluginOpts(
-    scenarios['browser-static-content'].defaultPluginOpts,
+    pipelines['browser-static-content'].defaultPluginOpts,
     [
       {
         name: 'ExtractUrlsPlugin',
@@ -530,12 +552,25 @@ await project.save();
 const client = new PuppeteerClient();
 
 const scraper = new Scraper(storage, client);
-await scraper.scrape(project);
+scraper.scrape(project);
 ```
+
+You can add additional resources to a project via `batchInsertResources(resources, chunkSize, uriNormalization)`. Each entry contains an URL and an optional depth. If depth is not specified the resource will be linked to the project with depth 0. By default, every 1000 resources are wrapped inside a transaction and no URI normalization takes place.
+```js
+await project.batchInsertResources(
+  [
+    {url: 'http://sitea.com/page1.html'},
+    {url: 'http://sitea.com/page2.html', depth: 1}
+  ],
+  2000,
+  true
+);
+```
+The above creates a wrapping transaction every 2000 resources and performs URI normalization.
 
 ### Resume scraping
 If a project has unscraped resources, just re-start the scraping process. Already scraped resources will be ignored.
-You can retrieve an existing project by name or id. When scraping from a scraping configuration the project name gets populated with the starting url hostname.
+You can retrieve an existing project by name or id. When scraping from a scraping configuration the project name gets populated with the starting URL hostname.
 
 ```js
 const { KnexStorage, PuppeteerClient, Scraper } = require('@get-set-fetch/scraper');
@@ -547,8 +582,78 @@ const project = await Project.get('startUrlHostname');
 const client = new PuppeteerClient();
 
 const scraper = new Scraper(storage, client);
-await scraper.scrape(project);
+scraper.scrape(project);
 ```
+### Scrape events
+
+| Event | Callback arguments | Occurs when ... |
+| ----------- | ----------- | -- |
+| ResourceSelected | project, resource | a resource is selected to be scraped, its scrapeInProgress flag is set to true
+| ResourceScraped | project, resource | a resource is updated with the scraped content, its scrapeInProgress flag is set to false
+| ResourceError | project, resource, error | a scraping error linked to a particular resource stops the resource scraping, project scraping continues
+| ProjectSelected | project | a project is ready for scraping, storage/browser client/plugins have been initialized
+| ProjectScraped | project | all resources linked to the project are scraped
+| ProjectError | project, error |  a scraping error not linked to a particular resource stops the scraping process
+
+```js
+const { ScrapeEvent } = require('@get-set-fetch/scraper');
+
+scraper.on(ScrapeEvent.ProjectScraped, async (project) => {
+  console.log(`project ${project.name} has been scraped`);
+});
+
+scraper.on(ScrapeEvent.ResourceError, async (project, resource, err) => {
+  console.log(`error scraping resource ${resource.url} from project ${project.name}: ${err.message}`);
+})
+```
+Scrape event handlers examples.
+
+### Concurrency options
+`maxRequests` and `delay` options can be specified at project/proxy/domain/session level. A session is identified as a unique proxy + domain combination. 
+All options are optional :) with all combinations valid. The resulting scraping behavior will obey all specified options.
+- `proxyPool`
+  - list of proxies to be used with each entry a {host, port} object
+  - default: [null]
+- `maxRequests`
+  - Maximum number of requests to be run in parallel. Browser clients are restricted to `1`, supporting only sequential scraping. Use [DOM clients](#dom-clients) for parallel scraping.
+  - default: 1
+- `delay`:
+  - Minimum amount of time (ms) between starting to scrape two resources.
+  - default: -/500/1000/- at project/proxy/domain/session level. Restrictions are set only at proxy/domain level.
+
+```js
+const concurrencyOpts = {
+  proxyPool: [
+    { host: 'proxyA', port: 8080 },
+    { host: 'proxyB', port: 8080 }
+  ],
+  project: {
+    maxRequests: 100,
+    delay: 100
+  },
+  proxy: {
+    maxRequests: 50,
+    delay: 200
+  },
+  domain: {
+    maxRequests: 10,
+    delay: 500
+  },
+  session: {
+    maxRequests: 1,
+    delay: 3000
+  }
+}
+```
+The above concurrency options will use proxyA, proxyB when fetching resources. 
+
+At project level a maximum of 100 resources can be scraped in parallel with a minimum 100 ms between issuing new requests. 
+
+Each proxy can have a maximum of 50 parallel requests with a minimum 200 ms delay before using the same proxy again. 
+
+Each domain to be scraped (independent of the proxy being used) will experience a load of maximum 10 parallel requests with a minimum 0.5 second delay between any two requests.
+
+User sessions defined as unique proxy + domain combinations mimic real user behavior scraping sequentially (maxRequests = 1) every 3 seconds.
 
 ## Export
 
@@ -622,7 +727,7 @@ Top languages by population. Extract tabular data from a single static html page
 ```js
 const scrapingConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -650,12 +755,8 @@ Book details with author, title, rating value, review count. Also scrapes the bo
 ```js
 const scrapingConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
-    {
-      name: 'SelectResourcePlugin',
-      delay: 1000,
-    },
     {
       name: 'ExtractUrlsPlugin',
       maxDepth: 3,
@@ -701,12 +802,8 @@ World Health Organization COVID-19 Updates during last month. Opens each report 
 ```js
 const scrapingConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
-    {
-      name: 'SelectResourcePlugin',
-      delay: 1000,
-    },
     {
       name: 'ExtractUrlsPlugin',
       maxDepth: 2,
@@ -729,7 +826,7 @@ UEFA Champions League top goalscorers. Keeps scrolling and loading new content u
 ```js
 const scrapingConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -793,7 +890,7 @@ With the help of this plugin one can extract article excerpts from news sites su
 ```js
 const scrapingConfig = {
   url: 'https://www.bbc.com/news/technology',
-  scenario: 'browser-static-content',
+  pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
@@ -820,4 +917,4 @@ const scrapingConfig = {
 ## Browser Extension
 This project is based on lessons learned developing [get-set-fetch-extension](https://github.com/get-set-fetch/extension), a scraping browser extension for Chrome and Firefox.
 
-Both projects share the same storage, scenarios, plugins concepts but unfortunately no code. I'm planning to fix this in the next versions so code from scraper can be used in the extension. 
+Both projects share the same storage, pipelines, plugins concepts but unfortunately no code. I'm planning to fix this in the next versions so code from scraper can be used in the extension. 
