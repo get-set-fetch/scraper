@@ -3,12 +3,11 @@ import { GsfServer, ScrapingSuite, IScrapingTest } from '@get-set-fetch/test-uti
 import BrowserClient from '../../src/browserclient/BrowserClient';
 import { pipelines, mergePluginOpts } from '../../src/pipelines/pipelines';
 
-import Scraper from '../../src/scraper/Scraper';
+import Scraper, { ScrapeEvent } from '../../src/scraper/Scraper';
 import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
-import ScrapeEvent from '../../src/scraper/ScrapeEvent';
 
 export default function acceptanceSuite(
   pipeline:string,

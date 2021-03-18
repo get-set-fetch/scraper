@@ -1,10 +1,9 @@
 import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
-import Scraper from '../../../src/scraper/Scraper';
+import Scraper, { ScrapeEvent } from '../../../src/scraper/Scraper';
 import Project from '../../../src/storage/base/Project';
 import BrowserClient from '../../../src/browserclient/BrowserClient';
 import Storage from '../../../src/storage/base/Storage';
-import ScrapeEvent from '../../../src/scraper/ScrapeEvent';
 
 describe('Scraper', () => {
   let sandbox:SinonSandbox;

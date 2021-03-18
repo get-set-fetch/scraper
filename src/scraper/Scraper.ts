@@ -16,8 +16,17 @@ import CsvExporter from '../export/CsvExporter';
 import ZipExporter from '../export/ZipExporter';
 import { decode } from '../confighash/config-hash';
 import { IDomClientConstructor } from '../domclient/DomClient';
-import ScrapeEvent from './ScrapeEvent';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
+
+export const enum ScrapeEvent {
+  ResourceSelected = 'resource-selected',
+  ResourceScraped = 'resource-scraped',
+  ResourceError = 'resource-error',
+
+  ProjectSelected = 'project-selected',
+  ProjectScraped = 'project-scraped',
+  ProjectError = 'project-error',
+}
 
 export type ScrapingConfig = {
   url: string,
