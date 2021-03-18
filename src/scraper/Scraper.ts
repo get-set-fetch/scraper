@@ -249,7 +249,12 @@ export default class Scraper extends EventEmitter {
       }
 
       this.logger.debug(resource, 'Resource successfully scraped');
-      this.logger.info('Resource %s successfully scraped with actions %s', resource.url, resource.actions);
+      if (resource.actions) {
+        this.logger.info('Resource %s successfully scraped with actions %s', resource.url, resource.actions);
+      }
+      else {
+        this.logger.info('Resource %s successfully scraped', resource.url);
+      }
     }
     catch (err) {
       this.logger.error(
