@@ -1,6 +1,6 @@
 ## Changelog
 
-### Unreleased
+### 0.3.0 - 2021-03-18
 - Storage:
   - Project: batchInsertResources allows fast resource saving with just url and depth properties
 - Plugins:
