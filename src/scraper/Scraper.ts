@@ -17,6 +17,7 @@ import ZipExporter from '../export/ZipExporter';
 import { decode } from '../confighash/config-hash';
 import { IDomClientConstructor } from '../domclient/DomClient';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
+import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMetrics';
 
 export const enum ScrapeEvent {
   ResourceSelected = 'resource-selected',
@@ -52,6 +53,11 @@ export default class Scraper extends EventEmitter {
   concurrency: ConcurrencyManager;
   checkTimeout: NodeJS.Timeout;
 
+  /**
+  * Contains memory and cpu usage metrics
+  */
+  metrics: RuntimeMetrics;
+
   constructor(storage: Storage, client:BrowserClient|IDomClientConstructor) {
     super();
 
@@ -74,7 +80,7 @@ export default class Scraper extends EventEmitter {
    * Pre-scrape preparations regarding PluginStore, storage and browser client.
    * Making sure default plugins are registered, a connection to a database is opened, a browser (if apllicable) is launched.
    */
-  async preScrape(concurrencyOpts?: Partial<ConcurrencyOptions>):Promise<void> {
+  async preScrape(concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void> {
     if (PluginStore.store.size === 0) {
       await PluginStore.init();
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
@@ -100,6 +106,13 @@ export default class Scraper extends EventEmitter {
       // concurrencyManager needs to update its status based on resource error/complete
       this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped.bind(this.concurrency));
       this.on(ScrapeEvent.ResourceError, this.concurrency.resourceError.bind(this.concurrency));
+    }
+
+    if (this.metrics) {
+      throw new Error('scraping already in progress');
+    }
+    else {
+      this.metrics = new RuntimeMetrics(processOpts);
     }
 
     if (this.browserClient && !this.browserClient.isLaunched) {
@@ -166,12 +179,12 @@ export default class Scraper extends EventEmitter {
    * Scrapes available resources from the provided project. If a scraping configuration is provided creates a project first.
    * @param project - project, scraping configuration or base64 deflated scraping configuration
    */
-  async scrape(project: Project, concurrencyOpts?: Partial<ConcurrencyOptions>):Promise<void>
-  async scrape(scrapingConfig: ScrapingConfig, concurrencyOpts?: Partial<ConcurrencyOptions>):Promise<void>
-  async scrape(scrapeHash: string, concurrencyOpts?: Partial<ConcurrencyOptions>):Promise<void>
-  async scrape(scrapingConfig: Project|ScrapingConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>):Promise<void> {
+  async scrape(project: Project, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
+  async scrape(scrapingConfig: ScrapingConfig, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
+  async scrape(scrapeHash: string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
+  async scrape(scrapingConfig: Project|ScrapingConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void> {
     try {
-      await this.preScrape(concurrencyOpts);
+      await this.preScrape(concurrencyOpts, processOpts);
 
       this.project = await this.initProject(scrapingConfig);
       this.project.plugins = this.project.initPlugins(!!this.browserClient);
@@ -202,6 +215,9 @@ export default class Scraper extends EventEmitter {
 
   async getResourceToScrape() {
     try {
+      // check if scraper cpu and memory usage are within the defined limits
+      this.metrics.check();
+
       const resource = await this.concurrency.getResourceToScrape(this.project);
       // no more available resources to be scraped, project scraping complete
       if (!resource) {
@@ -215,6 +231,14 @@ export default class Scraper extends EventEmitter {
       }
     }
     catch (err) {
+      /*
+      normal process usage error based on the existing memory/cpu thresholds,
+      not issuing new scraping requests and waiting for existing ones to complete will (hopefully) bring the usage down
+      */
+      if (err instanceof RuntimeMetricsError) {
+        this.logger.debug(err.snapshot, `Runtime conditions for project ${this.project.name} not met`);
+      }
+
       // normal concurrency errors based on the existing concurrency options
       if (err instanceof ConcurrencyError) {
         this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
