@@ -8,23 +8,51 @@ import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
+import { PluginOpts } from '../../src';
+
+function getConcurrencyInfo(concurrencyOpts: Partial<ConcurrencyOptions>):string {
+  const concurrencyInfo = [ 'project', 'proxy', 'domain', 'session' ]
+    .filter(key => concurrencyOpts[key])
+    .map(key => `${key}:${JSON.stringify(concurrencyOpts[key])}`)
+    .join(', ');
+
+  return concurrencyInfo ? `concurrency: parallel using {${concurrencyInfo}}` : 'concurrency: sequential';
+}
+
+function getPipelineInfo(pipeline:string):string {
+  return `pipeline: ${pipeline}`;
+}
+
+function getHeadersInfo(accPluginOpts: PluginOpts[]):string {
+  const nodeFetchPluginOpts = accPluginOpts ? accPluginOpts.find(opts => opts.name === 'NodeFetchPlugin') : null;
+
+  if (nodeFetchPluginOpts) {
+    const { headers } = nodeFetchPluginOpts;
+    return headers ? `headers: ${JSON.stringify(headers)}` : null;
+  }
+
+  return null;
+}
 
 export default function acceptanceSuite(
   pipeline:string,
   storage: Storage,
   client:BrowserClient|IDomClientConstructor,
   concurrencyOpts: Partial<ConcurrencyOptions>,
+  accPluginOpts?: PluginOpts[],
 ) {
   const browserType = client instanceof BrowserClient ? client.opts.browser.charAt(0).toUpperCase() + client.opts.browser.slice(1) : null;
   const clientInfo = browserType ? `${client.constructor.name}_${browserType}` : (<Function>client).name;
 
-  let concurrencyInfo = [ 'project', 'proxy', 'domain', 'session' ]
-    .filter(key => concurrencyOpts[key])
-    .map(key => `${key}:${JSON.stringify(concurrencyOpts[key])}`)
-    .join(', ');
-  concurrencyInfo = concurrencyInfo ? `concurrency: parallel using {${concurrencyInfo}}` : 'concurrency: sequential';
+  const suiteTile = [
+    clientInfo,
+    storage.config.client,
+    getConcurrencyInfo(concurrencyOpts),
+    getPipelineInfo(pipeline),
+    getHeadersInfo(accPluginOpts),
+  ].filter(fragment => fragment).join(' - ');
 
-  describe(`${clientInfo} - ${storage.config.client} - ${concurrencyInfo} - pipeline: ${pipeline}`, () => {
+  describe(suiteTile, () => {
     let srv: GsfServer;
     let Project: IStaticProject;
 
@@ -56,7 +84,12 @@ export default function acceptanceSuite(
     ) => it(test.title, async () => {
       srv.update(test.vhosts);
 
-      const pluginOpts = mergePluginOpts(pipelines[pipeline].defaultPluginOpts, test.definition.pluginOpts);
+      let pluginOpts = mergePluginOpts(pipelines[pipeline].defaultPluginOpts, test.definition.pluginOpts);
+
+      // override test, scenario plugin options based on acceptance plugin options
+      if (accPluginOpts) {
+        pluginOpts = mergePluginOpts(pluginOpts, accPluginOpts);
+      }
 
       // save a project for the current scraping test
       const project = new Project({
