@@ -1,5 +1,12 @@
 ## Changelog
 
+### Unreleased
+- Plugins
+  - NodeFetchPlugin: 
+    - supports br, gzip, deflate content encoding
+    - added headers option with `{'Accept-Encoding': 'br,gzip,deflate'}` default value
+- RuntimeMetrics: 
+  - added memory and cpu usage constraints at process and OS level
 ### 0.3.0 - 2021-03-18
 - Storage:
   - Project: batchInsertResources allows fast resource saving with just url and depth properties
