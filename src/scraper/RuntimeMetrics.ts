@@ -106,7 +106,6 @@ export default class RuntimeMetrics {
     const { totalTick, totalIdle, processTick } = this.cpuUsage;
     const totalTickDiff = totalTick - oldTotalTick;
     const totalIdleDff = totalIdle - oldTotalIdle;
-    console.log(processTick);
 
     return {
       global: {
@@ -125,10 +124,10 @@ export default class RuntimeMetrics {
 
   check():void {
     // no runtime usage thresholds have been set, nothing to do
-    // if (!(this.opts.global || this.opts.process)) return;
+    if (!(this.opts.global || this.opts.process)) return;
 
     // min interval between process check is not met
-    // if (this.lastCheck && (Date.now() - this.lastCheck) < this.minCheckInterval) return;
+    if (this.lastCheck && (Date.now() - this.lastCheck) < this.minCheckInterval) return;
 
     // update usage
     this.snapshot = this.takeSnapshot();
