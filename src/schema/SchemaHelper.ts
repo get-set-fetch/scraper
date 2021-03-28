@@ -84,9 +84,23 @@ export default class SchemaHelper {
   }
 
   static parseObject(schema:JSONSchema7, data, path: string[]) {
-    Object.keys(schema.properties).forEach(propKey => {
-      data[propKey] = SchemaHelper.instantiate(schema.properties[propKey] as JSONSchema7, data[propKey], path.concat([ propKey ]));
-    });
+    if (schema.properties) {
+      Object.keys(schema.properties).forEach(propKey => {
+        data[propKey] = SchemaHelper.instantiate(schema.properties[propKey] as JSONSchema7, data[propKey], path.concat([ propKey ]));
+      });
+    }
+
+    /*
+    treating additionalProperties as a means to expand/override default obj value (if present)
+    if incoming data is missing a key from default obj value, add the default key/value to it
+    */
+    if (schema.additionalProperties && schema.default) {
+      Object.keys(schema.default).forEach(defaultKey => {
+        if (!data[defaultKey]) {
+          data[defaultKey] = schema.default[defaultKey];
+        }
+      });
+    }
 
     return data;
   }

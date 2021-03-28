@@ -134,7 +134,7 @@ describe('SchemaHelper', () => {
     assert.strictEqual(err.message, 'invalid value 3, path: /');
   });
 
-  it('instantiate object', async () => {
+  it('instantiate object with default prop values', async () => {
     const schemaWithDefault:JSONSchema7 = {
       type: 'object',
       properties: {
@@ -224,5 +224,39 @@ describe('SchemaHelper', () => {
     };
     inst = SchemaHelper.instantiate(schemaWithDefault, fullObj);
     assert.deepEqual(inst, fullObj);
+  });
+
+  it('instantiate object with default obj value', async () => {
+    const schemaWithDefault:JSONSchema7 = {
+      type: 'object',
+      properties: {
+        map: {
+          type: 'object',
+          additionalProperties: {
+            type: 'string',
+          },
+          default: {
+            a: 1,
+            b: 2,
+          },
+        },
+      },
+    };
+
+    let inst = SchemaHelper.instantiate(schemaWithDefault);
+    assert.deepEqual(inst, {
+      map: {
+        a: 1,
+        b: 2,
+      },
+    });
+
+    inst = SchemaHelper.instantiate(schemaWithDefault, { map: { a: 10 } });
+    assert.deepEqual(inst, {
+      map: {
+        a: 10,
+        b: 2,
+      },
+    });
   });
 });

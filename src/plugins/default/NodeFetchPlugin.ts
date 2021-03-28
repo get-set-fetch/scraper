@@ -1,5 +1,7 @@
-import http, { IncomingMessage } from 'http';
+import http, { IncomingMessage, OutgoingHttpHeaders } from 'http';
 import https, { RequestOptions } from 'https';
+import { pipeline, Writable } from 'stream';
+import zlib from 'zlib';
 import { getLogger } from '../../logger/Logger';
 import { SchemaType } from '../../schema/SchemaHelper';
 import Resource from '../../storage/base/Resource';
@@ -8,8 +10,20 @@ import BaseFetchPlugin, { FetchError } from './BaseFetchPlugin';
 export default class NodeFetchPlugin extends BaseFetchPlugin {
   static get schema() {
     return {
+      type: 'object',
       title: 'Node Fetch Plugin',
       description: 'fetch resources via nodejs https/http',
+      properties: {
+        headers: {
+          type: 'object',
+          additionalProperties: {
+            type: 'string',
+          },
+          default: {
+            'Accept-Encoding': 'br,gzip,deflate',
+          },
+        },
+      },
     } as const;
   }
 
@@ -20,29 +34,40 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
     super(opts);
   }
 
+  getRequestFnc(protocol: string):(options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest {
+    switch (protocol) {
+      case 'https:':
+        return https.request;
+      case 'http:':
+        return http.request;
+      default:
+        throw new Error('protocol must be either https or http');
+    }
+  }
+
   async fetch(resource: Resource):Promise<Partial<Resource>> {
     return new Promise((resolve, reject) => {
       const { hostname, protocol, pathname } = new URL(resource.url);
 
       let requestFnc:(options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest;
-      switch (protocol) {
-        case 'https:':
-          requestFnc = https.request;
-          break;
-        case 'http:':
-          requestFnc = http.request;
-          break;
-        default:
-          reject(new Error('protocol must be either https or http'));
+      try {
+        requestFnc = this.getRequestFnc(protocol);
       }
+      catch (err) {
+        reject(err);
+      }
+
+      const reqHeaders:OutgoingHttpHeaders = {
+        Host: hostname,
+        'Accept-Encoding': 'br,gzip,deflate',
+        ...(<object> this.opts.headers),
+      };
 
       const opts: RequestOptions = {
         method: 'GET',
         path: pathname,
         host: hostname,
-        headers: {
-          Host: hostname,
-        },
+        headers: reqHeaders,
       };
 
       const req = requestFnc({ ...opts, ...resource.proxy }, (res:IncomingMessage) => {
@@ -61,12 +86,38 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         const contentType = this.getContentType(headers['content-type']);
 
         const chunks = [];
-        res
-          .on('data', chunk => chunks.push(Buffer.from(chunk)))
-          .on('end', () => {
+        const output = new Writable({
+          write(chunk, encoding, done) {
+            chunks.push(Buffer.from(chunk));
+            done();
+          },
+        });
+
+        const onComplete = err => {
+          if (err) {
+            reject(err);
+          }
+          else {
             const buffer = Buffer.concat(chunks);
             resolve({ data: buffer, contentType, status: statusCode });
-          });
+          }
+        };
+        this.logger.debug(res.headers, `response headers for ${resource.url}`);
+
+        switch (res.headers['content-encoding']) {
+          case 'br':
+            pipeline(res, zlib.createBrotliDecompress(), output, onComplete);
+            break;
+          case 'gzip':
+            pipeline(res, zlib.createGunzip(), output, onComplete);
+            break;
+          case 'deflate':
+            pipeline(res, zlib.createInflate(), output, onComplete);
+            break;
+          default:
+            pipeline(res, output, onComplete);
+            break;
+        }
       });
 
       req.on('error', err => {

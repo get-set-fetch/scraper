@@ -24,9 +24,17 @@
       "maxDepth": -1
     },
     {
-      "name": "BrowserFetchPlugin|NodeFetchPlugin",
+      "name": "BrowserFetchPlugin",
+      "gotoOptions": {
+        "timeout": 0,
+        "waitUntil": 0
+      },
       "stabilityCheck": 0,
       "stabilityTimeout": 0
+    },
+    {
+      "name": "NodeFetchPlugin",
+      "headers": {}
     },
     {
       "name": "InsertResourcesPlugin",
