@@ -29,7 +29,7 @@ export const enum ScrapeEvent {
   ProjectError = 'project-error',
 }
 
-export type ScrapingConfig = {
+export type ScrapeConfig = {
   url: string,
   pipeline: string,
   pluginOpts: PluginOpts[]
@@ -123,16 +123,16 @@ export default class Scraper extends EventEmitter {
 
   /**
    * If scrapingConfig is a project return it without modifications.
-   * If it's a scraping configuration or a deflated scraping configuration construct a new project based on start url.
+   * If it's a scrape configuration or a deflated scrape configuration construct a new project based on start url.
    * Project name resolves to the start url hostname.
-   * @param scrapingConfig - project, scraping configuration or base64 deflated scraping configuration
+   * @param scrapingConfig - project, scrape configuration or base64 deflated scrape configuration
    */
-  async initProject(scrapingConfig: Project|ScrapingConfig|string):Promise<Project> {
+  async initProject(scrapingConfig: Project|ScrapeConfig|string):Promise<Project> {
     if (scrapingConfig instanceof Project) {
       return <Project>scrapingConfig;
     }
 
-    const scrapeDef:ScrapingConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
+    const scrapeDef:ScrapeConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
     if (scrapeDef.pipeline && !pipelines[scrapeDef.pipeline]) {
       throw new Error(`Pipeline ${scrapeDef.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
@@ -176,13 +176,13 @@ export default class Scraper extends EventEmitter {
   }
 
   /**
-   * Scrapes available resources from the provided project. If a scraping configuration is provided creates a project first.
-   * @param project - project, scraping configuration or base64 deflated scraping configuration
+   * Scrapes available resources from the provided project. If a scrape configuration is provided creates a project first.
+   * @param project - project, scrape configuration or base64 deflated scrape configuration
    */
   async scrape(project: Project, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapingConfig: ScrapingConfig, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
+  async scrape(scrapingConfig: ScrapeConfig, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
   async scrape(scrapeHash: string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapingConfig: Project|ScrapingConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void> {
+  async scrape(scrapingConfig: Project|ScrapeConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void> {
     try {
       await this.preScrape(concurrencyOpts, processOpts);
 
@@ -255,7 +255,7 @@ export default class Scraper extends EventEmitter {
   /**
    * Sequentially executes the project plugins against the current resource.
    * It usually starts with an available resource being selected from db and ends with the resource being updated with the scraped content.
-   * @param resource - current scraping resource
+   * @param resource - current scrape resource
    */
   async scrapeResource(resource: Resource) {
     // dynamic resource, a resource that was modified by a dynamic action: scroll, click, ..
@@ -347,9 +347,9 @@ export default class Scraper extends EventEmitter {
 
   /**
    * Executes the current plugin in either node.js or browser environment.
-   * @param project - current scraping project
-   * @param resource - current scraping resource
-   * @param plugin - current scraping plugin
+   * @param project - current scrape project
+   * @param resource - current scrape resource
+   * @param plugin - current scrape plugin
    */
   async executePlugin(resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
     this.logger.debug(

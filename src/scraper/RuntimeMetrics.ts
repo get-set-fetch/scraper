@@ -65,7 +65,6 @@ export default class RuntimeMetrics {
     to get usage within a certain time interval do diffs, start right away with a 1st reading
     */
     this.cpuUsage = this.getCpuUsage();
-    console.log(this.cpuUsage.processTick);
   }
 
   getMemoryUsage() {

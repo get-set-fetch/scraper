@@ -69,10 +69,14 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         host: hostname,
         headers: reqHeaders,
         timeout: 10 * 1000,
+        ...resource.proxy,
       };
+      this.logger.debug(opts, 'Request Options');
 
-      const req = requestFnc({ ...opts, ...resource.proxy }, (res:IncomingMessage) => {
+      const req = requestFnc(opts, (res:IncomingMessage) => {
         const { statusCode, headers } = res;
+
+        this.logger.debug(`status code for ${resource.url} : ${statusCode}`);
 
         // don't have access to initial redirect status can't chain back to the original redirect one, always put 301
         if (this.isRedirectStatus(statusCode)) {

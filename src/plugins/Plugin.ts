@@ -35,16 +35,16 @@ export default abstract class Plugin {
 
   /**
    * Tests if the plugin should be executed or not against the current resource.
-   * @param project - current scraping project
-   * @param resource - current scraping resource
+   * @param project - current scrape project
+   * @param resource - current scrape resource
    */
   abstract test(project: Project, resource: Resource): Promise<boolean> | boolean;
 
   /**
    * Executes the plugin against the current resource, either in node.js or browser environment.
    * The result will be merged into the currently scraped resource at scraper level.
-   * @param project - current scraping project
-   * @param resource - current scraping resource
+   * @param project - current scrape project
+   * @param resource - current scrape resource
    * @param client - current browser client
    */
   abstract apply(project: Project, resource: Resource, client: BrowserClient|IDomClientConstructor): Promise<void | Partial<Resource>> | void | Partial<Resource>;

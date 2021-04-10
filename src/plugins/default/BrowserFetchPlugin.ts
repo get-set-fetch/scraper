@@ -13,7 +13,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     return {
       type: 'object',
       title: 'Browser Fetch Plugin',
-      description: 'depending on resource type (binary, html), either downloads or opens in the scraping tab the resource url.',
+      description: 'depending on resource type (binary, html), either downloads or opens in the scrape tab the resource url.',
       properties: {
         gotoOptions: {
           type: 'object',

@@ -183,7 +183,7 @@ export default class ConcurrencyManager {
 
     // no more resources available for scraping
     if (!resource) {
-      // scraping project is complete, there is no in-progress scraping possibly adding new resources
+      // project scraping is complete, there is no in-progress scraping possibly adding new resources
       if (this.status.project.requests === 0) {
         return null;
       }
