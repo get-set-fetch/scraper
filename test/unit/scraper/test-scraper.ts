@@ -24,6 +24,7 @@ describe('Scraper', () => {
     sandbox = createSandbox();
     storage = <Storage>{};
     storage.connect = sandbox.stub();
+    storage.close = sandbox.stub();
     storage.Project = <Project>{};
     browserClient = <BrowserClient>{};
     browserClient.launch = sandbox.stub();
