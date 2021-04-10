@@ -112,3 +112,7 @@ dist
 # examples data
 examples/data
 !examples/*.gitignore
+
+# test tmp dir
+test/tmp
+!test/tmp/*.gitignore
