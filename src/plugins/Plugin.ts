@@ -12,7 +12,7 @@ export type PluginOpts = {
   name: string;
   domRead?: boolean;
   domWrite?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 
   // position options within a plugin list
   before?: string;
@@ -31,6 +31,14 @@ export default abstract class Plugin {
   constructor(opts:Partial<PluginOpts> = {}) {
     const { schema } = <typeof Plugin> this.constructor;
     this.opts = SchemaHelper.instantiate(schema, opts);
+  }
+
+  /**
+   * Relevant for a pipeline plugin responsible for actual content scraping.
+   * @returns keys the scraped data will be exported under
+   */
+  getContentKeys():string[] {
+    return null;
   }
 
   /**

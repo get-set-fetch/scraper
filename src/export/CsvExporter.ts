@@ -53,9 +53,11 @@ export default class CsvExporter extends Exporter {
     this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.filepath)} ... done`);
   }
 
-  getContentKeys() {
-    const contentPlugin:any = this.project.plugins.find((plugin:any) => typeof plugin.getContentKeys === 'function');
-    return contentPlugin ? contentPlugin.getContentKeys() : [];
+  getContentKeys():string[] {
+    return this.project.plugins
+      .map(plugin => plugin.getContentKeys())
+      .find(contentKeys => contentKeys)
+    || [];
   }
 
   resourceToCsvRows(resource: Partial<Resource>):string[][] {

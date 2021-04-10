@@ -109,9 +109,8 @@ export default class PluginStore {
         moduleSideEffects: false,
       },
       onwarn: msg => {
-        // PluginStore.logger.warn(msg);
-        // to do: store and return warnings/errors ?
-        // if not overwritten, warnings are written to console
+        // try not to pollute the log with all kindof 3rd party warnings...
+        PluginStore.logger.trace(msg);
       },
     };
     const outputOpts:OutputOptions = {
