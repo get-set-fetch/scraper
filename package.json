@@ -13,8 +13,12 @@
   "main": "./dist/cjs/index.js",
   "types": "./dist/cjs/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
+  "bin": {
+    "gsfscrape": "bin/gsfscrape"
+  },
   "module": "dist/esm/index.js",
   "scripts": {
     "patch": "patch-package",
@@ -24,6 +28,7 @@
     "test:cheerio": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3 - concurrency: parallel'",
     "test:unit:non-storage": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/*",
     "test:unit:sqlite": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite3-unit-suite.ts\"",
+    "test:cli": "mocha --config test/.mocharc.js \"test/acceptance/cli/test-cli.ts\"",
     "example": "ts-node examples/custom-plugin-readability.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json"
   },
