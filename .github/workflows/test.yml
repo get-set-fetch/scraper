@@ -187,13 +187,6 @@ jobs:
     - name: cli tests
       run: npx nyc mocha --config test/.mocharc.js \"test/acceptance/cli/test-cli.ts\"
 
-    - name: Coveralls for cli tests
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: cli
-        parallel: true
-
   coverage:
     name: coverage
     runs-on: ubuntu-18.04
