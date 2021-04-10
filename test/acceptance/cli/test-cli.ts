@@ -134,7 +134,7 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Existing project sitea.com will be used/.test(stdout), '"Existing project sitea.com will be used" log entry not found');
   });
 
-  it('existing project --config --loglevel info --export', async () => {
+  it('new project --config --loglevel info --export', async () => {
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --export ../test/tmp/export.csv',
@@ -158,7 +158,7 @@ describe('Command Line Interface', () => {
     );
   });
 
-  it('existing project --config --loglevel info --export missing --exportType', async () => {
+  it('new project --config --loglevel info --export missing --exportType', async () => {
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --export ../test/tmp/export.txt',
