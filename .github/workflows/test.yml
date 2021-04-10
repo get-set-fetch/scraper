@@ -31,7 +31,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Install peer dependencies
+    - name: Install peer dependencies (to be cached by the remaining jobs)
       # in order to lint all files peerDependencies must be installed
       # if: steps.cache.outputs.cache-hit != 'true'
       run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
@@ -175,13 +175,10 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Install storage peer dependencies for sqlite3
-      run: npm install knex sqlite3 --save
+    - name: Install peer dependencies so that the project can be built
+      run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
 
-    - name: Install client peer dependencies for cheerio
-      run: npm install cheerio --save
-
-    - name: Build dist as cli uses dist files
+    - name: Build project as cli uses dist files
       run: npm run build
 
     - name: Make cli executable
