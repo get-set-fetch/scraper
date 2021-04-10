@@ -1,6 +1,6 @@
 /* eslint-disable object-curly-newline */
 import { join } from 'path';
-import { KnexStorage, PluginStore, PuppeteerClient, ScrapingConfig, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
+import { KnexStorage, PluginStore, PuppeteerClient, ScrapeConfig, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -25,7 +25,7 @@ const client = new PuppeteerClient({ args: [
 const scraper = new Scraper(storage, client);
 
 const scrapeHash = 'ePm8oZWZQ0855eXleklJyeAElJdaXqxfkpqckZefk59eSUxSIpRuUKIMEfKGRMRfdEZRappCnK2COrrDdNVjQX5B+BaUaKCxALesKLUgJzGZQBLGleCIizZToCMAtHl3/w==';
-const scrapingConfig:ScrapingConfig = {
+const scrapeConfig:ScrapeConfig = {
   url: 'https://www.bbc.com/news/technology',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -55,8 +55,8 @@ const scrapingConfig:ScrapingConfig = {
   scraper.on(ScrapeEvent.ProjectScraped, async () => {
     await scraper.export('./examples/data/readability.csv', { type: 'csv' });
     await storage.close();
-    console.log(encode(scrapingConfig));
+    console.log(encode(scrapeConfig));
   });
 
-  scraper.scrape(scrapingConfig, { domain: { delay: 1000 } });
+  scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
 })();

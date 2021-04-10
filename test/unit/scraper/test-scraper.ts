@@ -36,14 +36,14 @@ describe('Scraper', () => {
   });
 
   it('preScrape - do storage.connect', async () => {
-    storage.isConnected = false;
+    storage.connected = false;
     await scraper.preScrape();
 
     assert.isTrue(storage.connect.calledOnce);
   });
 
   it('preScrape - skip storage.connect', async () => {
-    storage.isConnected = true;
+    storage.connected = true;
     await scraper.preScrape();
 
     assert.isTrue(storage.connect.neverCalledWith());

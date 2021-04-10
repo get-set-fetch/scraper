@@ -7,7 +7,7 @@ import Project, { IStaticProject } from './Project';
  */
 export default abstract class Storage {
   config;
-  isConnected:boolean;
+  connected:boolean;
 
   Project: IStaticProject & typeof Project;
   Resource: IStaticResource & typeof Resource;
@@ -18,7 +18,7 @@ export default abstract class Storage {
    */
   constructor(config) {
     this.config = config;
-    this.isConnected = false;
+    this.connected = false;
   }
 
   /** Connects to db and returns Project and Resource classes linked to the db connection. */

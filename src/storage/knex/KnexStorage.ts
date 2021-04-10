@@ -43,7 +43,7 @@ export default class KnexStorage extends Storage {
 
     this.Project = DynamicKnexProject;
     this.Resource = DynamicKnexResource;
-    this.isConnected = true;
+    this.connected = true;
 
     return {
       Project: DynamicKnexProject,
@@ -53,7 +53,7 @@ export default class KnexStorage extends Storage {
 
   async close():Promise<void> {
     await this.knex.destroy();
-    this.isConnected = false;
+    this.connected = false;
   }
 
   get client():string {

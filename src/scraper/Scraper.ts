@@ -117,7 +117,7 @@ export default class Scraper extends EventEmitter {
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
     }
 
-    if (!this.storage.isConnected) {
+    if (!this.storage.connected) {
       await this.storage.connect();
       this.logger.info('Storage connected');
     }
@@ -153,17 +153,17 @@ export default class Scraper extends EventEmitter {
   }
 
   /**
-   * If scrapingConfig is a project return it without modifications.
+   * If scrapeConfig is a project return it without modifications.
    * If it's a scrape configuration or a deflated scrape configuration construct a new project based on start url.
    * Project name resolves to the start url hostname.
-   * @param scrapingConfig - project, scrape configuration or base64 deflated scrape configuration
+   * @param scrapeConfig - project, scrape configuration or base64 deflated scrape configuration
    */
-  async initProject(scrapingConfig: Project|ScrapeConfig|string):Promise<Project> {
-    if (scrapingConfig instanceof Project) {
-      return <Project>scrapingConfig;
+  async initProject(scrapeConfig: Project|ScrapeConfig|string):Promise<Project> {
+    if (scrapeConfig instanceof Project) {
+      return <Project>scrapeConfig;
     }
 
-    const scrapeDef:ScrapeConfig = typeof scrapingConfig === 'string' ? decode(scrapingConfig) : scrapingConfig;
+    const scrapeDef:ScrapeConfig = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
     if (scrapeDef.pipeline && !pipelines[scrapeDef.pipeline]) {
       throw new Error(`Pipeline ${scrapeDef.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
@@ -229,13 +229,13 @@ export default class Scraper extends EventEmitter {
    * @param project - project, scrape configuration or base64 deflated scrape configuration
    */
   async scrape(project: Project, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapingConfig: ScrapeConfig, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
+  async scrape(scrapeConfig: ScrapeConfig, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
   async scrape(scrapeHash: string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapingConfig: Project|ScrapeConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void> {
+  async scrape(scrapeConfig: Project|ScrapeConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>, processOpts?: Partial<RuntimeOptions>):Promise<void> {
     try {
       await this.preScrape(concurrencyOpts, processOpts);
 
-      this.project = await this.initProject(scrapingConfig);
+      this.project = await this.initProject(scrapeConfig);
       this.project.plugins = this.project.initPlugins(!!this.browserClient);
 
       this.logger.debug(this.project, 'Scraping project');
@@ -496,7 +496,7 @@ export default class Scraper extends EventEmitter {
 
       // get a valid project reference, by default after project scraping completes the db connection is closed
       let project:Project;
-      if (!this.storage.isConnected) {
+      if (!this.storage.connected) {
         await this.storage.connect();
         project = await this.storage.Project.get(this.project.id);
         if (!project) {
@@ -539,7 +539,7 @@ export default class Scraper extends EventEmitter {
       }
 
       // get a valid project reference, by default after project scraping completes the db connection is closed
-      if (!this.storage.isConnected) {
+      if (!this.storage.connected) {
         await this.storage.connect();
         project = await this.storage.Project.get(this.project.id);
         if (!project) {

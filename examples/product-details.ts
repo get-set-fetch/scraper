@@ -23,7 +23,7 @@ const client = new PuppeteerClient({ args: [
 const scraper = new Scraper(storage, client);
 
 const scrapeHash = 'ePm8oZWZnVNBTsMwEPyKFS4gEUdJOCEVVPWEVAlOXGiFNollW3Xsyk5S9QBvZzcWoi1BBY72ejy7Mzunm4NOWKMrD37PnZcZ9J1yPmSPy/KmKPJ59hAA6td50K0b7rcgxSz/zY6dW6gjL78sKc8bexEE+FrhbBiFwN4Zx660BZKB3THgC+VcEE/Y6q3tVForbZrL4ioheY6/UiWvnNuMa4JAH7+ceAgYsEH4JT5GCt3KeCZFr/8Xle/5UDnfOb9Jx24Q8xmmeCaeCUzBRaNp8rTakx8MDpDRyx+gvcF5oRE+jM4FnMtoDoNMPUppJV2ELdgX3L2WEjtbJbHyDKYXq2R9wBQLbKDKX/imOMSgxW7hetudcIwFVlOFhF+/fQCpef3i';
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -70,7 +70,7 @@ scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/books.csv', { type: 'csv' });
   await scraper.export('./examples/data/book-covers.zip', { type: 'zip' });
   await storage.close();
-  console.log(encode(scrapingConfig));
+  console.log(encode(scrapeConfig));
 });
 
-scraper.scrape(scrapingConfig, { domain: { delay: 1000 } });
+scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
