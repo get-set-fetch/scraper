@@ -185,7 +185,7 @@ jobs:
       run: chmod +x bin/gsfscrape
 
     - name: cli tests
-      run: npx nyc mocha --config test/.mocharc.js \"test/acceptance/cli.ts\"
+      run: npx nyc mocha --config test/.mocharc.js \"test/acceptance/cli/test-cli.ts\"
 
     - name: Coveralls for cli tests
       uses: coverallsapp/github-action@master
@@ -197,7 +197,7 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-18.04
-    needs: [acceptance]
+    needs: [cli, acceptance]
     
     steps:
     - name: Coveralls
