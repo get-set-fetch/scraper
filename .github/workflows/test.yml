@@ -151,6 +151,52 @@ jobs:
       if: ${{ matrix.docker_file }}
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} down; else echo "ignored, no docker file"; fi'
    
+  cli:
+    name: cli tests
+    runs-on: ubuntu-18.04
+    needs: unit
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Cache node modules
+      uses: actions/cache@v2
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+
+    - name: Setup node 12
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install storage peer dependencies for sqlite3
+      run: npm install knex sqlite3 --save
+
+    - name: Install client peer dependencies for cheerio
+      run: npm install cheerio --save
+
+    - name: Build dist as cli uses dist files
+      run: npm run build
+
+    - name: Make cli executable
+      run: chmod +x bin/gsfscrape
+
+    - name: cli tests
+      run: npx nyc mocha --config test/.mocharc.js \"test/acceptance/cli.ts\"
+
+    - name: Coveralls for cli tests
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: cli
+        parallel: true
+
   coverage:
     name: coverage
     runs-on: ubuntu-18.04
