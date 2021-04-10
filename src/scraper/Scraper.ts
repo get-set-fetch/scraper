@@ -35,8 +35,28 @@ export type ScrapeConfig = {
   pluginOpts: PluginOpts[]
 }
 
+export type ScrapeOptions = {
+  /**
+   * Overwrite project if already exists.
+   */
+  overwrite: boolean;
+
+  /**
+   * Close all opened resources after scraping completes: storage, browserClient.
+   */
+  cleanup: {
+    storage: boolean;
+    client: boolean;
+  }
+
+  /**
+   * Don't restrict scraping to a particular project. Once scraping a project completes, find other existing projects to scrape from.
+   */
+  discover: boolean;
+}
+
 /**
- * Executes defined scraping plugins against to be scraped resources.
+ * Executes defined scrape plugins against to be scraped resources.
  * Storage agnostic.
  * Browser client agnostic.
  * Will connect to db if provided storage not already connected.
@@ -48,6 +68,7 @@ export default class Scraper extends EventEmitter {
   storage: Storage;
   browserClient:BrowserClient;
   domClientConstruct: IDomClientConstructor;
+  opts: ScrapeOptions;
 
   project: Project;
   concurrency: ConcurrencyManager;
@@ -58,7 +79,7 @@ export default class Scraper extends EventEmitter {
   */
   metrics: RuntimeMetrics;
 
-  constructor(storage: Storage, client:BrowserClient|IDomClientConstructor) {
+  constructor(storage: Storage, client:BrowserClient|IDomClientConstructor, opts:Partial<ScrapeOptions> = {}) {
     super();
 
     this.storage = storage;
@@ -74,6 +95,16 @@ export default class Scraper extends EventEmitter {
     else {
       this.domClientConstruct = client;
     }
+
+    this.opts = {
+      overwrite: opts.overwrite,
+      cleanup: {
+        storage: true,
+        client: true,
+        ...opts.cleanup,
+      },
+      discover: opts.discover,
+    };
   }
 
   /**
@@ -139,9 +170,16 @@ export default class Scraper extends EventEmitter {
 
     const projectName = new URL(scrapeDef.url).hostname;
     let project = await this.storage.Project.get(projectName);
+
     if (project) {
-      this.logger.info(`Existing project ${project.name} detected.`);
-      return project;
+      if (this.opts.overwrite) {
+        this.logger.info(`Overwriting project ${project.name}`);
+        await project.del();
+      }
+      else {
+        this.logger.info(`Existing project ${project.name} will be used`);
+        return project;
+      }
     }
 
     project = new (<IStaticProject> this.storage.Project)({
@@ -152,26 +190,37 @@ export default class Scraper extends EventEmitter {
         : scrapeDef.pluginOpts,
     });
     await project.save();
-    this.logger.info(`new Project ${project.name} saved`);
+    this.logger.info(`New project ${project.name} saved`);
 
     return project;
   }
 
   /**
    * Cleanup actions after scraping completes.
-   * Closes the browser but keeps the storage connection open as scraping is often followed by data export actions.
    */
   async postScrape() {
-    if (this.browserClient && this.browserClient.isLaunched) {
-      await this.browserClient.close();
-    }
+    try {
+      // scraping stopped, if resumed a new concurrencyManager will be created
+      if (this.concurrency) {
+        clearInterval(this.checkTimeout);
+        this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
+        this.off(ScrapeEvent.ResourceError, this.concurrency.resourceError);
+        delete this.concurrency;
+      }
 
-    // scraping stopped, if resumed a new concurrencyManager will be created
-    if (this.concurrency) {
-      clearInterval(this.checkTimeout);
-      this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
-      this.off(ScrapeEvent.ResourceError, this.concurrency.resourceError);
-      delete this.concurrency;
+      if (
+        (this.opts.cleanup && this.opts.cleanup.client)
+        && (this.browserClient && this.browserClient.isLaunched)
+      ) {
+        await this.browserClient.close();
+      }
+
+      if (this.opts.cleanup && this.opts.cleanup.storage) {
+        await this.storage.close();
+      }
+    }
+    catch (err) {
+      this.logger.error(err);
     }
   }
 
@@ -436,23 +485,80 @@ export default class Scraper extends EventEmitter {
   async export(filepath: string, opts: ExportOptions):Promise<void> {
     let exporter: Exporter;
 
-    if (!(opts && opts.type)) {
-      this.logger.error('specify an export type');
-      return;
+    try {
+      if (!(opts && opts.type)) {
+        throw new Error('specify an export type');
+      }
+
+      if (!this.project) {
+        throw new Error('no project is linked to the current scraper instance');
+      }
+
+      // get a valid project reference, by default after project scraping completes the db connection is closed
+      let project:Project;
+      if (!this.storage.isConnected) {
+        await this.storage.connect();
+        project = await this.storage.Project.get(this.project.id);
+        if (!project) {
+          throw new Error(`could not find project ${this.project.name}`);
+        }
+        // need to init the plugins as one of the plugins may contain info related to the exported columns
+        project.plugins = project.initPlugins(!!this.browserClient);
+      }
+      else {
+        project = this.project;
+      }
+
+      switch (opts.type) {
+        case 'csv':
+          exporter = new CsvExporter(project, filepath, opts);
+          break;
+        case 'zip':
+          exporter = new ZipExporter(project, filepath, opts);
+          break;
+        default:
+          throw new Error(`unsupported export type ${opts.type}`);
+      }
+
+      await exporter.export();
+
+      await this.storage.close();
+    }
+    catch (err) {
+      this.logger.error(err, `error exporting to ${filepath} using options ${JSON.stringify(opts)}`);
+    }
+  }
+
+  async getResources():Promise<Resource[]> {
+    let project:Project;
+    let resources:Resource[];
+
+    try {
+      if (!this.project) {
+        throw new Error('no project is linked to the current scraper instance');
+      }
+
+      // get a valid project reference, by default after project scraping completes the db connection is closed
+      if (!this.storage.isConnected) {
+        await this.storage.connect();
+        project = await this.storage.Project.get(this.project.id);
+        if (!project) {
+          throw new Error(`could not find project ${this.project.name}`);
+        }
+      }
+      else {
+        project = this.project;
+      }
+
+      resources = await project.getResources();
+
+      await this.storage.close();
+    }
+    catch (err) {
+      this.logger.error(err);
+      return null;
     }
 
-    switch (opts.type) {
-      case 'csv':
-        exporter = new CsvExporter(this.project, filepath, opts);
-        break;
-      case 'zip':
-        exporter = new ZipExporter(this.project, filepath, opts);
-        break;
-      default:
-        this.logger.error(`unsupported export type ${opts.type}`);
-        return;
-    }
-
-    await exporter.export();
+    return resources;
   }
 }

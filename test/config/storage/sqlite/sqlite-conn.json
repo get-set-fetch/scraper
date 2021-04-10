@@ -2,7 +2,7 @@
   "client": "sqlite3",
   "useNullAsDefault": true,
   "connection": {
-    "filename": ":memory:"
+    "filename": "acc.sqlite"
   },
   "debug": false
 }

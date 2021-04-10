@@ -1,8 +1,9 @@
+/* eslint-disable no-param-reassign */
 import { unlinkSync } from 'fs';
+import { join } from 'path';
 import { GsfServer, ScrapingSuite, IScrapingTest } from '@get-set-fetch/test-utils';
 import BrowserClient from '../../src/browserclient/BrowserClient';
 import { pipelines, mergePluginOpts } from '../../src/pipelines/pipelines';
-
 import Scraper, { ScrapeEvent } from '../../src/scraper/Scraper';
 import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
@@ -34,6 +35,25 @@ function getHeadersInfo(accPluginOpts: PluginOpts[]):string {
   return null;
 }
 
+export function getSuiteTitle(
+  pipeline:string,
+  storage: Storage,
+  client:BrowserClient|IDomClientConstructor,
+  concurrencyOpts: Partial<ConcurrencyOptions>,
+  accPluginOpts?: PluginOpts[],
+):string {
+  const browserType = client instanceof BrowserClient ? client.opts.browser.charAt(0).toUpperCase() + client.opts.browser.slice(1) : null;
+  const clientInfo = browserType ? `${client.constructor.name}_${browserType}` : (<Function>client).name;
+
+  return [
+    clientInfo,
+    storage.config.client,
+    getConcurrencyInfo(concurrencyOpts),
+    getPipelineInfo(pipeline),
+    getHeadersInfo(accPluginOpts),
+  ].filter(fragment => fragment).join(' - ');
+}
+
 export default function acceptanceSuite(
   pipeline:string,
   storage: Storage,
@@ -41,18 +61,9 @@ export default function acceptanceSuite(
   concurrencyOpts: Partial<ConcurrencyOptions>,
   accPluginOpts?: PluginOpts[],
 ) {
-  const browserType = client instanceof BrowserClient ? client.opts.browser.charAt(0).toUpperCase() + client.opts.browser.slice(1) : null;
-  const clientInfo = browserType ? `${client.constructor.name}_${browserType}` : (<Function>client).name;
+  const suiteTitle = this.getSuiteTitle(pipeline, storage, client, concurrencyOpts, accPluginOpts);
 
-  const suiteTile = [
-    clientInfo,
-    storage.config.client,
-    getConcurrencyInfo(concurrencyOpts),
-    getPipelineInfo(pipeline),
-    getHeadersInfo(accPluginOpts),
-  ].filter(fragment => fragment).join(' - ');
-
-  describe(suiteTile, () => {
+  describe(suiteTitle, () => {
     let srv: GsfServer;
     let Project: IStaticProject;
 
@@ -62,19 +73,25 @@ export default function acceptanceSuite(
       srv.start();
 
       // init storage
-      ({ Project } = await storage.connect());
+      if (storage.config.client === 'sqlite3') {
+        // can't used :memory db since we connect/disconnect multiple times and can't loose data betweeen scraping and export actions
+        // make sure we don't update the path multiple times
+        if (!/tmp/.test(storage.config.connection.filename)) {
+          storage.config.connection.filename = join(__dirname, '..', 'tmp', storage.config.connection.filename);
+        }
+      }
     });
 
-    afterEach(async () => {
+    beforeEach(async () => {
+      /*
+      conn is automatically closed after each scrape operation,
+      re-open it to be able to create test projects outside of scraper logic
+      */
+      ({ Project } = await storage.connect());
       await Project.delAll();
     });
 
     after(async () => {
-      if (client instanceof BrowserClient) {
-        await client.close();
-      }
-
-      await storage.close();
       srv.stop();
     });
 
@@ -91,7 +108,7 @@ export default function acceptanceSuite(
         pluginOpts = mergePluginOpts(pluginOpts, accPluginOpts);
       }
 
-      // save a project for the current scraping test
+      // save a project for the current scrape test
       const project = new Project({
         name: test.title,
         url: test.definition.url,
@@ -111,7 +128,7 @@ export default function acceptanceSuite(
       await scrapeComplete;
 
       // compare results
-      const resources = await project.getResources();
+      const resources = await scraper.getResources();
       // console.log(JSON.stringify(resources));
       ScrapingSuite.checkResources(resources, test.resources);
 
