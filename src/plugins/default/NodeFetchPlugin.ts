@@ -68,6 +68,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         path: pathname,
         host: hostname,
         headers: reqHeaders,
+        timeout: 10 * 1000,
       };
 
       const req = requestFnc({ ...opts, ...resource.proxy }, (res:IncomingMessage) => {
