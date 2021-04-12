@@ -40,7 +40,9 @@ export default class KnexProject extends Project {
     return this.builder.select();
   }
 
-  static delAll():Promise<void> {
+  static async delAll():Promise<void> {
+    // since we're deleting all projects, it's safe to also delete all resources linked to them
+    await this.storage.knex('resources').del();
     return this.builder.del();
   }
 

@@ -38,7 +38,7 @@ export default abstract class Plugin {
    * @returns keys the scraped data will be exported under
    */
   getContentKeys():string[] {
-    return null;
+    return undefined;
   }
 
   /**

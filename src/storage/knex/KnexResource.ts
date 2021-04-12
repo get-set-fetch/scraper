@@ -87,7 +87,7 @@ export default class KnexResource extends Resource {
     return this.builder.del();
   }
 
-  // find a resource to crawl and set its scrapeInProgress flag
+  // find a resource to scrape and set its scrapeInProgress flag
   static async getResourceToScrape(projectId:number):Promise<Resource> {
     let resource:Resource = null;
 
