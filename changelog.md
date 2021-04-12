@@ -1,12 +1,18 @@
 ## Changelog
 
 ### Unreleased
+- Command Line
+  - supported arguments: --version, --loglevel, --logdestination, --config, --discover, --overwrite, --export, --exportType
 - Plugins
   - NodeFetchPlugin: 
     - supports br, gzip, deflate content encoding
     - added headers option with `{'Accept-Encoding': 'br,gzip,deflate'}` default value
 - RuntimeMetrics: 
   - added memory and cpu usage constraints at process and OS level
+- Export
+  - relative and absolute export paths are now supported
+- Scraper
+  - scrape configuration contains an optional name parameter
 ### 0.3.0 - 2021-03-18
 - Storage:
   - Project: batchInsertResources allows fast resource saving with just url and depth properties
