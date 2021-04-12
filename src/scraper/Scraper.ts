@@ -18,6 +18,7 @@ import { decode } from '../confighash/config-hash';
 import { IDomClientConstructor } from '../domclient/DomClient';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
 import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMetrics';
+import { initStorage } from '../storage/storage-utils';
 
 export const enum ScrapeEvent {
   ResourceSelected = 'resource-selected',
