@@ -164,11 +164,6 @@ export function invokeScraper(argObj:ArgObjType) {
   }
 
   const scrapeOptions:ScrapeOptions = {
-    // after scraping completes always close all remaining opened resources (browser, storage, ..)
-    cleanup: {
-      client: true,
-      storage: true,
-    },
     overwrite,
     discover,
   };

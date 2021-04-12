@@ -43,14 +43,6 @@ export type ScrapeOptions = {
   overwrite: boolean;
 
   /**
-   * Close all opened resources after scraping completes: storage, browserClient.
-   */
-  cleanup: {
-    storage: boolean;
-    client: boolean;
-  }
-
-  /**
    * Don't restrict scraping to a particular project. Once scraping a project completes, find other existing projects to scrape from.
    */
   discover: boolean;
@@ -209,14 +201,11 @@ export default class Scraper extends EventEmitter {
         delete this.concurrency;
       }
 
-      if (
-        (this.opts.cleanup && this.opts.cleanup.client)
-        && (this.browserClient && this.browserClient.isLaunched)
-      ) {
+      if (this.browserClient && this.browserClient.isLaunched) {
         await this.browserClient.close();
       }
 
-      if (this.opts.cleanup && this.opts.cleanup.storage) {
+      if (this.storage && this.storage.connected) {
         await this.storage.close();
       }
     }
