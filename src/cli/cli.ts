@@ -1,16 +1,21 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable prefer-destructuring */
 /* eslint-disable no-case-declarations */
 /* eslint-disable no-console */
 import fs from 'fs';
-import { join, dirname, extname } from 'path';
+import { join, dirname, extname, parse } from 'path';
 import pino from 'pino';
 import PlaywrightClient from '../browserclient/PlaywrightClient';
 import PuppeteerClient from '../browserclient/PuppeteerClient';
 import CheerioClient from '../domclient/CheerioClient';
 import JsdomClient from '../domclient/JsdomClient';
 import Scraper, { ScrapeEvent, ScrapeOptions } from '../scraper/Scraper';
-import KnexStorage from '../storage/knex/KnexStorage';
 import { setLogger } from '../logger/Logger';
+import Storage, { StorageConfig } from '../storage/base/Storage';
+import BrowserClient from '../browserclient/BrowserClient';
+import { IDomClientConstructor } from '../domclient/DomClient';
+import Project from '../storage/base/Project';
+import { initStorage as initStorageUtil } from '../storage/storage-utils';
 
 const defaultArgObj = {
   jsExecPath: null,
@@ -111,37 +116,22 @@ export function invokeLogger(argObj:ArgObjType) {
   );
 }
 
-export function invokeScraper(argObj:ArgObjType) {
-  const { config, overwrite, discover, jsExecPath } = argObj;
+function initStorage(fullConfigPath: string, storageConfig:StorageConfig):Storage {
+  if (!storageConfig) throw new Error('missing storage options');
+  if (!storageConfig.client) throw new Error('missing storage client');
 
-  if ((typeof config) !== 'string') throw new Error('invalid config path');
-  const fullConfigPath = join(dirname(jsExecPath), config);
-  if (!fs.existsSync(fullConfigPath)) throw new Error(`config path ${fullConfigPath} does not exist`);
-  console.log(`using scrape configuration file ${fullConfigPath}`);
-
-  const configFile = fs.readFileSync(fullConfigPath).toString('utf-8');
-  const { storage: storageOpts, dom: domOpts, scrape: scrapeOpts, concurrency: concurrencyOpts, process: processOpts } = JSON.parse(configFile);
-
-  if (!storageOpts) throw new Error('missing storage options');
-  if (!storageOpts.client) throw new Error('missing storage client');
-
-  let storage;
-  switch (storageOpts.client) {
-    case 'sqlite3':
-      // generate full sqlite3 filepath relative to config file
-      if (storageOpts.connection.filename !== ':memory:') {
-        storageOpts.connection.filename = join(dirname(fullConfigPath), storageOpts.connection.filename);
-        console.log(`using sqlite file ${storageOpts.connection.filename}`);
-      }
-    // eslint-disable-next-line no-fallthrough
-    case 'mysql':
-    case 'pg':
-      storage = new KnexStorage(storageOpts);
-      break;
-    default:
-      throw new Error(`invalid storage client ${storageOpts.client}`);
+  if (storageConfig.client === 'sqlite3') {
+    // generate full sqlite3 filepath relative to config file
+    if (storageConfig.connection.filename !== ':memory:') {
+      storageConfig.connection.filename = join(dirname(fullConfigPath), storageConfig.connection.filename);
+      console.log(`using sqlite file ${storageConfig.connection.filename}`);
+    }
   }
 
+  return initStorageUtil(storageConfig);
+}
+
+function initDomClient(domOpts):BrowserClient|IDomClientConstructor {
   if (!domOpts) throw new Error('missing DOM options');
   if (!domOpts.client) throw new Error('missing DOM client');
 
@@ -162,6 +152,23 @@ export function invokeScraper(argObj:ArgObjType) {
     default:
       throw new Error(`invalid DOM client ${domOpts.client}`);
   }
+
+  return domClient;
+}
+
+export function invokeScraper(argObj:ArgObjType) {
+  const { config, overwrite, discover, jsExecPath } = argObj;
+
+  if ((typeof config) !== 'string') throw new Error('invalid config path');
+  const fullConfigPath = join(dirname(jsExecPath), config);
+  if (!fs.existsSync(fullConfigPath)) throw new Error(`config path ${fullConfigPath} does not exist`);
+  console.log(`using scrape configuration file ${fullConfigPath}`);
+
+  const configFile = fs.readFileSync(fullConfigPath).toString('utf-8');
+  const { storage: storageConfig, dom: domOpts, scrape: scrapeConfig, concurrency: concurrencyOpts, process: processOpts } = JSON.parse(configFile);
+
+  const storage = initStorage(fullConfigPath, storageConfig);
+  const domClient = initDomClient(domOpts);
 
   const scrapeOptions:ScrapeOptions = {
     overwrite,
@@ -191,10 +198,15 @@ export function invokeScraper(argObj:ArgObjType) {
       }
     }
 
-    scraper.addListener(ScrapeEvent.ProjectScraped, async () => {
-      console.log(`exporting to ${exportPath}`);
-      await scraper.export(exportPath, { type: exportType });
-      console.log(`exporting to ${exportPath} complete`);
+    scraper.addListener(ScrapeEvent.ProjectScraped, async (project:Project) => {
+      // when discovering and scraping multiple projects inject project.name into exported filename
+      let updatedExportPath = exportPath;
+      if (discover) {
+        const { dir, name, ext } = parse(exportPath);
+        updatedExportPath = join(dir, `${name}-${project.name}${ext}`);
+      }
+
+      await scraper.export(updatedExportPath, { type: exportType }, project);
     });
   }
 
@@ -202,7 +214,12 @@ export function invokeScraper(argObj:ArgObjType) {
     console.log(err);
   });
 
-  scraper.scrape(scrapeOpts, concurrencyOpts, processOpts);
+  if (discover) {
+    scraper.discover(concurrencyOpts, processOpts);
+  }
+  else {
+    scraper.scrape(scrapeConfig, concurrencyOpts, processOpts);
+  }
 }
 
 export function invoke(argv: string[]) {

@@ -6,15 +6,24 @@ import { GsfServer, ScrapingSuite } from '@get-set-fetch/test-utils';
 import Storage from '../../../src/storage/base/Storage';
 import { IStaticProject } from '../../../src/storage/base/Project';
 import KnexStorage from '../../../src/storage/knex/KnexStorage';
+import { pipelines, mergePluginOpts } from '../../../src/pipelines/pipelines';
 
 describe('Command Line Interface', () => {
   let srv: GsfServer;
   let storage: Storage;
   let Project: IStaticProject;
+  let config;
 
   before(async () => {
+    // do some file cleanup on tmp dir containing export files
+    fs.readdirSync(join(__dirname, '..', '..', 'tmp')).forEach(file => {
+      if (file !== '.gitkeep') {
+        fs.unlinkSync(join(__dirname, '..', '..', 'tmp', file));
+      }
+    });
+
     // init storage
-    const config = JSON.parse(fs.readFileSync(join(__dirname, 'static-single-page-single-content-entry.json')).toString('utf-8'));
+    config = JSON.parse(fs.readFileSync(join(__dirname, 'static-single-page-single-content-entry.json')).toString('utf-8'));
     config.storage.connection.filename = join(__dirname, config.storage.connection.filename);
     storage = new KnexStorage(config.storage);
     ({ Project } = await storage.connect());
@@ -104,7 +113,11 @@ describe('Command Line Interface', () => {
   });
 
   it('existing project --config --loglevel info --overwrite', async () => {
-    const project = new Project({ name: 'sitea.com', url: 'http://sitea.com/index.html' });
+    const project = new Project({
+      name: 'sitea.com',
+      url: config.scrape.url,
+      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+    });
     await project.save();
 
     const stdout = await new Promise<string>(resolve => exec(
@@ -119,7 +132,11 @@ describe('Command Line Interface', () => {
   });
 
   it('existing project --config --loglevel info --overwrite false', async () => {
-    const project = new Project({ name: 'sitea.com', url: 'http://sitea.com/index.html' });
+    const project = new Project({
+      name: 'sitea.com',
+      url: config.scrape.url,
+      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+    });
     await project.save();
 
     // by default overwrite is false, just make sure --overwrite flag is not present
@@ -137,7 +154,7 @@ describe('Command Line Interface', () => {
   it('new project --config --loglevel info --export', async () => {
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -145,8 +162,7 @@ describe('Command Line Interface', () => {
     ));
 
     assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
-    assert.isTrue(/exporting to/.test(stdout), '"exporting to" log entry not found');
-    assert.isTrue(/exporting to .+ complete/.test(stdout), '"exporting to  .. complete" log entry not found');
+    assert.isTrue(/export.csv .+ done/.test(stdout), '"export.csv done" log entry not found');
 
     const csvContent:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export.csv')).toString('utf-8').split('\n');
     assert.sameOrderedMembers(
@@ -170,5 +186,43 @@ describe('Command Line Interface', () => {
 
     assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
     assert.isTrue(/missing --exportType/.test(stdout), '"missing --exportType" log entry not found');
+  });
+
+  it('existing projects --discover --loglevel info --export', async () => {
+    const projectA = new Project({
+      name: 'projectA',
+      url: config.scrape.url,
+      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+    });
+    await projectA.save();
+
+    const projectB = new Project({
+      name: 'projectB',
+      url: config.scrape.url,
+      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+    });
+    await projectB.save();
+
+    // by default overwrite is false, just make sure --overwrite flag is not present
+    const stdout = await new Promise<string>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --discover --loglevel info --export ../test/tmp/export.csv',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout) => {
+        resolve(stdout);
+      },
+    ));
+
+    assert.isTrue(/export-projectA.csv .+ done/.test(stdout), '"export-projectA.csv done" log entry not found');
+    assert.isTrue(/export-projectB.csv .+ done/.test(stdout), '"export-projectB.csv done" log entry not found');
+
+    const csvContentA:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export-projectA.csv')).toString('utf-8').split('\n');
+    const csvContentB:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export-projectB.csv')).toString('utf-8').split('\n');
+    const expectedContent = [
+      'url,h1',
+      'http://sitea.com/index.html,"Main Header 1"',
+    ];
+
+    assert.sameOrderedMembers(expectedContent, csvContentA);
+    assert.sameOrderedMembers(expectedContent, csvContentB);
   });
 });

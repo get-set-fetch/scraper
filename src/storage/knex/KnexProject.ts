@@ -46,6 +46,11 @@ export default class KnexProject extends Project {
     return this.builder.del();
   }
 
+  static async getProjectToScrape() {
+    const resourceToScrape:Resource = await this.storage.knex('resources').where({ scrapeInProgress: false, scrapedAt: null }).first();
+    return resourceToScrape ? this.get(resourceToScrape.projectId) : null;
+  }
+
   get Constructor():typeof KnexProject {
     return (<typeof KnexProject> this.constructor);
   }

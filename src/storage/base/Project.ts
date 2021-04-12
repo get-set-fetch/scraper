@@ -78,4 +78,5 @@ export interface IStaticProject extends IStaticEntity {
   new(kwArgs: Partial<Project>): Project;
   get(nameOrId: string | number):Promise<Project>;
   getAll():Promise<any[]>;
+  getProjectToScrape():Promise<Project>
 }
