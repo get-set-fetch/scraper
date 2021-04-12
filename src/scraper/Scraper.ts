@@ -31,6 +31,7 @@ export const enum ScrapeEvent {
 }
 
 export type ScrapeConfig = {
+  name?: string,
   url: string,
   pipeline: string,
   pluginOpts: PluginOpts[]
@@ -161,7 +162,7 @@ export default class Scraper extends EventEmitter {
       throw new Error(`Pipeline ${scrapeDef.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
 
-    const projectName = new URL(scrapeDef.url).hostname;
+    const projectName = scrapeDef.name || new URL(scrapeDef.url).hostname;
     let project = await this.storage.Project.get(projectName);
 
     if (project) {
