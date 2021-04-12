@@ -1,5 +1,5 @@
 import fs from 'fs';
-import path, { join } from 'path';
+import path, { join, parse } from 'path';
 import JSZip from 'jszip';
 import Resource from '../storage/base/Resource';
 import Exporter, { ExportOptions } from './Exporter';
@@ -20,7 +20,7 @@ export default class ZipExporter extends Exporter {
     const { pageLimit } = this.opts;
     let pageOffset = 0;
 
-    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.getPath(this.filepath, pageOffset, pageLimit))} ...`);
+    this.logger.info(`Exporting as ${this.opts.type} under ${this.getPath(this.filepath, pageOffset, pageLimit)} ...`);
 
     let resources = await this.project.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
     if (resources.length === 0) {
@@ -50,17 +50,15 @@ export default class ZipExporter extends Exporter {
       resources = await this.project.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
     }
 
-    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.getPath(this.filepath, pageOffset, pageLimit))} ... done`);
+    this.logger.info(`Exporting as ${this.opts.type} under ${this.getPath(this.filepath, pageOffset, pageLimit)} ... done`);
   }
 
   getPath(filepath: string, offset: number, limit: number) {
-    const dirname = path.dirname(this.filepath);
-    const extName = path.extname(this.filepath) || '.zip';
-    const basename = path.basename(this.filepath, extName);
+    const { dir, name, ext } = parse(filepath);
 
     const idx = offset / limit;
     const idxSuffix = idx === 0 ? '' : `-${idx}`;
-    const zipPath = path.join(dirname, `${basename}${idxSuffix}${extName}`);
+    const zipPath = path.join(dir, `${name}${idxSuffix}${ext}`);
     return zipPath;
   }
 

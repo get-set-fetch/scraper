@@ -1,3 +1,4 @@
+import { isAbsolute, join } from 'path';
 import Project from '../storage/base/Project';
 
 export type ExportOptions = {
@@ -14,7 +15,7 @@ export default abstract class Exporter {
     const mergedOpts = Object.assign(this.getDefaultOptions(), opts);
 
     this.opts = mergedOpts;
-    this.filepath = filepath;
+    this.filepath = isAbsolute(filepath) ? filepath : join(process.cwd(), filepath);
     this.project = project;
   }
 

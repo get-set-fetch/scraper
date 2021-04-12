@@ -19,7 +19,7 @@ export default class CsvExporter extends Exporter {
   opts: CsvExportOptions;
 
   async export() {
-    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.filepath)} ...`);
+    this.logger.info(`Exporting as ${this.opts.type} under ${this.filepath} ...`);
 
     const { lineSeparator, fieldSeparator, pageLimit } = this.opts;
     let pageOffset = 0;
@@ -50,7 +50,7 @@ export default class CsvExporter extends Exporter {
 
     wstream.close();
 
-    this.logger.info(`Exporting as ${this.opts.type} under ${join(process.cwd(), this.filepath)} ... done`);
+    this.logger.info(`Exporting as ${this.opts.type} under ${this.filepath} ... done`);
   }
 
   getContentKeys():string[] {
