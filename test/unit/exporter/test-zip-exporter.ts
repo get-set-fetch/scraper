@@ -3,6 +3,7 @@ import fs from 'fs';
 import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
 import JSZip from 'jszip';
+import { join } from 'path';
 import ZipExporter from '../../../src/export/ZipExporter';
 import KnexProject from '../../../src/storage/knex/KnexProject';
 import Exporter from '../../../src/export/Exporter';
@@ -38,7 +39,7 @@ describe('ZipExporter', () => {
     await exporter.export();
 
     const [ archiveName, archiveContent ] = writeStub.getCall(0).args;
-    assert.strictEqual(archiveName, 'archiveA.zip');
+    assert.strictEqual(archiveName, join(process.cwd(), 'archiveA.zip'));
 
     const archive = await JSZip.loadAsync(archiveContent);
     const archiveEntries = Object.keys(archive.files).map(name => archive.files[name].name);
@@ -58,7 +59,7 @@ describe('ZipExporter', () => {
     await exporter.export();
 
     const [ archiveName, archiveContent ] = writeStub.getCall(0).args;
-    assert.strictEqual(archiveName, 'archiveA.zip');
+    assert.strictEqual(archiveName, join(process.cwd(), 'archiveA.zip'));
 
     const archive = await JSZip.loadAsync(archiveContent);
     const archiveEntries = Object.keys(archive.files).map(name => archive.files[name].name);
@@ -88,14 +89,14 @@ describe('ZipExporter', () => {
     let archive = await JSZip.loadAsync(archiveContent);
     let archiveEntries = Object.keys(archive.files).map(name => archive.files[name].name);
 
-    assert.strictEqual(archiveName, 'archiveA.zip');
+    assert.strictEqual(archiveName, join(process.cwd(), 'archiveA.zip'));
     assert.sameMembers([ 'report.pdf' ], archiveEntries);
 
     [ archiveName, archiveContent ] = writeStub.getCall(1).args;
     archive = await JSZip.loadAsync(archiveContent);
     archiveEntries = Object.keys(archive.files).map(name => archive.files[name].name);
 
-    assert.strictEqual(archiveName, 'archiveA-1.zip');
+    assert.strictEqual(archiveName, join(process.cwd(), 'archiveA-1.zip'));
     assert.sameMembers([ 'animation.gif' ], archiveEntries);
   });
 });
