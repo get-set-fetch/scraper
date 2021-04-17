@@ -26,10 +26,10 @@ export default function crudProject(storage: Storage) {
 
     it(`${storage.config.client} project get`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      assert.deepEqual(projectById, expectedProject);
+      assert.deepEqual({ ...projectById, logger: undefined }, { ...expectedProject, logger: undefined });
 
       const projectByName = await Project.get(expectedProject.name);
-      assert.deepEqual(projectByName, expectedProject);
+      assert.deepEqual({ ...projectByName, logger: undefined }, { ...expectedProject, logger: undefined });
 
       const resourceToCrawl = await projectByName.getResourceToScrape();
       assert.strictEqual(resourceToCrawl.projectId, projectById.id);
@@ -38,6 +38,59 @@ export default function crudProject(storage: Storage) {
 
       const resourceNo = await projectByName.countResources();
       assert.strictEqual(resourceNo, 1);
+    });
+
+    it(`${storage.config.client} project batchInsertResources uriNormalization = false`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+      await projectById.batchInsertResources([
+        { url: 'http://siteA.com/other1.html' },
+        { url: 'http://siteA.com/other2.html', depth: 2 },
+      ]);
+
+      const resources = await projectById.getResources();
+      assert.sameDeepMembers(
+        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        [
+          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://siteA.com/other1.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://siteA.com/other2.html', depth: 2, projectId: expectedProject.id },
+        ],
+      );
+    });
+
+    it(`${storage.config.client} project batchInsertResources uriNormalization = true`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+      await projectById.batchInsertResources([
+        { url: 'http://siteA.com/other1.html' },
+        { url: 'http://siteA.com/other2.html', depth: 2 },
+        { url: 'not-url', depth: 2 },
+      ], 1000, true);
+
+      const resources = await projectById.getResources();
+      assert.sameDeepMembers(
+        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        [
+          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other2.html', depth: 2, projectId: expectedProject.id },
+        ],
+      );
+    });
+
+    it(`${storage.config.client} project batchInsertResourcesFromFile`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources.csv');
+
+      const resources = await projectById.getResources();
+      assert.sameDeepMembers(
+        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        [
+          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other3.html', depth: 0, projectId: expectedProject.id },
+        ],
+      );
     });
 
     it(`${storage.config.client} project update`, async () => {
@@ -53,7 +106,7 @@ export default function crudProject(storage: Storage) {
       await expectedProject.update();
 
       const actualProject = await Project.get(expectedProject.id);
-      assert.deepEqual(actualProject, expectedProject);
+      assert.deepEqual({ ...actualProject, logger: undefined }, { ...expectedProject, logger: undefined });
     });
 
     it(`${storage.config.client} project del`, async () => {
