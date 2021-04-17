@@ -62,9 +62,10 @@ export default function crudProject(storage: Storage) {
       const projectById = await Project.get(expectedProject.id);
       await projectById.batchInsertResources([
         { url: 'http://siteA.com/other1.html' },
-        { url: 'http://siteA.com/other2.html', depth: 2 },
+        { url: 'http://siteA.com/other2.html' },
+        { url: 'http://siteA.com/other3.html', depth: 2 },
         { url: 'invalid-url', depth: 2 },
-      ], 500, true);
+      ], 2, true);
 
       const resources = await projectById.getResources();
       assert.sameDeepMembers(
@@ -72,7 +73,8 @@ export default function crudProject(storage: Storage) {
         [
           { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other2.html', depth: 2, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other3.html', depth: 2, projectId: expectedProject.id },
         ],
       );
     });
@@ -95,7 +97,7 @@ export default function crudProject(storage: Storage) {
 
     it(`${storage.config.client} project batchInsertResourcesFromFile uriNormalization = true`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/unnormalized-resources.csv', 500, true);
+      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/unnormalized-resources.csv', 2, true);
 
       const resources = await projectById.getResources();
       assert.sameDeepMembers(
