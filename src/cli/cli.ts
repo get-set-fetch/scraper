@@ -198,6 +198,12 @@ export function invokeScraper(argObj:ArgObjType) {
       }
     }
 
+    // get an absolute resource path based on the relative path from the configuration file path
+    if (scrapeConfig.resourcePath) {
+      scrapeConfig.resourcePath = join(dirname(fullConfigPath), scrapeConfig.resourcePath);
+      if (!fs.existsSync(scrapeConfig.resourcePath)) throw new Error(`resourcePath ${scrapeConfig.resourcePath} does not exist`);
+    }
+
     scraper.addListener(ScrapeEvent.ProjectScraped, async (project:Project) => {
       // when discovering and scraping multiple projects inject project.name into exported filename
       let updatedExportPath = exportPath;

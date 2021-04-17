@@ -2,9 +2,12 @@ import Entity, { IStaticEntity } from './Entity';
 import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
+import { LogWrapper } from '../../logger/Logger';
 
 /** Groups resources sharing the same scrape configuration and discovered from the same initial URLs. */
 export default abstract class Project extends Entity {
+  logger: LogWrapper;
+
   id: number;
   name: string;
   url: string;
@@ -60,8 +63,25 @@ export default abstract class Project extends Entity {
   abstract saveResources(resources: Partial<Resource>[]):Promise<void>;
 
   abstract batchInsertResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean):Promise<void>;
+  abstract batchInsertResourcesFromFile(resourcePath: string, chunkSize?:number, uriNormalization?:boolean):Promise<void>;
 
   abstract createResource(resource: Partial<Resource>):Resource;
+
+  /**
+   * URL normalization
+   * make sure we don't end up with equivalent but syntactically different URIs
+   *  ex: http://sitea.com, http://sitea.com/, http://SitEa.com
+   */
+  normalizeUrl(rawUrl: string):string {
+    let url: string;
+    try {
+      url = new URL(rawUrl).toString();
+    }
+    catch (err) {
+      this.logger.error(err, `error normalizing url: ${rawUrl}`);
+    }
+    return url;
+  }
 
   get dbCols() {
     return [ 'id', 'name', 'url', 'pluginOpts' ];

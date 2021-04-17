@@ -2,6 +2,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-param-reassign */
 import { URL } from 'url';
+import { join, isAbsolute } from 'path';
 import EventEmitter from 'events';
 import BrowserClient from '../browserclient/BrowserClient';
 import Project, { IStaticProject } from '../storage/base/Project';
@@ -37,6 +38,7 @@ export type ScrapeConfig = {
   url: string,
   pipeline: string,
   pluginOpts: PluginOpts[]
+  resourcePath?: string;
 }
 
 export type ScrapeOptions = {
@@ -182,6 +184,13 @@ export default class Scraper extends EventEmitter {
     });
     await project.save();
     this.logger.info(`New project ${project.name} saved`);
+
+    // link additional resources to the project
+    let { resourcePath } = scrapeDef;
+    if (resourcePath) {
+      resourcePath = isAbsolute(resourcePath) ? resourcePath : join(process.cwd(), resourcePath);
+      await project.batchInsertResourcesFromFile(resourcePath);
+    }
 
     return project;
   }

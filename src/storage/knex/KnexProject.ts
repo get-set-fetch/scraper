@@ -1,7 +1,11 @@
 /* eslint-disable no-await-in-loop */
+import { createReadStream } from 'fs';
+import { pipeline, Writable } from 'stream';
+
 import Resource, { ResourceQuery } from '../base/Resource';
 import Project from '../base/Project';
 import KnexStorage from './KnexStorage';
+import { getLogger } from '../../logger/Logger';
 
 /** @see {@link Project} */
 export default class KnexProject extends Project {
@@ -50,6 +54,8 @@ export default class KnexProject extends Project {
     const resourceToScrape:Resource = await this.storage.knex('resources').where({ scrapeInProgress: false, scrapedAt: null }).first();
     return resourceToScrape ? this.get(resourceToScrape.projectId) : null;
   }
+
+  logger = getLogger('KnexProject');
 
   get Constructor():typeof KnexProject {
     return (<typeof KnexProject> this.constructor);
@@ -113,23 +119,115 @@ export default class KnexProject extends Project {
    * @param chunkSize - number of resources within a transaction
    * @param uriNormalization - if set perform URI normalization on each url
    */
-  async batchInsertResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean) {
+  async batchInsertResources(resources: {url: string, depth?: number}[], chunkSize:number = 1000, uriNormalization:boolean = false) {
     // assign projectId in place for faster processing
     resources.forEach(resource => {
       // eslint-disable-next-line no-param-reassign
       (<Resource>resource).projectId = this.id;
+
       if (uriNormalization) {
-        /*
-        URI normalization
-        make sure we don't end up with equivalent but syntactically different URIs
-        ex: http://sitea.com, http://sitea.com/, http://SitEa.com
-        */
         // eslint-disable-next-line no-param-reassign
-        (<Resource>resource).url = new URL(resource.url).toString();
+        resource.url = this.normalizeUrl(resource.url);
       }
     });
 
-    await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
+    await this.Constructor.storage.knex.batchInsert('resources', resources.filter(resource => resource.url), chunkSize);
+  }
+
+  /**
+   * Creates a stream pipeline from a reable file stream to a db writable stream. Attempts to keep memory usage down.
+   * Input file contains an url per line.
+   * @param resourcePath - input filepath
+   * @param chunkSize - number of resources within a transaction
+   * @param uriNormalization - if set perform URI normalization on each url
+   */
+  async batchInsertResourcesFromFile(resourcePath: string, chunkSize:number = 1000, uriNormalization:boolean = false) {
+    let resourceCount:number = 0;
+    let resources: {url: string, projectId: number}[] = [];
+
+    let partialLine:string = '';
+    let urlIdx:number;
+
+    this.logger.info(`inserting resources from ${resourcePath}`);
+    await new Promise<void>((resolve, reject) => {
+      const readStream = createReadStream(resourcePath);
+
+      const writeStream = new Writable({
+        write: async (chunk, encoding, done) => {
+          try {
+            const chunkContent:string = partialLine + Buffer.from(chunk).toString('utf-8');
+            const chunkLines = chunkContent.split(/\r?\n/);
+            partialLine = chunkLines.pop();
+
+            // find out on what position on the csv row is the url
+            if (urlIdx === undefined) {
+              chunkLines[0].split(',').forEach((entry, idx) => {
+                try {
+                  if (new URL(entry)) urlIdx = idx;
+                }
+                // eslint-disable-next-line no-empty
+                catch (err) {
+                }
+              });
+            }
+
+            chunkLines.forEach(line => {
+              const rawUrl = line.split(',')[urlIdx];
+              const url = uriNormalization ? this.normalizeUrl(rawUrl) : rawUrl;
+              if (url) {
+                resources.push({ url, projectId: this.id });
+              }
+            });
+
+            if (resources.length >= chunkSize) {
+              await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
+              resourceCount += resources.length;
+              this.logger.info(`${resourceCount} total resources inserted`);
+              resources = [];
+            }
+          }
+          catch (err) {
+            this.logger.error(err);
+          }
+
+          done();
+        },
+
+        final: async done => {
+          try {
+            if (partialLine.length > 0) {
+              const rawUrl = partialLine.split(',')[urlIdx];
+              const url = uriNormalization ? this.normalizeUrl(rawUrl) : rawUrl;
+              if (url) {
+                resources.push({ url, projectId: this.id });
+                await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
+                resourceCount += resources.length;
+                this.logger.info(`${resourceCount} total resources inserted`);
+              }
+            }
+          }
+          catch (err) {
+            this.logger.error(err);
+            reject(err);
+          }
+          done();
+        },
+      });
+
+      const onComplete = async err => {
+        if (err) {
+          this.logger.error(err);
+          reject(err);
+        }
+        else {
+          resolve();
+        }
+      };
+
+      pipeline(readStream, writeStream, onComplete);
+    });
+
+    this.logger.info(`inserting resources from ${resourcePath} done`);
   }
 
   /**

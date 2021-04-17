@@ -225,4 +225,33 @@ describe('Command Line Interface', () => {
     assert.sameOrderedMembers(expectedContent, csvContentA);
     assert.sameOrderedMembers(expectedContent, csvContentB);
   });
+
+  it('new project with external resources --scrape --loglevel info --export', async () => {
+    const stdout = await new Promise<string>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/static-with-external-resources.json --loglevel info --export ../test/tmp/export.csv',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout) => {
+        resolve(stdout);
+      },
+    ));
+
+    assert.isTrue(/3 total resources inserted/.test(stdout), '"3 total resources inserted" log entry not found');
+    assert.isTrue(/inserting resources from .+resources.csv done/.test(stdout), '"inserting resources from .. resource.csv done" log entry not found');
+
+    assert.isTrue(/index.html successfully scraped/.test(stdout), '"index.html successfully scraped" log entry not found');
+    assert.isTrue(/other1.html successfully scraped/.test(stdout), '"other1.html successfully scraped" log entry not found');
+    assert.isTrue(/other2.html successfully scraped/.test(stdout), '"other2.html successfully scraped" log entry not found');
+    assert.isTrue(/other3.html successfully scraped/.test(stdout), '"other3.html successfully scraped" log entry not found');
+    assert.isTrue(/Project sitea.com scraping complete/.test(stdout), '"project scraping complete" log entry not found');
+
+    const csvContent:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export.csv')).toString('utf-8').split('\n');
+
+    // a single valid entry since otherN.html pages have null content
+    const expectedContent = [
+      'url,h1',
+      'http://sitea.com/index.html,"Main Header 1"',
+    ];
+
+    assert.sameOrderedMembers(expectedContent, csvContent);
+  });
 });
