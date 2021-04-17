@@ -63,8 +63,8 @@ export default function crudProject(storage: Storage) {
       await projectById.batchInsertResources([
         { url: 'http://siteA.com/other1.html' },
         { url: 'http://siteA.com/other2.html', depth: 2 },
-        { url: 'not-url', depth: 2 },
-      ], 1000, true);
+        { url: 'invalid-url', depth: 2 },
+      ], 500, true);
 
       const resources = await projectById.getResources();
       assert.sameDeepMembers(
@@ -77,7 +77,7 @@ export default function crudProject(storage: Storage) {
       );
     });
 
-    it(`${storage.config.client} project batchInsertResourcesFromFile`, async () => {
+    it(`${storage.config.client} project batchInsertResourcesFromFile uriNormalization = false`, async () => {
       const projectById = await Project.get(expectedProject.id);
       await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources.csv');
 
@@ -89,6 +89,21 @@ export default function crudProject(storage: Storage) {
           { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other3.html', depth: 0, projectId: expectedProject.id },
+        ],
+      );
+    });
+
+    it(`${storage.config.client} project batchInsertResourcesFromFile uriNormalization = true`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/unnormalized-resources.csv', 500, true);
+
+      const resources = await projectById.getResources();
+      assert.sameDeepMembers(
+        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        [
+          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
         ],
       );
     });

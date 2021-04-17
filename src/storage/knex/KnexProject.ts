@@ -145,6 +145,10 @@ export default class KnexProject extends Project {
     let resourceCount:number = 0;
     let resources: {url: string, projectId: number}[] = [];
 
+    /*
+    reading chunk by chunk, partialLine represents the last read line which can be incomplete
+    parse it only on final when we have guarantee of its completness
+    */
     let partialLine:string = '';
     let urlIdx:number;
 
@@ -195,11 +199,16 @@ export default class KnexProject extends Project {
 
         final: async done => {
           try {
+            // try to retrieve a new resources from the now complete last read line
             if (partialLine.length > 0) {
               const rawUrl = partialLine.split(',')[urlIdx];
               const url = uriNormalization ? this.normalizeUrl(rawUrl) : rawUrl;
               if (url) {
                 resources.push({ url, projectId: this.id });
+              }
+
+              // insert pending resources
+              if (resources.length > 0) {
                 await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
                 resourceCount += resources.length;
                 this.logger.info(`${resourceCount} total resources inserted`);
