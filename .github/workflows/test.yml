@@ -129,7 +129,8 @@ jobs:
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
     - name: Coveralls for unit tests
-      if: ${{ matrix.run_storage_unit_tests }}
+      # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
+      if: ${{ matrix.client == 'puppeteer_chromium' }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
