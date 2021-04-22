@@ -13,6 +13,8 @@
   - relative and absolute export paths are now supported
 - Scraper
   - scrape configuration contains an optional name parameter
+- Storage:
+  - Project: batchInsertResourcesFromFile allows saving project resources from external csv files
 ### 0.3.0 - 2021-03-18
 - Storage:
   - Project: batchInsertResources allows fast resource saving with just url and depth properties
