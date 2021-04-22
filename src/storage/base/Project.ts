@@ -3,6 +3,7 @@ import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 import { LogWrapper } from '../../logger/Logger';
+import { normalizeUrl } from '../../plugins/url-utils';
 
 /** Groups resources sharing the same scrape configuration and discovered from the same initial URLs. */
 export default abstract class Project extends Entity {
@@ -29,11 +30,13 @@ export default abstract class Project extends Entity {
     }
 
     /*
-    URI normalization
-    make sure we don't end up with equivalent but syntactically different URIs
-    ex: http://sitea.com, http://sitea.com/, http://SitEa.com
+    normalizeUrl fails silently on invalid urls, this is the desired behavior for batch inserting new resource urls
+    in this case though we want project initialization to fail
     */
-    this.url = new URL(this.url).toString();
+    const normalizedUrl = normalizeUrl(this.url);
+    if (!normalizedUrl) throw new Error(`invalid url ${this.url}`);
+
+    this.url = normalizedUrl;
   }
 
   initPlugins(browserClientPresent:boolean):Plugin[] {
@@ -62,26 +65,11 @@ export default abstract class Project extends Entity {
 
   abstract saveResources(resources: Partial<Resource>[]):Promise<void>;
 
-  abstract batchInsertResources(resources: {url: string, depth?: number}[], chunkSize?:number, uriNormalization?:boolean):Promise<void>;
-  abstract batchInsertResourcesFromFile(resourcePath: string, chunkSize?:number, uriNormalization?:boolean):Promise<void>;
+  abstract batchInsertResources(resources: {url: string, depth?: number}[], chunkSize?:number):Promise<void>;
+
+  abstract batchInsertResourcesFromFile(resourcePath: string, chunkSize?:number):Promise<void>;
 
   abstract createResource(resource: Partial<Resource>):Resource;
-
-  /**
-   * URL normalization
-   * make sure we don't end up with equivalent but syntactically different URIs
-   *  ex: http://sitea.com, http://sitea.com/, http://SitEa.com
-   */
-  normalizeUrl(rawUrl: string):string {
-    let url: string;
-    try {
-      url = new URL(rawUrl).toString();
-    }
-    catch (err) {
-      this.logger.error(err, `error normalizing url: ${rawUrl}`);
-    }
-    return url;
-  }
 
   get dbCols() {
     return [ 'id', 'name', 'url', 'pluginOpts' ];

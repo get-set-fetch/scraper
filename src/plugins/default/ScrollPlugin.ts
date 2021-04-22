@@ -2,7 +2,7 @@ import { SchemaType } from '../../schema/SchemaHelper';
 import Plugin from '../Plugin';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
-import { DomStabilityStatus, waitForDomStability } from '../utils';
+import { DomStabilityStatus, waitForDomStability } from '../dom-utils';
 
 /** Provides infinite scrolling. Runs in browser. */
 export default class ScrollPlugin extends Plugin {

@@ -4,13 +4,12 @@ export const enum DomStabilityStatus {
   Unchanged
 }
 
-/* eslint-disable import/prefer-default-export */
 /**
  * Useful for bypassing preloader content.
  * @param stabilityCheck - Considers the page loaded and ready to be scraped when there are no more DOM changes within the specified amount of time (milliseconds).
  * @param stabilityTimeout - Maximum waiting time (miliseconds) for achieving DOM stability in case of a continuously updated DOM (ex: timers, countdowns).
  */
-function waitForDomStability({ stabilityCheck, stabilityTimeout }:{stabilityCheck: number, stabilityTimeout: number}):Promise<DomStabilityStatus> {
+export function waitForDomStability({ stabilityCheck, stabilityTimeout }:{stabilityCheck: number, stabilityTimeout: number}):Promise<DomStabilityStatus> {
   return new Promise(resolve => {
     let stabilityCheckId:number;
     let stabilityTimeoutId:number;
@@ -55,7 +54,3 @@ function waitForDomStability({ stabilityCheck, stabilityTimeout }:{stabilityChec
     );
   });
 }
-
-export {
-  waitForDomStability,
-};

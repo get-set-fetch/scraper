@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { createSandbox, SinonSandbox } from 'sinon';
 import ScrollPlugin from '../../../src/plugins/default/ScrollPlugin';
-import * as utils from '../../../src/plugins/utils';
+import * as utils from '../../../src/plugins/dom-utils';
 import Resource from '../../../src/storage/base/Resource';
 
 describe('ScrollPlugin', () => {

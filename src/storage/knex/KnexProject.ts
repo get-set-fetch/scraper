@@ -6,6 +6,7 @@ import Resource, { ResourceQuery } from '../base/Resource';
 import Project from '../base/Project';
 import KnexStorage from './KnexStorage';
 import { getLogger } from '../../logger/Logger';
+import { getUrlColIdx, normalizeUrl } from '../../plugins/url-utils';
 
 /** @see {@link Project} */
 export default class KnexProject extends Project {
@@ -117,18 +118,15 @@ export default class KnexProject extends Project {
    * All json and binary fields are undefined requiring no tranformation (JSON.strinfigy, Buffer.from, ...)
    * @param resources - resources to be saved
    * @param chunkSize - number of resources within a transaction
-   * @param uriNormalization - if set perform URI normalization on each url
    */
-  async batchInsertResources(resources: {url: string, depth?: number}[], chunkSize:number = 1000, uriNormalization:boolean = false) {
+  async batchInsertResources(resources: {url: string, depth?: number}[], chunkSize:number = 1000) {
     // assign projectId in place for faster processing
     resources.forEach(resource => {
       // eslint-disable-next-line no-param-reassign
       (<Resource>resource).projectId = this.id;
 
-      if (uriNormalization) {
-        // eslint-disable-next-line no-param-reassign
-        resource.url = this.normalizeUrl(resource.url);
-      }
+      // eslint-disable-next-line no-param-reassign
+      resource.url = normalizeUrl(resource.url);
     });
 
     await this.Constructor.storage.knex.batchInsert('resources', resources.filter(resource => resource.url), chunkSize);
@@ -139,9 +137,8 @@ export default class KnexProject extends Project {
    * Input file contains an url per line.
    * @param resourcePath - input filepath
    * @param chunkSize - number of resources within a transaction
-   * @param uriNormalization - if set perform URI normalization on each url
    */
-  async batchInsertResourcesFromFile(resourcePath: string, chunkSize:number = 1000, uriNormalization:boolean = false) {
+  async batchInsertResourcesFromFile(resourcePath: string, chunkSize:number = 1000) {
     let resourceCount:number = 0;
     let resources: {url: string, projectId: number}[] = [];
 
@@ -165,19 +162,13 @@ export default class KnexProject extends Project {
 
             // find out on what position on the csv row is the url
             if (urlIdx === undefined) {
-              chunkLines[0].split(',').forEach((entry, idx) => {
-                try {
-                  if (new URL(entry)) urlIdx = idx;
-                }
-                // eslint-disable-next-line no-empty
-                catch (err) {
-                }
-              });
+              urlIdx = getUrlColIdx(chunkLines[0]);
+              if (!urlIdx) throw new Error(`could not detect url column from ${chunkLines[0]}`);
             }
 
             chunkLines.forEach(line => {
               const rawUrl = line.split(',')[urlIdx];
-              const url = uriNormalization ? this.normalizeUrl(rawUrl) : rawUrl;
+              const url = normalizeUrl(rawUrl);
               if (url) {
                 resources.push({ url, projectId: this.id });
               }
@@ -202,7 +193,7 @@ export default class KnexProject extends Project {
             // try to retrieve a new resources from the now complete last read line
             if (partialLine.length > 0) {
               const rawUrl = partialLine.split(',')[urlIdx];
-              const url = uriNormalization ? this.normalizeUrl(rawUrl) : rawUrl;
+              const url = normalizeUrl(rawUrl);
               if (url) {
                 resources.push({ url, projectId: this.id });
               }

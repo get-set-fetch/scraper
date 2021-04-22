@@ -2,7 +2,7 @@
 // eslint-disable-next-line max-classes-per-file
 import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
-import { DomStabilityStatus, waitForDomStability } from '../../../src/plugins/utils';
+import { DomStabilityStatus, waitForDomStability } from '../../../src/plugins/dom-utils';
 
 describe('DOM Utils', () => {
   let sandbox:SinonSandbox;

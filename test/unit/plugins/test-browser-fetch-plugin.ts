@@ -4,7 +4,7 @@ import BrowserFetchPlugin from '../../../src/plugins/default/BrowserFetchPlugin'
 import Resource from '../../../src/storage/base/Resource';
 import Project from '../../../src/storage/base/Project';
 import { FetchError } from '../../../src/plugins/default/BaseFetchPlugin';
-import { DomStabilityStatus } from '../../../src/plugins/utils';
+import { DomStabilityStatus } from '../../../src/plugins/dom-utils';
 
 describe('BrowserFetchPlugin', () => {
   let sandbox:SinonSandbox;

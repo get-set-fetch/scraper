@@ -40,32 +40,14 @@ export default function crudProject(storage: Storage) {
       assert.strictEqual(resourceNo, 1);
     });
 
-    it(`${storage.config.client} project batchInsertResources uriNormalization = false`, async () => {
-      const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResources([
-        { url: 'http://siteA.com/other1.html' },
-        { url: 'http://siteA.com/other2.html', depth: 2 },
-      ]);
-
-      const resources = await projectById.getResources();
-      assert.sameDeepMembers(
-        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
-        [
-          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://siteA.com/other1.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://siteA.com/other2.html', depth: 2, projectId: expectedProject.id },
-        ],
-      );
-    });
-
-    it(`${storage.config.client} project batchInsertResources uriNormalization = true`, async () => {
+    it(`${storage.config.client} project batchInsertResources`, async () => {
       const projectById = await Project.get(expectedProject.id);
       await projectById.batchInsertResources([
         { url: 'http://siteA.com/other1.html' },
         { url: 'http://siteA.com/other2.html' },
         { url: 'http://siteA.com/other3.html', depth: 2 },
         { url: 'invalid-url', depth: 2 },
-      ], 2, true);
+      ], 2);
 
       const resources = await projectById.getResources();
       assert.sameDeepMembers(
@@ -79,25 +61,9 @@ export default function crudProject(storage: Storage) {
       );
     });
 
-    it(`${storage.config.client} project batchInsertResourcesFromFile uriNormalization = false`, async () => {
+    it(`${storage.config.client} project batchInsertResourcesFromFile`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources.csv');
-
-      const resources = await projectById.getResources();
-      assert.sameDeepMembers(
-        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
-        [
-          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other3.html', depth: 0, projectId: expectedProject.id },
-        ],
-      );
-    });
-
-    it(`${storage.config.client} project batchInsertResourcesFromFile uriNormalization = true`, async () => {
-      const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/unnormalized-resources.csv', 2, true);
+      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/unnormalized-resources.csv', 2);
 
       const resources = await projectById.getResources();
       assert.sameDeepMembers(
@@ -140,9 +106,8 @@ export default function crudProject(storage: Storage) {
       assert.isUndefined(actualProject);
     });
 
-    it(`${storage.config.client} project normalize url`, async () => {
-      assert.strictEqual(new Project({ name: 'projectN', url: 'http://siten.com' }).url, 'http://siten.com/');
-      assert.strictEqual(new Project({ name: 'projectN', url: 'http://wWw.CaPs.com' }).url, 'http://www.caps.com/');
+    it(`${storage.config.client} project constructor normalize url`, async () => {
+      assert.strictEqual(new Project({ name: 'projectN', url: 'http://siteN.com' }).url, 'http://siten.com/');
     });
   });
 }

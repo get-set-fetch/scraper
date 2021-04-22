@@ -2,7 +2,7 @@ import { SchemaType } from '../../schema/SchemaHelper';
 import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import BrowserClient from '../../browserclient/BrowserClient';
-import { DomStabilityStatus, waitForDomStability } from '../utils';
+import { DomStabilityStatus, waitForDomStability } from '../dom-utils';
 import * as MimeTypes from '../../export/MimeTypes.json';
 import { getLogger } from '../../logger/Logger';
 import BaseFetchPlugin, { FetchError } from './BaseFetchPlugin';
