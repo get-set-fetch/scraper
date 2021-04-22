@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 import { createReadStream } from 'fs';
 import { pipeline, Writable } from 'stream';
@@ -125,8 +126,13 @@ export default class KnexProject extends Project {
       // eslint-disable-next-line no-param-reassign
       (<Resource>resource).projectId = this.id;
 
-      // eslint-disable-next-line no-param-reassign
-      resource.url = normalizeUrl(resource.url);
+      try {
+        resource.url = normalizeUrl(resource.url);
+      }
+      catch (err) {
+        this.logger.error(err);
+        delete resource.url;
+      }
     });
 
     await this.Constructor.storage.knex.batchInsert('resources', resources.filter(resource => resource.url), chunkSize);
@@ -168,9 +174,12 @@ export default class KnexProject extends Project {
 
             chunkLines.forEach(line => {
               const rawUrl = line.split(',')[urlIdx];
-              const url = normalizeUrl(rawUrl);
-              if (url) {
+              try {
+                const url = normalizeUrl(rawUrl);
                 resources.push({ url, projectId: this.id });
+              }
+              catch (err) {
+                this.logger.error(err);
               }
             });
 
@@ -193,9 +202,12 @@ export default class KnexProject extends Project {
             // try to retrieve a new resources from the now complete last read line
             if (partialLine.length > 0) {
               const rawUrl = partialLine.split(',')[urlIdx];
-              const url = normalizeUrl(rawUrl);
-              if (url) {
+              try {
+                const url = normalizeUrl(rawUrl);
                 resources.push({ url, projectId: this.id });
+              }
+              catch (err) {
+                this.logger.error(err);
               }
 
               // insert pending resources

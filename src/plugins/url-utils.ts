@@ -3,23 +3,19 @@ export const enum Protocol {
 }
 
 /**
- * URL normalization including adding protocol prefix if missing
- * make sure we don't end up with equivalent but syntactically different URIs
- * ex: http://sitea.com, http://sitea.com/, http://SitEa.com
+ * URL normalization including adding protocol prefix if missing.
+ * Mostly used in batch insert jobs.
+ * @param rawUrl - input url
+ * @param defaultProtocol - protocol to add if one is not present, defaults to https
+ * @throws error on invalid urls
+ * @returns normalized url
  */
 export function normalizeUrl(rawUrl: string, defaultProtocol:string = Protocol.HTTPS):string {
-  try {
-    if (!this.isURL(rawUrl)) throw new Error(`error normalizing url: ${rawUrl}`);
+  if (!this.isURL(rawUrl)) throw new Error(`error normalizing url: ${rawUrl}`);
 
-    // if protocol is missing, add default one
-    const fullUrl = rawUrl.split('//').length === 1 ? `${defaultProtocol}//${rawUrl}` : rawUrl;
-    return new URL(fullUrl).toString();
-  }
-  catch (err) {
-    this.logger.error(err);
-  }
-
-  return undefined;
+  // if protocol is missing, add default one
+  const fullUrl = rawUrl.split('//').length === 1 ? `${defaultProtocol}//${rawUrl}` : rawUrl;
+  return new URL(fullUrl).toString();
 }
 
 /**

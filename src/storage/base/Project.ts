@@ -29,14 +29,7 @@ export default abstract class Project extends Entity {
       this.pluginOpts = JSON.parse(kwArgs.pluginOpts);
     }
 
-    /*
-    normalizeUrl fails silently on invalid urls, this is the desired behavior for batch inserting new resource urls
-    in this case though we want project initialization to fail
-    */
-    const normalizedUrl = normalizeUrl(this.url);
-    if (!normalizedUrl) throw new Error(`invalid url ${this.url}`);
-
-    this.url = normalizedUrl;
+    this.url = normalizeUrl(this.url);
   }
 
   initPlugins(browserClientPresent:boolean):Plugin[] {
