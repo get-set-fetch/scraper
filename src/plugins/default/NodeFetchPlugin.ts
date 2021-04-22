@@ -5,6 +5,7 @@ import zlib from 'zlib';
 import { getLogger } from '../../logger/Logger';
 import { SchemaType } from '../../schema/SchemaHelper';
 import Resource from '../../storage/base/Resource';
+import { Protocol } from '../url-utils';
 import BaseFetchPlugin, { FetchError } from './BaseFetchPlugin';
 
 export default class NodeFetchPlugin extends BaseFetchPlugin {
@@ -65,6 +66,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
 
       const opts: RequestOptions = {
         method: 'GET',
+        defaultPort: protocol === Protocol.HTTPS ? 443 : 80,
         path: pathname,
         host: hostname,
         headers: reqHeaders,
@@ -126,6 +128,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
       });
 
       req.on('error', err => {
+        this.logger.error(opts, 'Error using request options');
         reject(err);
       });
       req.end();
