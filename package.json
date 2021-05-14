@@ -26,9 +26,11 @@
     "lint": "eslint src/**/*.ts",
     "test:unit:single": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --grep \"ConfigHash\" --exclude test/unit/storage/**/*",
     "test:cheerio": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3 - concurrency: parallel'",
+    "test:puppeteer": "mocha --config test/.mocharc.js \"test/acceptance/puppeteer_chromium.ts\" --grep 'sqlite3 - concurrency: sequential'",
     "test:cheerio:single": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3.+parallel.+200.+Html'",
     "test:unit:non-storage": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/*",
     "test:unit:sqlite": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite3-unit-suite.ts\"",
+    "test:unit:sqlite:single": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite3-unit-suite.ts\" --grep \".+batchInsertResources\"",
     "test:cli": "mocha --config test/.mocharc.js \"test/acceptance/cli/test-cli.ts\"",
     "example": "ts-node examples/custom-plugin-readability.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json"
