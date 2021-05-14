@@ -220,7 +220,7 @@ export function invokeScraper(argObj:ArgObjType) {
   }
 
   scraper.addListener(ScrapeEvent.ProjectError, err => {
-    console.log(err);
+    console.error(err);
   });
 
   if (discover) {
@@ -256,6 +256,6 @@ export default function cli(args) {
     invoke(args);
   }
   catch (err) {
-    console.log(err.toString());
+    console.error(err.toString());
   }
 }
