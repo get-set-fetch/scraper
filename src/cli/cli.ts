@@ -5,20 +5,15 @@
 import fs from 'fs';
 import { join, dirname, extname, parse } from 'path';
 import pino from 'pino';
-import PlaywrightClient from '../browserclient/PlaywrightClient';
-import PuppeteerClient from '../browserclient/PuppeteerClient';
-import CheerioClient from '../domclient/CheerioClient';
-import JsdomClient from '../domclient/JsdomClient';
-import Scraper, { ScrapeEvent, ScrapeOptions } from '../scraper/Scraper';
-import { setLogger } from '../logger/Logger';
-import Storage, { StorageConfig } from '../storage/base/Storage';
-import BrowserClient from '../browserclient/BrowserClient';
-import { IDomClientConstructor } from '../domclient/DomClient';
-import Project from '../storage/base/Project';
-import { initStorage as initStorageUtil } from '../storage/storage-utils';
+
+import { PlaywrightClient, PuppeteerClient, CheerioClient, JsdomClient, BrowserClient,
+  IDomClientConstructor,
+  Scraper, ScrapeEvent, ScrapeOptions,
+  setLogger,
+  Storage, StorageConfig, initStorage as initStorageUtil,
+  Project } from '../index';
 
 const defaultArgObj = {
-  jsExecPath: null,
   version: false,
   logLevel: null,
   logDestination: null,
@@ -37,6 +32,10 @@ type ArgObjType = typeof defaultArgObj;
  * @returns plain object with arguments as keys
  */
 export function readArgs(args: string[]):Partial<ArgObjType> {
+  if (args.length === 0) {
+    throw new Error('no arguments provided');
+  }
+
   // read and validate key
   const arg = args[0].trim();
   if (arg.indexOf('--') !== 0) throw new Error(`invalid argument ${arg}, try --${arg}`);
@@ -138,15 +137,19 @@ function initDomClient(domOpts):BrowserClient|IDomClientConstructor {
   let domClient;
   switch (domOpts.client) {
     case 'cheerio':
+      if (!CheerioClient) throw new Error('cheerio package not installed');
       domClient = CheerioClient;
       break;
     case 'jsdom':
+      if (!JsdomClient) throw new Error('jsdom package not installed');
       domClient = JsdomClient;
       break;
     case 'puppeteer':
+      if (!PuppeteerClient) throw new Error('puppeteer package not installed');
       domClient = new PuppeteerClient(domOpts);
       break;
     case 'playwright':
+      if (!PlaywrightClient) throw new Error('playwright-core package not installed');
       domClient = new PlaywrightClient(domOpts);
       break;
     default:

@@ -8,6 +8,7 @@ export function initStorage(config: StorageConfig):Storage {
     case 'sqlite3':
     case 'mysql':
     case 'pg':
+      if (!KnexStorage) throw new Error('knex package not installed');
       storage = new KnexStorage(config);
       break;
     default:
