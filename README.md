@@ -14,7 +14,7 @@ An ordered list of plugins (builtin or custom) is executed against each to be sc
 - [Getting Started](#getting-started)
   * [Install](#install-the-scraper)
   * [Init](#init-storage)
-  * [Define a Scraping Configuration](#define-a-scraping-configuration)
+  * [Define a Scrape Configuration](#define-a-scrape-configuration)
   * [Define Concurrency Options](#define-concurrency-options)
   * [Scrape](#start-scraping)
   * [Export](#export-results)
@@ -43,16 +43,19 @@ An ordered list of plugins (builtin or custom) is executed against each to be sc
   * [UpsertResourcePlugin](#upsertresourceplugin)
   * [ScrollPlugin](#scrollplugin)
 - [Scrape](#scrape)
-  * [Start from a Scraping Configuration](#start-from-a-scraping-configuration)
-  * [Start from a Scraping Hash](#start-from-a-scraping-hash)
+  * [Start from a Scrape Configuration](#start-from-a-scrape-configuration)
+  * [Start from a Scrape Hash](#start-from-a-scrape-hash)
   * [Start from a Predefined Project](#start-from-a-predefined-project)
   * [Resume Scraping](#resume-scraping)
   * [Scrape Events](#scrape-events)
   * [Concurrency Options](#concurrency-options)
+  * [Runtime Options](#runtime-options)
+  * [Scrape Options](#scrape-options)
 - [Export](#export)
   * [CSV Exporter](#csv-exporter)
   * [ZIP Exporter](#zip-exporter)
 - [Logging](#logging)
+- [Command Line Interface](#command-line-interface)
 - [Examples](#examples)
   * [Table Scraping](#table-scraping)
   * [Product Details](#product-details)
@@ -109,9 +112,9 @@ const { Scraper } = require('@get-set-fetch/scraper');
 const scraper = new Scraper(storage, client);
 ```
 
-### Define a scraping configuration
+### Define a scrape configuration
 ```js
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -154,8 +157,8 @@ const scrapingConfig = {
   ],
 };
 ```
-You can define a scraping configuration in multiple ways. The above example is the most direct one.
-You define a starting url, a predefined pipeline containing a series of scraping plugins with default options, and any plugin options you want to override. See [pipelines](#pipelines) and [plugins](#plugins) for all available options.
+You can define a scrape configuration in multiple ways. The above example is the most direct one.
+You define a starting url, a predefined pipeline containing a series of scrape plugins with default options, and any plugin options you want to override. See [pipelines](#pipelines) and [plugins](#plugins) for all available options.
 
 ExtractUrlsPlugin.maxDepth defines a maximum depth of resources to be scraped. The starting resource has depth 0. Resources discovered from it have depth 1 and so on. A value of -1 disables this check.
 
@@ -178,7 +181,7 @@ A minimum delay of 5000 ms will be enforced between scraping consecutive resourc
 
 ### Start scraping
 ```js
-scraper.scrape(scrapingConfig, concurrencyOpts);
+scraper.scrape(scrapeConfig, concurrencyOpts);
 ```
 The entire process is asynchronous. Listen to the emitted [scrape events](#scrape-events) to monitor progress.
 
@@ -198,7 +201,7 @@ Export scraped html content as csv. Export scraped images under a zip archive. S
 
 ## Storage
 
-Each URL (web page, image, API endpoint, ...) represents a [Resource](./src/storage/base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scraping configuration and discovered from the same initial URL(s) are grouped in a [Project](./src/storage/base/Project.ts). 
+Each URL (web page, image, API endpoint, ...) represents a [Resource](./src/storage/base/Resource.ts). Binary content is stored under `resource.data` while text based content is stored under `resource.content`. Resources sharing the same scrape configuration and discovered from the same initial URL(s) are grouped in a [Project](./src/storage/base/Project.ts). 
 Projects represent the starting point for any scraping operation.
 
 You can add additional storage support by implementing the above two abstract classes and [Storage](./src/storage/base/Storage.ts).
@@ -236,9 +239,9 @@ Examples: [PostgreSQL connection](./test/config/storage/pg/pg-conn.json) | [Post
 
 ## Pipelines
 
-Each pipeline contains a series of plugins with predefined values for all plugin options. A scraping configuration extends a pipeline by replacing/adding new plugins or overriding the predefined plugin options.
+Each pipeline contains a series of plugins with predefined values for all plugin options. A scrape configuration extends a pipeline by replacing/adding new plugins or overriding the predefined plugin options.
 
-Take a look at [Examples](#examples) for real world scraping configurations.
+Take a look at [Examples](#examples) for real world scrape configurations.
 
 ### Static Content Pipeline
 Use to scrape static data, does not rely on javascript to either read or alter the html content. 
@@ -265,7 +268,7 @@ Comes in two variants [browser-static-content](#browser-static-content-plugin-op
 
  Plugin | Option | Default value |
 | ----------- | ----------- | -- |
-| NodeFetchPlugin      | proxyPool | [] 
+| NodeFetchPlugin      | headers | { 'Accept-Encoding': 'br,gzip,deflate' }
 | ExtractUrlsPlugin    | domRead | false
 |                      | maxDepth | -1
 |                      | selectorPairs     | [ { urlSelector: 'a[href$=".html"]' } ]
@@ -394,16 +397,16 @@ await PluginStore.add(fileOrDirPath);
 
 ## Plugins
 
-The entire scraping process is plugin based. A scraping configuration (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
+The entire scrape process is plugin based. A scrape configuration (see [Examples](#examples)) contains an ordered list of plugins to be executed against each to be scraped web resource. Each plugin embeds a json schema for its options. Check the schemas for complete option definitions.
 
 ### NodeFetchPlugin
 Uses nodejs `http.request` / `https.request` to fetch html and binary data. Response content is available under Uint8Array `resource.data`.  Html content can be retrieved via `resource.data.toString('utf8')`.
-- `proxyPool`
-  - Proxies to be used when performing http/https requests. Each array entry is an `{host, port}` object. At the moment there is no proxy management. All requests will use the first pool entry if available.
-  - default: `[]`
+- `headers`
+  - Request headers.
+  - default: `{ 'Accept-Encoding': 'br,gzip,deflate' }`
 
 ### BrowserFetchPlugin
-Depending on resource type (binary, html), either downloads or opens in the scraping tab the resource URL | [schema](./src/plugins/default/FetchPlugin.ts)
+Depending on resource type (binary, html), either downloads or opens in the scrape tab the resource URL | [schema](./src/plugins/default/FetchPlugin.ts)
 - `gotoOptions`
   - navigation parameters for Puppeteer/Playwright page.goto API.
   - `timeout`
@@ -467,8 +470,8 @@ Performs infinite scrolling in order to load additional content | [schema](./src
 
 ## Scrape
 
-### Start from a Scraping Configuration
-No need to specify a starting scraping project. One will be automatically created based on input URL and plugin definitions. The project name resolves to the starting URL hostname.
+### Start from a Scrape Configuration
+No need to specify a starting scrape project. One will be automatically created based on input URL and plugin definitions. If not provided the project name resolves to the starting URL hostname.
 
 ```js
 const { KnexStorage, PuppeteerClient, Scraper} = require('@get-set-fetch/scraper');
@@ -478,6 +481,7 @@ const client = new PuppeteerClient();
 const scraper = new Scraper(storage, client);
 
 scraper.scrape({
+  name: 'language-list',
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -502,8 +506,8 @@ scraper.scrape({
 });
 ```
 
-### Start from a Scraping Hash
-A scraping hash represents a zlib archive of a scraping configuration encoded as base64. To minimize size a preset deflate dictionary is used.
+### Start from a Scrape Hash
+A scrape hash represents a zlib archive of a scrape configuration encoded as base64. To minimize size a preset deflate dictionary is used.
 
 ```js
 const { KnexStorage, PuppeteerClient, Scraper, encode, decode } = require('@get-set-fetch/scraper');
@@ -514,8 +518,8 @@ const scraper = new Scraper(storage, client);
 
 const scrapingHash = 'ePm8oZWZQ085qXl65ZnZwBSTkpmol1+Urg/i6ftkFpfE56fF5yTmpZcmpqcWxydVxueV5ialFoGE84BJpyw1vrggNTE7FRj6RKQ5QgkMJW4RUWSAmQqIS4qY6Q8YTzmpermpJYkpiSWJCtoKBUAMEQT5GcxSKEmxyivJ0E3OyMxJ0TDSVLBTSLRKA5pZAhECWgVL47CgUQK5kBq2GWsimQ4LWgWNXGDiAsavJij2YmsBAzufSg==';
 
-// outputs the scraping configuration from the above "Scrape starting from a scraping configuration" section
-// use encode to generate a scraping hash
+// outputs the scrape configuration from the above "Scrape starting from a scrape configuration" section
+// use encode to generate a scrape hash
 console.log(decode(scrapingHash));
 
 scraper.scrape(scrapingHash);
@@ -555,22 +559,29 @@ const scraper = new Scraper(storage, client);
 scraper.scrape(project);
 ```
 
-You can add additional resources to a project via `batchInsertResources(resources, chunkSize, uriNormalization)`. Each entry contains an URL and an optional depth. If depth is not specified the resource will be linked to the project with depth 0. By default, every 1000 resources are wrapped inside a transaction and no URI normalization takes place.
+You can add additional resources to a project via `batchInsertResources(resources, chunkSize)`. Each entry contains an URL and an optional depth. If depth is not specified the resource will be linked to the project with depth 0. By default, every 1000 resources are wrapped inside a transaction.
 ```js
 await project.batchInsertResources(
   [
     {url: 'http://sitea.com/page1.html'},
     {url: 'http://sitea.com/page2.html', depth: 1}
   ],
-  2000,
-  true
+  2000
 );
 ```
-The above creates a wrapping transaction every 2000 resources and performs URI normalization.
+The above performs URI normalization and creates a wrapping transaction every 2000 resources.
+
+Additional resources can also be directly loaded from a csv file via `batchInsertResourcesFromFile(resourcePath, chunkSize)`. The column containing the resource url will automatically be detected. Making use of read/write streams, this method keeps memory usage low and is the preferred way of adding 1000k+ entries. `resourcePath` is either absolute or relative to the current working directory. `chunkSize` parameter behaves the same as in `batchInsertResources`.
+```js
+await project.batchInsertResourcesFromFile(
+  './csv/external-resources.csv', 2000
+);
+```
+
 
 ### Resume scraping
-If a project has unscraped resources, just re-start the scraping process. Already scraped resources will be ignored.
-You can retrieve an existing project by name or id. When scraping from a scraping configuration the project name gets populated with the starting URL hostname.
+If a project has unscraped resources, just re-start the scrape process. Already scraped resources will be ignored.
+You can retrieve an existing project by name or id. When scraping from a scrape configuration the project name gets populated with the starting URL hostname.
 
 ```js
 const { KnexStorage, PuppeteerClient, Scraper } = require('@get-set-fetch/scraper');
@@ -594,6 +605,7 @@ scraper.scrape(project);
 | ProjectSelected | project | a project is ready for scraping, storage/browser client/plugins have been initialized
 | ProjectScraped | project | all resources linked to the project are scraped
 | ProjectError | project, error |  a scraping error not linked to a particular resource stops the scraping process
+| DiscoverComplete | | project discovery is complete, all existing projects have all their resources scraped
 
 ```js
 const { ScrapeEvent } = require('@get-set-fetch/scraper');
@@ -610,7 +622,7 @@ Scrape event handlers examples.
 
 ### Concurrency options
 `maxRequests` and `delay` options can be specified at project/proxy/domain/session level. A session is identified as a unique proxy + domain combination. 
-All options are optional :) with all combinations valid. The resulting scraping behavior will obey all specified options.
+All options are optional :) with all combinations valid. The resulting scrape behavior will obey all specified options.
 - `proxyPool`
   - list of proxies to be used with each entry a {host, port} object
   - default: [null]
@@ -644,6 +656,8 @@ const concurrencyOpts = {
     delay: 3000
   }
 }
+
+scraper.scrape(scrapeConfig, concurrencyOpts);
 ```
 The above concurrency options will use proxyA, proxyB when fetching resources. 
 
@@ -655,12 +669,49 @@ Each domain to be scraped (independent of the proxy being used) will experience 
 
 User sessions defined as unique proxy + domain combinations mimic real user behavior scraping sequentially (maxRequests = 1) every 3 seconds.
 
+### Runtime options
+Optional runtime memory and cpu usage constraints defined at OS and process level. If memory or cpu usage is higher than specified new resources will not be scraped until the usage drops. By default there are no constraints.
+- `mem`
+  - Memory usage (bytes)
+- `memPct`
+  - Memory usage (percentage)
+- `cpuPct`
+  - Average cpu usage (percentage)
+```js
+const runtimeOpts = {
+  global: {
+    memPct: 75
+  },
+  process: {
+    mem: 10,000,000
+  }
+}
+scraper.scrape(scrapeConfig, concurrencyOpts, processOpts);
+```
+The above runtime options will restrict scraper to 10MB process memory usage while also making sure total OS memory usage doesn't exceed 75%.
+
+### Scrape options
+Additional, optional scrape flags:
+- `overwrite`
+  - Overwrite a project if already exists.
+  - default: `false`
+- `discover`
+  - Don't restrict scraping to a particular project. Once scraping a project completes, find other existing projects to scrape from..
+  - default: `false`
+
+```js
+const scrapeOpts = {
+  overwrite:true,
+  discover:true
+}
+scraper.scrape(scrapeConfig, concurrencyOpts, processOpts, scrapeOpts);
+```
 ## Export
 
 Scraped content is stored at database level in resource entries under a project. See [Storage](#storage) for more info.
 Each exporter constructor takes 3 parameters:
 - `project` - content from all resources under the given project will be exported
-- `filepath` - location to store the content, relative to the current working directory
+- `filepath` - location to store the content, absolute or relative to the current working directory
 - `opts` - export options pertinent to the selected export type
 
 
@@ -716,16 +767,44 @@ setLogger({ level: 'info' }, destination('./scraping.log'))
 ```
 The above sets the logging output to a file. Existing child loggers will also output to it.
 
+## Command Line Interface
+Cli usage covers two main use cases: (create and scrape a new project)[create-and-scrape-a-new-project], scrape existing projects. Both use cases make use of a configuration file containing storage, scrape and concurrency settings. Both use cases support optional custom log settings such as level and destination.
+
+
+| Argument  | Default Value | Description |
+| ----------- | ----------- | ----------- |
+| version | - | project version |
+| loglevel | warn | log level |
+| logdestination | console | log filepath |
+| config | - | config filepath. Examples: [new project](./test/acceptance/cli/static-single-page-single-content-entry.json), [new project with external resources from csv file using resourcePath](./test/acceptance/cli/static-with-external-resources.json) |
+| overwrite | false | When creating a new project, whether or not to overwrite an already existing one with the same name
+| discover | false | Sequentially scrape existing projects until there are no more resources to be scraped
+| export | - | Export resources as zip or csv after scraping completes using the specified filepath. If in discovery mode each project will be exported in a separate file containing the project name.
+
+### Create and scrape a new project
+```bash
+gsfscrape --config scrape-config.json --loglevel info --logdestination scrape.log --overwrite --export project.csv
+```
+
+### Scrape existing projects
+```bash
+gsfscrape --config scrape-config.json --discover --loglevel info --logdestination scrape.log --export project.csv
+```
+
+
+
+### Configuration File
+
 ## Examples
 
-What follows are real world scraping examples. If in the meanwhile the pages have changed, the scraping configurations below may become obsolete and no longer produce the expected scraping results. Last check performed on 7th January 2021. 
+What follows are real world scrape examples. If in the meanwhile the pages have changed, the scrape configurations below may become obsolete and no longer produce the expected scrape results. Last check performed on 7th January 2021. 
 
 [Acceptance test definitions](https://github.com/get-set-fetch/test-utils/tree/main/lib/scraping-suite) may also serve as inspiration.
 
 ### Table Scraping
 Top languages by population. Extract tabular data from a single static html page. [See full script.](./examples/table-scraping.ts)
 ```js
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -753,7 +832,7 @@ const scrapingConfig = {
 ### Product Details
 Book details with author, title, rating value, review count. Also scrapes the book covers. Only the first and second page of results are being scraped. [See full script.](./examples/product-details.ts)
 ```js
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -800,7 +879,7 @@ const scrapingConfig = {
 ### PDF Extraction
 World Health Organization COVID-19 Updates during last month. Opens each report page and downloads the pdf. [See full script.](./examples/pdf-extraction.ts)
 ```js
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -824,7 +903,7 @@ const scrapingConfig = {
 ### Infinite Scrolling
 UEFA Champions League top goalscorers. Keeps scrolling and loading new content until the final 100th position is reached. After each scroll action scraping is resumed only after the preloader is removed and the new content is available. [See full script.](./examples/infinite-scrolling.ts)
 ```js
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -888,7 +967,7 @@ await PluginStore.addEntry(join(__dirname, 'plugins', 'ReadabilityPlugin.js'));
 
 With the help of this plugin one can extract article excerpts from news sites such as BBC technology section. Custom `ReadabilityPlugin` replaces builtin `ExtractHtmlContentPlugin`. Only links containing hrefs starting with `/news/technology-` are followed. Scraping is limited to 5 articles. [See full script.](./examples/custom-plugin-readability.ts)
 ```js
-const scrapingConfig = {
+const scrapeConfig = {
   url: 'https://www.bbc.com/news/technology',
   pipeline: 'browser-static-content',
   pluginOpts: [

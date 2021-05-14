@@ -1,6 +1,6 @@
 ## Changelog
 
-### Unreleased
+### 0.4.0 - 2021-05-14
 - Command Line
   - supported arguments: --version, --loglevel, --logdestination, --config, --discover, --overwrite, --export, --exportType
 - Plugins
