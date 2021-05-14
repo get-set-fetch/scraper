@@ -82,7 +82,7 @@ export default class Scraper extends EventEmitter {
 
     this.storage = storage;
     if (!client) {
-      const err = new Error('A browser or DOM client need to be provided');
+      const err = new Error('A browser or DOM client needs to be provided');
       this.logger.error(err);
       throw err;
     }
