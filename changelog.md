@@ -1,5 +1,10 @@
 ## Changelog
 
+### Unreleased
+- Command Line
+  - relative file paths are now resolved to current working directory
+  - more verbose error messages when missing packages
+  - errors output to stderr
 ### 0.4.0 - 2021-05-14
 - Command Line
   - supported arguments: --version, --loglevel, --logdestination, --config, --discover, --overwrite, --export, --exportType

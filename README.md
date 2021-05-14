@@ -781,17 +781,21 @@ Cli usage covers two main use cases: (create and scrape a new project)[create-an
 | discover | false | Sequentially scrape existing projects until there are no more resources to be scraped
 | export | - | Export resources as zip or csv after scraping completes using the specified filepath. If in discovery mode each project will be exported in a separate file containing the project name.
 
-### Create and scrape a new project
+When you only need the cli, install the package and its peer dependencies globally.
 ```bash
+npm install -g @get-set-fetch/scraper knex sqlite3 cheerio
+```
+The above uses knex with sqlite3 for storage, cheerio as a dom client.
+
+```bash
+# Create and scrape a new project
 gsfscrape --config scrape-config.json --loglevel info --logdestination scrape.log --overwrite --export project.csv
 ```
 
-### Scrape existing projects
 ```bash
+# Scrape existing projects
 gsfscrape --config scrape-config.json --discover --loglevel info --logdestination scrape.log --export project.csv
 ```
-
-
 
 ### Configuration File
 
