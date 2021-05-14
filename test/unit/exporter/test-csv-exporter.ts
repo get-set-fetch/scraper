@@ -50,6 +50,25 @@ describe('CsvExporter', () => {
     assert.strictEqual(content, expectedContent);
   });
 
+  it('array values - single selector - empty content', async () => {
+    project.plugins = [ { getContentKeys: () => [ 'colA' ] } ];
+    project.getPagedResources.onCall(0).returns([
+      { url: 'urlA', content: [ [ 'A1 content' ] ] },
+      { url: 'urlB', content: [ [ ] ] },
+      { url: 'urlC', content: [ ] },
+    ]);
+    project.getPagedResources.onCall(1).returns([]);
+    await exporter.export();
+
+    const expectedContent = `url,colA
+      urlA,"A1 content"
+      urlB
+      urlC`
+      .split(lineSeparator).map(csvLine => csvLine.trim()).join(lineSeparator);
+
+    assert.strictEqual(content, expectedContent);
+  });
+
   it('array values - multiple selectors', async () => {
     project.plugins = [ { getContentKeys: () => [ 'colA', 'colB' ] } ];
     project.getPagedResources.onCall(0).returns([

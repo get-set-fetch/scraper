@@ -72,6 +72,11 @@ export default class CsvExporter extends Exporter {
       csvRows.push(csvRow);
     });
 
+    // no content for current resource, add a [url] entry
+    if (csvRows.length === 0) {
+      csvRows.push([ url ]);
+    }
+
     return csvRows;
   }
 

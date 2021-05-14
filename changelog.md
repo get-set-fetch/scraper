@@ -5,6 +5,8 @@
   - relative file paths are now resolved to current working directory
   - more verbose error messages when missing packages
   - errors output to stderr
+- Export
+  * scraped resources with no content are also exported as csv rows with just the url
 ### 0.4.0 - 2021-05-14
 - Command Line
   - supported arguments: --version, --loglevel, --logdestination, --config, --discover, --overwrite, --export, --exportType
