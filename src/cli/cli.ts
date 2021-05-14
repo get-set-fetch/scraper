@@ -101,7 +101,7 @@ export function invokeVersion() {
 }
 
 export function invokeLogger(argObj:ArgObjType) {
-  const { logLevel, logDestination, jsExecPath } = argObj;
+  const { logLevel, logDestination } = argObj;
 
   if (logLevel && (typeof logLevel) !== 'string') throw new Error('invalid loglevel value');
   if (logDestination && (typeof logDestination) !== 'string') throw new Error('invalid logdestination value');
@@ -111,7 +111,7 @@ export function invokeLogger(argObj:ArgObjType) {
     {
       level: logLevel || 'warn',
     },
-    logDestination ? pino.destination(join(dirname(jsExecPath), <string>logDestination)) : null,
+    logDestination ? pino.destination(join(process.cwd(), <string>logDestination)) : null,
   );
 }
 
@@ -160,10 +160,10 @@ function initDomClient(domOpts):BrowserClient|IDomClientConstructor {
 }
 
 export function invokeScraper(argObj:ArgObjType) {
-  const { config, overwrite, discover, jsExecPath } = argObj;
+  const { config, overwrite, discover } = argObj;
 
   if ((typeof config) !== 'string') throw new Error('invalid config path');
-  const fullConfigPath = join(dirname(jsExecPath), config);
+  const fullConfigPath = join(process.cwd(), config);
   if (!fs.existsSync(fullConfigPath)) throw new Error(`config path ${fullConfigPath} does not exist`);
   console.log(`using scrape configuration file ${fullConfigPath}`);
 
@@ -181,7 +181,7 @@ export function invokeScraper(argObj:ArgObjType) {
   const scraper = new Scraper(storage, domClient, scrapeOptions);
 
   if (argObj.export) {
-    const exportPath = join(dirname(jsExecPath), argObj.export);
+    const exportPath = join(process.cwd(), argObj.export);
     if (!fs.existsSync(dirname(exportPath))) throw new Error(`export path ${dirname(exportPath)} does not exist`);
     console.log(`scraped data will be exported to ${exportPath}`);
 
@@ -234,7 +234,6 @@ export function invokeScraper(argObj:ArgObjType) {
 export function invoke(argv: string[]) {
   const argObj:ArgObjType = {
     ...defaultArgObj,
-    jsExecPath: argv[1],
     ...readArgs(argv.slice(2)),
   };
 
