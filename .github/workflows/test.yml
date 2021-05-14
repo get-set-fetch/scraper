@@ -139,7 +139,7 @@ jobs:
 
     - name: Acceptance tests - ${{ matrix.client }} - ${{ matrix.storage_label }} - ${{ matrix.concurrency }}
       run: | 
-        npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'
+        npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/dom-utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'
 
     - name: Coveralls for acceptance tests
       uses: coverallsapp/github-action@master
