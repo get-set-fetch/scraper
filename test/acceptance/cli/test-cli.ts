@@ -176,16 +176,16 @@ describe('Command Line Interface', () => {
 
   it('new project --config --loglevel info --export missing --exportType', async () => {
     // by default overwrite is false, just make sure --overwrite flag is not present
-    const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --export ../test/tmp/export.txt',
+    const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.txt',
       { cwd: join(__dirname, '../../../bin') },
-      (err, stdout) => {
-        resolve(stdout);
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
       },
     ));
 
     assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
-    assert.isTrue(/missing --exportType/.test(stdout), '"missing --exportType" log entry not found');
+    assert.isTrue(/missing --exportType/.test(stderr), '"missing --exportType" log entry not found');
   });
 
   it('existing projects --discover --loglevel info --export', async () => {
