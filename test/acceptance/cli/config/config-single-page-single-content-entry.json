@@ -3,14 +3,14 @@
     "client": "sqlite3",
     "useNullAsDefault": true,
     "connection": {
-      "filename": "../../tmp/db.sqlite"
+      "filename": "../../../tmp/db.sqlite"
     }
   },
   "dom": {
     "client": "cheerio"
   },
   "scrape": {
-    "url": "http://sitea.com/index.html",
+    "name": "sitea.com",
     "pipeline": "dom-static-content",
     "pluginOpts": [
       {
@@ -28,7 +28,11 @@
         ]
       }
     ],
-    "resourcePath": "resources.csv"
+    "resources": [
+      {
+        "url": "http://sitea.com/index.html"
+      }
+    ]
   },
   "concurrency": {
     "proxy": {

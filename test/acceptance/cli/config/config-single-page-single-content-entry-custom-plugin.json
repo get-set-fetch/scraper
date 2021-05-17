@@ -3,14 +3,14 @@
     "client": "sqlite3",
     "useNullAsDefault": true,
     "connection": {
-      "filename": "../../tmp/db.sqlite"
+      "filename": "../../../tmp/db.sqlite"
     }
   },
   "dom": {
     "client": "cheerio"
   },
   "scrape": {
-    "url": "http://sitea.com/index.html",
+    "name": "sitea.com",
     "pipeline": "dom-static-content",
     "pluginOpts": [
       {
@@ -20,12 +20,15 @@
         }
       },
       {
-        "name": "ExtractHtmlContentPlugin",
-        "selectorPairs": [
-          {
-            "contentSelector": "h1"
-          }
-        ]
+        "name": "H1CounterPlugin",
+        "path": "../plugins/h1-counter-plugin.js",
+        "replace": "ExtractHtmlContentPlugin",
+        "startVal": 50
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://sitea.com/index.html"
       }
     ]
   },

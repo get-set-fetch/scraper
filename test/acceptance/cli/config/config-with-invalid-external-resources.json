@@ -1,0 +1,49 @@
+{
+  "storage": {
+    "client": "sqlite3",
+    "useNullAsDefault": true,
+    "connection": {
+      "filename": "../../../tmp/db.sqlite"
+    }
+  },
+  "dom": {
+    "client": "cheerio"
+  },
+  "scrape": {
+    "name": "sitea.com",
+    "pipeline": "dom-static-content",
+    "pluginOpts": [
+      {
+        "name": "NodeFetchPlugin",
+        "headers": {
+          "Accept-Encoding": "identity"
+        }
+      },
+      {
+        "name": "ExtractHtmlContentPlugin",
+        "selectorPairs": [
+          {
+            "contentSelector": "h1"
+          }
+        ]
+      }
+    ],
+    "resourcePath": "non-existent-resources.csv"
+  },
+  "concurrency": {
+    "proxy": {
+      "maxRequests": 10,
+      "delay": 100
+    },
+    "domain": {
+      "maxRequests": 10,
+      "delay": 100
+    },
+    "proxyPool": [ {
+      "host": "127.0.0.1",
+      "port": 8080
+    } ]
+  },
+  "process": {
+  }
+}

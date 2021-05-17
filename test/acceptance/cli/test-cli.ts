@@ -22,9 +22,12 @@ describe('Command Line Interface', () => {
       }
     });
 
-    // init storage
-    config = JSON.parse(fs.readFileSync(join(__dirname, 'static-single-page-single-content-entry.json')).toString('utf-8'));
-    config.storage.connection.filename = join(__dirname, config.storage.connection.filename);
+    /*
+    init storage, ALL config files db settings point to the same sqlite db: test/tmp/db.sqlite
+    we need a storage instance for cleaning up the db and adding projects before invoking cli
+    */
+    config = JSON.parse(fs.readFileSync(join(__dirname, 'config', 'config-single-page-single-content-entry.json')).toString('utf-8'));
+    config.storage.connection.filename = join(__dirname, 'config', config.storage.connection.filename);
     storage = new KnexStorage(config.storage);
     ({ Project } = await storage.connect());
 
@@ -58,9 +61,9 @@ describe('Command Line Interface', () => {
 
   it('--config --loglevel error', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel error',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel error',
       { cwd: join(__dirname, '../../../bin') },
-      (err, stdout) => {
+      (err, stdout, stderr) => {
         resolve(stdout);
       },
     ));
@@ -71,7 +74,7 @@ describe('Command Line Interface', () => {
 
   it('--config --loglevel info --logdestination', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info --logdestination ../test/tmp/scrape.log',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --logdestination ../test/tmp/scrape.log',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -95,7 +98,7 @@ describe('Command Line Interface', () => {
 
   it('new project --config --loglevel info', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -115,13 +118,13 @@ describe('Command Line Interface', () => {
   it('existing project --config --loglevel info --overwrite', async () => {
     const project = new Project({
       name: 'sitea.com',
-      url: config.scrape.url,
       pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
     });
     await project.save();
+    await project.batchInsertResources(config.scrape.resources);
 
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info --overwrite',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --overwrite',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -134,14 +137,14 @@ describe('Command Line Interface', () => {
   it('existing project --config --loglevel info --overwrite false', async () => {
     const project = new Project({
       name: 'sitea.com',
-      url: config.scrape.url,
       pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
     });
     await project.save();
+    await project.batchInsertResources(config.scrape.resources);
 
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -154,7 +157,7 @@ describe('Command Line Interface', () => {
   it('new project --config --loglevel info --export', async () => {
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -174,10 +177,33 @@ describe('Command Line Interface', () => {
     );
   });
 
+  it('new project with custom plugin --config --loglevel debug --export', async () => {
+    // by default overwrite is false, just make sure --overwrite flag is not present
+    const stdout = await new Promise<string>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry-custom-plugin.json --loglevel info --export ../test/tmp/export.csv',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout) => {
+        resolve(stdout);
+      },
+    ));
+
+    assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
+    assert.isTrue(/export.csv .+ done/.test(stdout), '"export.csv done" log entry not found');
+
+    const csvContent:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export.csv')).toString('utf-8').split('\n');
+    assert.sameOrderedMembers(
+      [
+        'url,h1,h1Length',
+        'http://sitea.com/index.html,"Main Header 1",23',
+      ],
+      csvContent,
+    );
+  });
+
   it('new project --config --loglevel info --export missing --exportType', async () => {
     // by default overwrite is false, just make sure --overwrite flag is not present
     const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.txt',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.txt',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout, stderr) => {
         resolve({ stdout, stderr });
@@ -191,21 +217,21 @@ describe('Command Line Interface', () => {
   it('existing projects --discover --loglevel info --export', async () => {
     const projectA = new Project({
       name: 'projectA',
-      url: config.scrape.url,
       pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
     });
     await projectA.save();
+    await projectA.batchInsertResources(config.scrape.resources);
 
     const projectB = new Project({
       name: 'projectB',
-      url: config.scrape.url,
       pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
     });
     await projectB.save();
+    await projectB.batchInsertResources(config.scrape.resources);
 
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-single-page-single-content-entry.json --discover --loglevel info --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --discover --loglevel info --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -226,12 +252,24 @@ describe('Command Line Interface', () => {
     assert.sameOrderedMembers(expectedContent, csvContentB);
   });
 
-  it('new project with external resources --scrape --loglevel info --export', async () => {
-    const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/static-with-external-resources.json --loglevel info --export ../test/tmp/export.csv',
+  it('new project with invalid resources path', async () => {
+    const { stderr } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-invalid-external-resources.json --loglevel info --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
-      (err, stdout) => {
-        resolve(stdout);
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
+      },
+    ));
+
+    assert.isTrue(/non-existent-resources\.csv does not exist/.test(stderr), '"non-existent-resources.csv does not exist" log entry not found');
+  });
+
+  it('new project with external resources --scrape --loglevel info --export', async () => {
+    const { stdout } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --loglevel info --export ../test/tmp/export.csv',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
       },
     ));
 
