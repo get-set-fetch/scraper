@@ -12,7 +12,7 @@ export default function crudProject(storage: Storage) {
     });
 
     beforeEach(async () => {
-      expectedProject = new Project({ name: 'projectA', url: 'http://sitea.com/index.html', pluginOpts: [ { name: 'pluginA', propA: 'valA' } ] });
+      expectedProject = new Project({ name: 'projectA', pluginOpts: [ { name: 'pluginA', propA: 'valA' } ] });
       expectedProject.id = await expectedProject.save();
     });
 
@@ -30,10 +30,16 @@ export default function crudProject(storage: Storage) {
 
       const projectByName = await Project.get(expectedProject.name);
       assert.deepEqual({ ...projectByName, logger: undefined }, { ...expectedProject, logger: undefined });
+    });
+
+    it(`${storage.config.client} project getResourceToScrape`, async () => {
+      const projectByName = await Project.get(expectedProject.name);
+      await projectByName.batchInsertResources([
+        { url: 'http://sitea.com/index.html' },
+      ]);
 
       const resourceToCrawl = await projectByName.getResourceToScrape();
-      assert.strictEqual(resourceToCrawl.projectId, projectById.id);
-      assert.strictEqual(resourceToCrawl.url, projectById.url);
+      assert.strictEqual(resourceToCrawl.projectId, projectByName.id);
       assert.isTrue(resourceToCrawl.scrapeInProgress);
 
       const resourceNo = await projectByName.countResources();
@@ -53,7 +59,6 @@ export default function crudProject(storage: Storage) {
       assert.sameDeepMembers(
         resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
         [
-          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other3.html', depth: 2, projectId: expectedProject.id },
@@ -69,7 +74,6 @@ export default function crudProject(storage: Storage) {
       assert.sameDeepMembers(
         resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
         [
-          { url: 'http://sitea.com/index.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
         ],
@@ -78,7 +82,6 @@ export default function crudProject(storage: Storage) {
 
     it(`${storage.config.client} project update`, async () => {
       Object.assign(expectedProject, {
-        url: 'http://sitea.com/b.html',
         pluginOpts: [
           {
             name: 'pluginA1',
@@ -104,10 +107,6 @@ export default function crudProject(storage: Storage) {
       const actualProject = await Project.get(expectedProject.id);
 
       assert.isUndefined(actualProject);
-    });
-
-    it(`${storage.config.client} project constructor normalize url`, async () => {
-      assert.strictEqual(new Project({ name: 'projectN', url: 'http://siteN.com' }).url, 'http://siten.com/');
     });
   });
 }
