@@ -5,6 +5,10 @@
   - relative file paths are now resolved to current working directory
   - more verbose error messages when missing packages
   - errors output to stderr
+- Scraper
+  - multiple starting urls can now be defined at scrape definition level
+- Storage
+  - Project: no longer contains a single start url
 - Export
   * scraped resources with no content are also exported as csv rows with just the url
 ### 0.4.0 - 2021-05-14
@@ -14,7 +18,7 @@
   - NodeFetchPlugin: 
     - supports br, gzip, deflate content encoding
     - added headers option with `{'Accept-Encoding': 'br,gzip,deflate'}` default value
-- RuntimeMetrics: 
+- RuntimeMetrics
   - added memory and cpu usage constraints at process and OS level
 - Export
   - relative and absolute export paths are now supported
