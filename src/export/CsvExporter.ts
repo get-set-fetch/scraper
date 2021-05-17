@@ -90,8 +90,12 @@ export default class CsvExporter extends Exporter {
       return '""';
     }
 
-    const quotedVal = contentVal.replace(/"/g, '""');
-    return `"${quotedVal}"`;
+    if (typeof contentVal === 'string') {
+      const quotedVal = contentVal.replace(/"/g, '""');
+      return `"${quotedVal}"`;
+    }
+
+    return contentVal;
   }
 
   getDefaultOptions():CsvExportOptions {
