@@ -174,9 +174,15 @@ export default class Scraper extends EventEmitter {
       }
     }
 
+    // register new external plugins if available
+    const externalPluginOpts = scrapeDef.pluginOpts.filter(pluginOpts => pluginOpts.path);
+
+    for (let i = 0; i < externalPluginOpts.length; i += 1) {
+      await PluginStore.addEntry(externalPluginOpts[i].path);
+    }
+
     project = new (<IStaticProject> this.storage.Project)({
       name: projectName,
-      url: scrapeDef.url,
       pluginOpts: pipelines[scrapeDef.pipeline]
         ? mergePluginOpts(pipelines[scrapeDef.pipeline].defaultPluginOpts, scrapeDef.pluginOpts)
         : scrapeDef.pluginOpts,
@@ -184,7 +190,7 @@ export default class Scraper extends EventEmitter {
     await project.save();
     this.logger.info(`New project ${project.name} saved`);
 
-    // link additional resources to the project
+    // link resources to the project from external file
     let { resourcePath } = scrapeDef;
     if (resourcePath) {
       resourcePath = isAbsolute(resourcePath) ? resourcePath : join(process.cwd(), resourcePath);

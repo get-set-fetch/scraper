@@ -170,6 +170,25 @@ export function invokeScraper(argObj:ArgObjType) {
   const configFile = fs.readFileSync(fullConfigPath).toString('utf-8');
   const { storage: storageConfig, dom: domOpts, scrape: scrapeConfig, concurrency: concurrencyOpts, process: processOpts } = JSON.parse(configFile);
 
+  if (!scrapeConfig.name && !discover) {
+    throw new Error('missing scrape.name');
+  }
+
+  // get an absolute resource path based on the relative path from the configuration file path
+  if (scrapeConfig.resourcePath) {
+    scrapeConfig.resourcePath = join(dirname(fullConfigPath), scrapeConfig.resourcePath);
+    if (!fs.existsSync(scrapeConfig.resourcePath)) throw new Error(`resource path ${scrapeConfig.resourcePath} does not exist`);
+  }
+
+  // get absolute plugins paths based on the relative path from the configuration file path
+  if (scrapeConfig.pluginOpts) {
+    const externalPluginOpts = scrapeConfig.pluginOpts.filter(pluginOpts => pluginOpts.path);
+    externalPluginOpts.forEach(pluginOpts => {
+      pluginOpts.path = join(dirname(fullConfigPath), pluginOpts.path);
+      if (!fs.existsSync(pluginOpts.path)) throw new Error(`plugin path ${pluginOpts.path} does not exist`);
+    });
+  }
+
   const storage = initStorage(fullConfigPath, storageConfig);
   const domClient = initDomClient(domOpts);
 
@@ -199,12 +218,6 @@ export function invokeScraper(argObj:ArgObjType) {
         default:
           throw new Error('missing --exportType');
       }
-    }
-
-    // get an absolute resource path based on the relative path from the configuration file path
-    if (scrapeConfig.resourcePath) {
-      scrapeConfig.resourcePath = join(dirname(fullConfigPath), scrapeConfig.resourcePath);
-      if (!fs.existsSync(scrapeConfig.resourcePath)) throw new Error(`resourcePath ${scrapeConfig.resourcePath} does not exist`);
     }
 
     scraper.addListener(ScrapeEvent.ProjectScraped, async (project:Project) => {

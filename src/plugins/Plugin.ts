@@ -18,6 +18,7 @@ export type PluginOpts = {
   before?: string;
   replace?: string;
   after?: string;
+  path?: string;
 }
 
 /** All plugins should extend this class implementing the test and apply methods. */

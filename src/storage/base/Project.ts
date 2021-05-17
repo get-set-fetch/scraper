@@ -31,6 +31,8 @@ export default abstract class Project extends Entity {
   initPlugins(browserClientPresent:boolean):Plugin[] {
     const plugins = this.pluginOpts.map((pluginOpt:PluginOpts) => {
       const PluginCls = PluginStore.get(pluginOpt.name).Cls;
+      if (!PluginCls) throw new Error(`missing class for plugin ${pluginOpt.name}`);
+
       return new PluginCls(pluginOpt);
     });
 

@@ -78,11 +78,12 @@ export default class PluginStore {
         filepath, bundle, Cls,
       };
       PluginStore.store.set(instance.constructor.name, storeEntry);
+      PluginStore.logger.info('Registered plugin %s', instance.constructor.name);
 
       return storeEntry;
     }
     catch (err) {
-      PluginStore.logger.error(err, 'Could not rgister plugin %s', filepath);
+      PluginStore.logger.error(err, 'Could not register plugin %s', filepath);
       throw (err);
     }
   }
@@ -93,7 +94,7 @@ export default class PluginStore {
    */
   static get(name: string):StoreEntry {
     if (!PluginStore.store.has(name)) {
-      PluginStore.logger.error('Plugin %s not registered', name);
+      throw new Error(`Plugin ${name} not registered`);
     }
     return PluginStore.store.get(name);
   }
