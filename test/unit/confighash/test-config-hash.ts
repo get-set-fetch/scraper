@@ -3,7 +3,7 @@ import { encode, decode } from '../../../src/confighash/config-hash';
 
 describe('ConfigHash', () => {
   const expectedDefinition = {
-    url: 'http://sitea.com/index.html',
+    name: 'projectA',
     pipeline: 'browser-static-content',
     pluginOpts: [
       {
@@ -23,9 +23,14 @@ describe('ConfigHash', () => {
         ],
       },
     ],
+    resources: [
+      {
+        url: 'http://sitea.com/index.html',
+      },
+    ],
   };
 
-  const expectedConfigHash = 'ePkcQMHZQ057wKRXDDQ5EZz+MvNSUiuIToSEUhxpkR2dUZSapmKrDrZePVYJ5BFUJZm56SDn65CTsmOBGgF4cVg0';
+  const expectedConfigHash = 'ePnXQdMJgxtWUJSfBYwER2JSJ6GkSFoqiM4oSk1TsVUHO0o9VgnkQ1QlmbnpIMfqkJPkY/EFCDA8ioHBnggOlMy8lNQKeMgAAOKgZAQ=';
 
   it('encode', () => {
     const encodedDefinition = encode(expectedDefinition);

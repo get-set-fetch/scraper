@@ -113,7 +113,6 @@ describe('Scraper', () => {
 
   it('initProject - return new project', async () => {
     const expectedProject = {
-      url: 'http://a.com/index.html',
       name: 'a.com',
       pluginOpts: [
         { name: 'pluginA' },
@@ -127,7 +126,7 @@ describe('Scraper', () => {
     storage.Project.get = sandbox.stub();
 
     const preScrapeProject = await scraper.initProject({
-      url: 'http://a.com/index.html',
+      name: 'a.com',
       pipeline: 'browser-static-content',
       pluginOpts: [ { name: 'ExtractUrlsPlugin' } ],
     });

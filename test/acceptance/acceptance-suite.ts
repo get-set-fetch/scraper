@@ -111,10 +111,10 @@ export default function acceptanceSuite(
       // save a project for the current scrape test
       const project = new Project({
         name: test.title,
-        url: test.definition.url,
         pluginOpts,
       });
       await project.save();
+      await project.batchInsertResources(test.definition.resources);
 
       // start scraping
       const scraper = new Scraper(storage, client);

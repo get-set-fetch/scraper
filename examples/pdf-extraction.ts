@@ -22,10 +22,10 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePm8oZWZjZLNCsIwEIRfpXjSQ1Jb8KAH30RC2qzNYppIfho8+O5uQCgWpd72sOzszHxLcnLOPGvH0cYaRvAD2B4h1AoDyECDdRMYwsQ7Kyf0KbB23xzrgDHJosw83J0naP4Ab42yj4Lnntr1tnm4shEgoh3eDzGDIZ5s1KzXaNT2sKvOlfyxJwQlPG5KgIu7XYqRTHYmAetkfxu8S1aVU1/40g1XD7I0OxZCE9CkVsK/PF+cwooz';
+const scrapeHash = 'ePnXQdMJjZLBDsIgEER/pfGkB6ht4kEP/oVnQmEtG1toYCnx74XE2Gg09baH3dnMzHuJKTejvkxaUj77g9A1HN9IWApt17Hg4cpGAELbMw+T88QGDHSyZJgyOOjtYVedK/ljT4gc5LgpOX3odpHIWdYNEVgn1a33LlpdpL6AaBqu79nS4liIUn/+VoJbSTmlxJNxHC3VMILvwSqEUGsMIEMerJthyMreWTmjj4G1++ZYB6QoS9dPR6H8egBynpe2';
 
 const scrapeConfig = {
-  url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
+  name: 'covidUpdates',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -42,12 +42,16 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
+    },
+  ],
 };
 
 scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/resources.zip', { type: 'zip' });
   await storage.close();
-  console.log(encode(scrapeConfig));
 });
 
 scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });

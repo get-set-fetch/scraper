@@ -29,7 +29,6 @@ export default class KnexProject extends Project {
       builder => {
         builder.increments('id').primary();
         builder.string('name');
-        builder.string('url');
 
         this.storage.jsonCol(builder, 'pluginOpts');
       },
@@ -76,9 +75,6 @@ export default class KnexProject extends Project {
         : this.Constructor.builder.insert(this.toJSON())
     );
     [ this.id ] = result;
-
-    // save the project url as a new resource, scraping will start with this resource
-    await this.batchInsertResources([ { url: this.url } ]);
 
     return this.id;
   }

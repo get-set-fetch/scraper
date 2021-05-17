@@ -23,10 +23,10 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePm8oZWZQ085qXl65ZnZwBSTkpmol1+Urg/i6ftkFpfE56fF5yTmpZcmpqcWxydVxueV5ialFoGE84BJpyw1vrggNTE7FRj6RKQ5QgkMJW4RUWSAmQqIS4qY6Q8YTzmpermpJYkpiSWJCtoKBUAMEQT5GcxSKEmxyivJ0E3OyMxJ0TDSVLBTSLRKA5pZAhECWgVL47CgUQK5kBq2GWsimQ4LWgWNXGDiAsavJij2YmsBAzufSg==';
+const scrapeHash = 'ePnXQdMJrZNNDoMgEIWvQrqSNNWm3bnoCXoHMpYRiYBGsE1v30FDf+JCF12QwFu8N5n38TYz4NQICq/ahy2EruH4Q8Kn0OOSmW3gLmml7gzmFgNICMD2rKcziw/d6unGgixdaA63RhuZnTi7MChr8gyzRFHpR6QF7OKE/0g78y933yO0hA7LLAFHXfK4/pWu0E3ePUoNeTeoIr6K2JDoapEG9qJ6CjfaCocoO2rpjiIFxpgXe3Oswg==';
 
 const scrapeConfig = {
-  url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
+  name: 'languageList',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -47,12 +47,16 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
+    },
+  ],
 };
 
 scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/languages.csv', { type: 'csv' });
   await storage.close();
-  console.log(encode(scrapeConfig));
 });
 
 scraper.scrape(scrapeHash);

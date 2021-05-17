@@ -3,7 +3,6 @@ import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
 import PluginStore from '../../pluginstore/PluginStore';
 import { LogWrapper } from '../../logger/Logger';
-import { normalizeUrl } from '../../plugins/url-utils';
 
 /** Groups resources sharing the same scrape configuration and discovered from the same initial URLs. */
 export default abstract class Project extends Entity {
@@ -11,7 +10,6 @@ export default abstract class Project extends Entity {
 
   id: number;
   name: string;
-  url: string;
 
   // stored as json string, initialized as PluginOpts[]
   pluginOpts: PluginOpts[];
@@ -28,8 +26,6 @@ export default abstract class Project extends Entity {
     if (typeof kwArgs.pluginOpts === 'string') {
       this.pluginOpts = JSON.parse(kwArgs.pluginOpts);
     }
-
-    this.url = normalizeUrl(this.url);
   }
 
   initPlugins(browserClientPresent:boolean):Plugin[] {
@@ -65,7 +61,7 @@ export default abstract class Project extends Entity {
   abstract createResource(resource: Partial<Resource>):Resource;
 
   get dbCols() {
-    return [ 'id', 'name', 'url', 'pluginOpts' ];
+    return [ 'id', 'name', 'pluginOpts' ];
   }
 
   async toExecJSON() {

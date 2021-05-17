@@ -22,10 +22,10 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePm8oZWZjZJBEsIgDEXv4loab+TENlLGQjtEZLy9CTq2ih27Y5Of8P77Nifn3CTRqhikj7ZHP2niQGgTQe9Y4N0hYri4YBkm2U+RwY448JHbMVIHW7T759hHvXNLh1qEbTbWCnbu1pSbWM5iI1S9MSV6/3b3+b2dLv0d8AJiQvIn4bAYLUSU8mqZeL5SXKun1ktLlrgHA1idgA==';
+const scrapeHash = 'ePnXQdMJjZJRDoIwDIbv4rOjHsV4ATJhDiLbSOtcvL3tJBAyCbz1pe3fft88LLKnV95q8Kb9s/eWjni6J+XKhwXrpTTnmL6ls23/rnIm4lik+IlOqTz6PMs+5rtOsvT/gI67A36Uj+4ufJdWG/RA8qlNdvrxMrhFo7ROmO4xSilVwiOzkqLptBvFgMFoGw1MeQEnVPC7kCDHrakJaFqQ2F/CU61j';
 
 const scrapeConfig = {
-  url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
+  name: 'uefaPlayerRankings',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -51,12 +51,16 @@ const scrapeConfig = {
       stabilityCheck: 1000,
     },
   ],
+  resources: [
+    {
+      url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
+    },
+  ],
 };
 
 scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/infinite-scrolling.csv', { type: 'csv' });
   await storage.close();
-  console.log(encode(scrapeConfig));
 });
 
 scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });

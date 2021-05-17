@@ -1,7 +1,6 @@
 /* eslint-disable no-continue */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-param-reassign */
-import { URL } from 'url';
 import { join, isAbsolute } from 'path';
 import EventEmitter from 'events';
 import BrowserClient from '../browserclient/BrowserClient';
@@ -34,10 +33,10 @@ export const enum ScrapeEvent {
 }
 
 export type ScrapeConfig = {
-  name?: string,
-  url: string,
+  name: string,
   pipeline: string,
   pluginOpts: PluginOpts[]
+  resources?: {url: string, depth?: number}[];
   resourcePath?: string;
 }
 
@@ -161,7 +160,7 @@ export default class Scraper extends EventEmitter {
       throw new Error(`Pipeline ${scrapeDef.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
 
-    const projectName = scrapeDef.name || new URL(scrapeDef.url).hostname;
+    const projectName = scrapeDef.name;
     let project = await this.storage.Project.get(projectName);
 
     if (project) {
@@ -190,6 +189,12 @@ export default class Scraper extends EventEmitter {
     if (resourcePath) {
       resourcePath = isAbsolute(resourcePath) ? resourcePath : join(process.cwd(), resourcePath);
       await project.batchInsertResourcesFromFile(resourcePath);
+    }
+
+    // link resources to the project from inline definition
+    const { resources } = scrapeDef;
+    if (resources && Array.isArray(resources)) {
+      await project.batchInsertResources(resources);
     }
 
     return project;

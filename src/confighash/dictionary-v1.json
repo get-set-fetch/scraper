@@ -1,5 +1,5 @@
 {
-  "url": "https://.com/.html",
+  "name": "",
   "pipeline": "browser-static-content|dom-static-content",
   "pluginOpts": [
     {
@@ -48,6 +48,11 @@
     },
     {
       "name": "UpsertResourcePlugin"
+    }
+  ],
+  "resources": [
+    {
+      "url": "https://.com/.html"
     }
   ]
 }

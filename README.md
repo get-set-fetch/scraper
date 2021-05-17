@@ -115,7 +115,7 @@ const scraper = new Scraper(storage, client);
 ### Define a scrape configuration
 ```js
 const scrapeConfig = {
-  url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
+  name: "myScrapeProject",
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -155,10 +155,15 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1'
+    }
+  ]
 };
 ```
 You can define a scrape configuration in multiple ways. The above example is the most direct one.
-You define a starting url, a predefined pipeline containing a series of scrape plugins with default options, and any plugin options you want to override. See [pipelines](#pipelines) and [plugins](#plugins) for all available options.
+You define one or more starting urls, a predefined pipeline containing a series of scrape plugins with default options, and any plugin options you want to override. See [pipelines](#pipelines) and [plugins](#plugins) for all available options.
 
 ExtractUrlsPlugin.maxDepth defines a maximum depth of resources to be scraped. The starting resource has depth 0. Resources discovered from it have depth 1 and so on. A value of -1 disables this check.
 
@@ -282,12 +287,17 @@ Comes in two variants [browser-static-content](#browser-static-content-plugin-op
 Limit scraping to a single page by setting `ExtractUrlsPlugin.maxDepth` to `0`.
 ```js
 scraper.scrape({
-  url: 'startUrl',
+  name: "singlePageScraping",
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ExtractUrlsPlugin',
       maxDepth: 0,
+    }
+  ],
+  resources: [
+    {
+      url: 'startUrl'
     }
   ]
 })
@@ -296,7 +306,7 @@ scraper.scrape({
 Scrape from each html page all elements found by the `h1.title` CSS selector.
 ```js
 scraper.scrape({
-  url: 'startUrl',
+  name: 'h1TitleScraping',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -308,6 +318,11 @@ scraper.scrape({
         },
       ]
     }
+  ],
+  resources: [
+    {
+      url: 'startUrl'
+    }
   ]
 })
 ```
@@ -315,13 +330,18 @@ scraper.scrape({
 Add a new `ScrollPlugin` to the pipeline and scroll html pages to reveal further dynamically loaded content.
 ```js
 scraper.scrape({
-  url: 'startUrl',
+  name: 'scrollScraping',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
       name: 'ScrollPlugin',
       after: 'UpsertResourcePlugin',
       stabilityCheck: 1000,
+    }
+  ],
+  resources: [
+    {
+      url: 'startUrl'
     }
   ]
 })
@@ -471,8 +491,7 @@ Performs infinite scrolling in order to load additional content | [schema](./src
 ## Scrape
 
 ### Start from a Scrape Configuration
-No need to specify a starting scrape project. One will be automatically created based on input URL and plugin definitions. If not provided the project name resolves to the starting URL hostname.
-
+No need to specify a starting scrape project. One will be automatically created based on input URL and plugin definitions.
 ```js
 const { KnexStorage, PuppeteerClient, Scraper} = require('@get-set-fetch/scraper');
 
@@ -482,7 +501,6 @@ const scraper = new Scraper(storage, client);
 
 scraper.scrape({
   name: 'language-list',
-  url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -503,6 +521,11 @@ scraper.scrape({
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers'
+    }
+  ]
 });
 ```
 
@@ -516,13 +539,13 @@ const storage = new KnexStorage();
 const client = new PuppeteerClient();
 const scraper = new Scraper(storage, client);
 
-const scrapingHash = 'ePm8oZWZQ085qXl65ZnZwBSTkpmol1+Urg/i6ftkFpfE56fF5yTmpZcmpqcWxydVxueV5ialFoGE84BJpyw1vrggNTE7FRj6RKQ5QgkMJW4RUWSAmQqIS4qY6Q8YTzmpermpJYkpiSWJCtoKBUAMEQT5GcxSKEmxyivJ0E3OyMxJ0TDSVLBTSLRKA5pZAhECWgVL47CgUQK5kBq2GWsimQ4LWgWNXGDiAsavJij2YmsBAzufSg==';
+const scrapeHash = 'ePnXQdMJrZNNDoMgEIWvQrqSNNWm3bnoCXoHMpYRiYBGsE1v30FDf+JCF12QwFu8N5n38TYz4NQICq/ahy2EruH4Q8Kn0OOSmW3gLmml7gzmFgNICMD2rKcziw/d6unGgixdaA63RhuZnTi7MChr8gyzRFHpR6QF7OKE/0g78y933yO0hA7LLAFHXfK4/pWu0E3ePUoNeTeoIr6K2JDoapEG9qJ6CjfaCocoO2rpjiIFxpgXe3Oswg==';
 
 // outputs the scrape configuration from the above "Scrape starting from a scrape configuration" section
 // use encode to generate a scrape hash
-console.log(decode(scrapingHash));
+console.log(decode(scrapeHash));
 
-scraper.scrape(scrapingHash);
+scraper.scrape(scrapeHash);
 ```
 
 ### Start from a Predefined Project
@@ -535,7 +558,7 @@ const storage = new KnexStorage();
 const { Project } = await storage.connect();
 const project = new Project({
   name: 'projA.com',
-  url: 'http://projA.com',
+
   pluginOpts: mergePluginOpts(
     pipelines['browser-static-content'].defaultPluginOpts,
     [
@@ -552,6 +575,9 @@ const project = new Project({
   ),
 });
 await project.save();
+await project.batchInsertResources([
+  { url: 'http://projA.com' }
+]);
 
 const client = new PuppeteerClient();
 
@@ -809,7 +835,7 @@ What follows are real world scrape examples. If in the meanwhile the pages have 
 Top languages by population. Extract tabular data from a single static html page. [See full script.](./examples/table-scraping.ts)
 ```js
 const scrapeConfig = {
-  url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers',
+  name: 'languageList',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -830,6 +856,11 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers'
+    }
+  ]
 };
 ```
 
@@ -837,7 +868,7 @@ const scrapeConfig = {
 Book details with author, title, rating value, review count. Also scrapes the book covers. Only the first and second page of results are being scraped. [See full script.](./examples/product-details.ts)
 ```js
 const scrapeConfig = {
-  url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
+  name: 'asimovBooks',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -877,6 +908,11 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1'
+    }
+  ]
 };
 ```
 
@@ -884,7 +920,7 @@ const scrapeConfig = {
 World Health Organization COVID-19 Updates during last month. Opens each report page and downloads the pdf. [See full script.](./examples/pdf-extraction.ts)
 ```js
 const scrapeConfig = {
-  url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports',
+  name: 'covidUpdates',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -901,6 +937,11 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports'
+    }
+  ]
 };
 ```
 
@@ -908,7 +949,7 @@ const scrapeConfig = {
 UEFA Champions League top goalscorers. Keeps scrolling and loading new content until the final 100th position is reached. After each scroll action scraping is resumed only after the preloader is removed and the new content is available. [See full script.](./examples/infinite-scrolling.ts)
 ```js
 const scrapeConfig = {
-  url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/',
+  name: 'uefaPlayerRankings',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -934,6 +975,11 @@ const scrapeConfig = {
       stabilityCheck: 1000,
     },
   ],
+  resources: [
+    {
+      url: 'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/'
+    }
+  ]
 };
 ```
 
@@ -972,7 +1018,7 @@ await PluginStore.addEntry(join(__dirname, 'plugins', 'ReadabilityPlugin.js'));
 With the help of this plugin one can extract article excerpts from news sites such as BBC technology section. Custom `ReadabilityPlugin` replaces builtin `ExtractHtmlContentPlugin`. Only links containing hrefs starting with `/news/technology-` are followed. Scraping is limited to 5 articles. [See full script.](./examples/custom-plugin-readability.ts)
 ```js
 const scrapeConfig = {
-  url: 'https://www.bbc.com/news/technology',
+  name: 'bbcNews',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -992,6 +1038,11 @@ const scrapeConfig = {
       maxResources: 5,
     },
   ],
+  resources: [
+    {
+      url: 'https://www.bbc.com/news/technology'
+    }
+  ]
 };
 ```
 

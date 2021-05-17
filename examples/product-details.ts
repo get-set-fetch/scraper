@@ -22,9 +22,9 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePm8oZWZnVNBTsMwEPyKFS4gEUdJOCEVVPWEVAlOXGiFNollW3Xsyk5S9QBvZzcWoi1BBY72ejy7Mzunm4NOWKMrD37PnZcZ9J1yPmSPy/KmKPJ59hAA6td50K0b7rcgxSz/zY6dW6gjL78sKc8bexEE+FrhbBiFwN4Zx660BZKB3THgC+VcEE/Y6q3tVForbZrL4ioheY6/UiWvnNuMa4JAH7+ceAgYsEH4JT5GCt3KeCZFr/8Xle/5UDnfOb9Jx24Q8xmmeCaeCUzBRaNp8rTakx8MDpDRyx+gvcF5oRE+jM4FnMtoDoNMPUppJV2ELdgX3L2WEjtbJbHyDKYXq2R9wBQLbKDKX/imOMSgxW7hetudcIwFVlOFhF+/fQCpef3i';
+const scrapeHash = 'ePnXQdMJnVTLTsMwEPwVK1yKRBwl4YRUUNsTUiU4caEIbVIrtprYlZ246oVvZ9cW0EKkAEd7H+OZnfVnM3CqM35pzM79xqBTbjwzwtc8y2lXXDgBtpZIC9fGsTfG94BtgBRgtwz4ShrjxCM04kb3Mq2larez4jIhZc5byZJXSCh4DAttbDmSCKiKF3aNyQihuiaeSaGr/+3Zz+WSOT8Yu0vDa7DmYxPjmXBGagoutoqYp9WR5sHgpBKGXmLaeOnQIt/g1jA5h7xaxcE3qUUpdUMXbg/6GW3X0brPN0mMPEE7iE3ycoIUA8xT5C94YxjCK3FYmUH33zBCgNUUIeEnfIz/k25VZcEeubFNFsVw2cO6vC6KfJHdO4D6dRFsfYcWEvOc2r4D6BILFg==';
 const scrapeConfig = {
-  url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
+  name: 'asimovBooks',
   pipeline: 'browser-static-content',
   pluginOpts: [
     {
@@ -64,13 +64,17 @@ const scrapeConfig = {
       ],
     },
   ],
+  resources: [
+    {
+      url: 'https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1',
+    },
+  ],
 };
 
 scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await scraper.export('./examples/data/books.csv', { type: 'csv' });
   await scraper.export('./examples/data/book-covers.zip', { type: 'zip' });
   await storage.close();
-  console.log(encode(scrapeConfig));
 });
 
 scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
