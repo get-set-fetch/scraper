@@ -13,4 +13,16 @@ describe('URL Utils', () => {
     assert.strictEqual(getUrlColIdx('1, 2, www.sitea.com'), 2);
     assert.strictEqual(getUrlColIdx('sitea.com'), 0);
   });
+
+  it('getUrlColIdx throws error', async () => {
+    let urlErr;
+    try {
+      getUrlColIdx('1,2,invalidurl');
+    }
+    catch (err) {
+      urlErr = err;
+    }
+
+    assert.strictEqual(urlErr.message, 'could not detect url column from 1,2,invalidurl');
+  });
 });

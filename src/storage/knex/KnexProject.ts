@@ -162,28 +162,29 @@ export default class KnexProject extends Project {
             const chunkLines = chunkContent.split(/\r?\n/);
             partialLine = chunkLines.pop();
 
-            // find out on what position on the csv row is the url
-            if (urlIdx === undefined) {
-              urlIdx = getUrlColIdx(chunkLines[0]);
-              if (!urlIdx) throw new Error(`could not detect url column from ${chunkLines[0]}`);
-            }
-
-            chunkLines.forEach(line => {
-              const rawUrl = line.split(',')[urlIdx];
-              try {
-                const url = normalizeUrl(rawUrl);
-                resources.push({ url, projectId: this.id });
+            if (chunkLines.length > 0) {
+              // find out on what position on the csv row is the url
+              if (urlIdx === undefined) {
+                urlIdx = getUrlColIdx(chunkLines[0]);
               }
-              catch (err) {
-                this.logger.error(err);
-              }
-            });
 
-            if (resources.length >= chunkSize) {
-              await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
-              resourceCount += resources.length;
-              this.logger.info(`${resourceCount} total resources inserted`);
-              resources = [];
+              chunkLines.forEach(line => {
+                const rawUrl = line.split(',')[urlIdx];
+                try {
+                  const url = normalizeUrl(rawUrl);
+                  resources.push({ url, projectId: this.id });
+                }
+                catch (err) {
+                  this.logger.error(err);
+                }
+              });
+
+              if (resources.length >= chunkSize) {
+                await this.Constructor.storage.knex.batchInsert('resources', resources, chunkSize);
+                resourceCount += resources.length;
+                this.logger.info(`${resourceCount} total resources inserted`);
+                resources = [];
+              }
             }
           }
           catch (err) {
@@ -197,6 +198,11 @@ export default class KnexProject extends Project {
           try {
             // try to retrieve a new resources from the now complete last read line
             if (partialLine.length > 0) {
+              // find out on what position on the csv row is the url
+              if (urlIdx === undefined) {
+                urlIdx = getUrlColIdx(partialLine);
+              }
+
               const rawUrl = partialLine.split(',')[urlIdx];
               try {
                 const url = normalizeUrl(rawUrl);
