@@ -38,12 +38,18 @@ export default function crudProject(storage: Storage) {
         { url: 'http://sitea.com/index.html' },
       ]);
 
+      let unscrapedResourceNo = await projectByName.countUnscrapedResources();
+      assert.strictEqual(unscrapedResourceNo, 1);
+
       const resourceToCrawl = await projectByName.getResourceToScrape();
       assert.strictEqual(resourceToCrawl.projectId, projectByName.id);
       assert.isTrue(resourceToCrawl.scrapeInProgress);
 
       const resourceNo = await projectByName.countResources();
       assert.strictEqual(resourceNo, 1);
+
+      unscrapedResourceNo = await projectByName.countUnscrapedResources();
+      assert.strictEqual(unscrapedResourceNo, 0);
     });
 
     it(`${storage.config.client} project batchInsertResources`, async () => {
@@ -68,7 +74,7 @@ export default function crudProject(storage: Storage) {
 
     it(`${storage.config.client} project batchInsertResourcesFromFile`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/unnormalized-resources.csv', 2);
+      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources/unnormalized-resources.csv', 2);
 
       const resources = await projectById.getResources();
       assert.sameDeepMembers(
@@ -76,6 +82,19 @@ export default function crudProject(storage: Storage) {
         [
           { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
           { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
+        ],
+      );
+    });
+
+    it(`${storage.config.client} project batchInsertResourcesFromFile single entry`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources/resources-single-entry.csv', 2);
+
+      const resources = await projectById.getResources();
+      assert.sameDeepMembers(
+        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        [
+          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
         ],
       );
     });

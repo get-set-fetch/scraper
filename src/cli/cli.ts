@@ -199,6 +199,13 @@ export function invokeScraper(argObj:ArgObjType) {
 
   const scraper = new Scraper(storage, domClient, scrapeOptions);
 
+  scraper.addListener(ScrapeEvent.ResourceScraped, async (project:Project) => {
+    const resourceNo = await project.countResources();
+    const unscrapedResourceNo = await project.countUnscrapedResources();
+    const completionPercentage = Math.floor(((resourceNo - unscrapedResourceNo) / resourceNo) * 100);
+    console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${completionPercentage}%`);
+  });
+
   if (argObj.export) {
     const exportPath = join(process.cwd(), argObj.export);
     if (!fs.existsSync(dirname(exportPath))) throw new Error(`export path ${dirname(exportPath)} does not exist`);

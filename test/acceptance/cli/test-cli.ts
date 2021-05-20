@@ -111,6 +111,9 @@ describe('Command Line Interface', () => {
     // check resource was scraped
     assert.isTrue(/Resource http:\/\/sitea.com\/index.html successfully scraped/.test(stdout), '"resource successfully scraped" log entry not found');
 
+    // check scraping status
+    assert.isTrue(/progress \(scraped \/ total resources\): 1 \/ 1 \| 100%/.test(stdout), '"Scrape progress ... 100%" log entry not found');
+
     // check project scraping is complete
     assert.isTrue(/Project sitea.com scraping complete/.test(stdout), '"project scraping complete" log entry not found');
   });
@@ -281,6 +284,10 @@ describe('Command Line Interface', () => {
     assert.isTrue(/other2.html successfully scraped/.test(stdout), '"other2.html successfully scraped" log entry not found');
     assert.isTrue(/other3.html successfully scraped/.test(stdout), '"other3.html successfully scraped" log entry not found');
     assert.isTrue(/Project sitea.com scraping complete/.test(stdout), '"project scraping complete" log entry not found');
+
+    // check scraping status
+    assert.isTrue(/progress \(scraped \/ total resources\): 1 \/ 4 \| 25%/.test(stdout), '"Scrape progress ... 25%" log entry not found');
+    assert.isTrue(/progress \(scraped \/ total resources\): 4 \/ 4 \| 100%/.test(stdout), '"Scrape progress ... 100%" log entry not found');
 
     const csvContent:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export.csv')).toString('utf-8').split('\n');
 

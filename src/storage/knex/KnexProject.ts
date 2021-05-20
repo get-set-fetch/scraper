@@ -67,6 +67,13 @@ export default class KnexProject extends Project {
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
   }
 
+  async countUnscrapedResources():Promise<number> {
+    const [ result ] = await this.Constructor.storage.Resource.builder.where(
+      { projectId: this.id, scrapedAt: null, scrapeInProgress: false },
+    ).count('id', { as: 'count' });
+    return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
+  }
+
   async save():Promise<number> {
     // save the project
     const result:number[] = await (

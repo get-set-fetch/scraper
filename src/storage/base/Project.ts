@@ -60,6 +60,8 @@ export default abstract class Project extends Entity {
 
   abstract countResources():Promise<number>;
 
+  abstract countUnscrapedResources():Promise<number>;
+
   abstract getResourceToScrape():Promise<Resource>;
 
   abstract getResource(url: string):Promise<Resource>;
