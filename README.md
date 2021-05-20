@@ -347,6 +347,28 @@ scraper.scrape({
 })
 ```
 
+Replace `ExtractHtmlContentPlugin` with an external plugin. `path` is relative to current working directory / config file directory when invoked from a module / cli.  [H1CounterPlugin](./test/acceptance/cli/plugins/h1-counter-plugin.js) is such an external plugin referenced in this [configuration example](./test/acceptance/cli/config/config-single-page-single-content-entry-custom-plugin.json).
+```js
+scraper.scrape({
+  name: 'customScraping',
+  pipeline: 'browser-static-content',
+  pluginOpts: [
+    {
+      name: 'H1CounterPlugin',
+      path: "../plugins/h1-counter-plugin.js",
+      replace: 'ExtractHtmlContentPlugin',
+      customOptionA: 1000,
+      customOptionB: 'h1',
+    }
+  ],
+  resources: [
+    {
+      url: 'startUrl'
+    }
+  ]
+})
+```
+
 ## Browser Clients
 Clients controlling an actual browser. You can use such clients with predefined pipelines prefixed by 'browser' like [browser-static-content](#browser-static-content). Each client needs to be manually installed as @get-set-fetch/scraper is not bundling them. 
 

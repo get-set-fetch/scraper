@@ -2,11 +2,13 @@
 
 ### Unreleased
 - Command Line
-  - relative file paths are now resolved to current working directory
+  - external plugins can be specified in the config file via pluginOpts.path
+  - scrape progress is displayed after each scraped resource
+  - relative file paths are resolved to current working directory
   - more verbose error messages when missing packages
   - errors output to stderr
 - Scraper
-  - multiple starting urls can now be defined at scrape definition level
+  - multiple starting urls can be defined at scrape definition level
 - Storage
   - Project: no longer contains a single start url
 - Export
