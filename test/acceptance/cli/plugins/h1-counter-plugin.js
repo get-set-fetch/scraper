@@ -20,14 +20,11 @@ class H1CounterPlugin {
       domNode.getAttribute('innerText'),
       domNode.getAttribute('innerText').length + this.opts.startVal,
     ]));
-    // const content = doc.querySelectorAll('h1').map(domNode => ([ domNode.innerText, domNode.innerText ]));
 
     /*
     a content entry is represented by an array containing one or multiple scraped values
-    we can have multiple content entries for a single resources due to
-      - dom selectors returning multiple results
+    we can have multiple content entries for a single resources due to dom selectors returning multiple results
     */
-
     return { content };
   }
 }
