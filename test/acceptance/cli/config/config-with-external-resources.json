@@ -28,7 +28,7 @@
         ]
       }
     ],
-    "resourcePath": "../resources.csv",
+    "resourcePath": "../resources/resources.csv",
     "resources": [
       {
         "url": "http://sitea.com/index.html"
