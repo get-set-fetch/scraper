@@ -1,6 +1,6 @@
 ## Changelog
 
-### Unreleased
+### 0.5.0 - 2021-05-20
 - Command Line
   - external plugins can be specified in the config file via pluginOpts.path
   - scrape progress is displayed after each scraped resource
