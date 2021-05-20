@@ -7,7 +7,7 @@ import BrowserClient from '../browserclient/BrowserClient';
 import Project, { IStaticProject } from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import Plugin, { PluginOpts } from '../plugins/Plugin';
-import PluginStore from '../pluginstore/PluginStore';
+import PluginStore, { StoreEntry } from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
 import Storage from '../storage/base/Storage';
 import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
@@ -174,13 +174,6 @@ export default class Scraper extends EventEmitter {
       }
     }
 
-    // register new external plugins if available
-    const externalPluginOpts = scrapeDef.pluginOpts.filter(pluginOpts => pluginOpts.path);
-
-    for (let i = 0; i < externalPluginOpts.length; i += 1) {
-      await PluginStore.addEntry(externalPluginOpts[i].path);
-    }
-
     project = new (<IStaticProject> this.storage.Project)({
       name: projectName,
       pluginOpts: pipelines[scrapeDef.pipeline]
@@ -261,7 +254,7 @@ export default class Scraper extends EventEmitter {
         if (!this.project) throw new Error('could not find project');
       }
 
-      this.project.plugins = this.project.initPlugins(!!this.browserClient);
+      this.project.plugins = await this.project.initPlugins(!!this.browserClient);
 
       this.logger.debug(this.project, 'Scraping project');
       this.emit(ScrapeEvent.ProjectSelected, this.project);
@@ -487,7 +480,13 @@ export default class Scraper extends EventEmitter {
 
     const pluginClsName = plugin.constructor.name;
     const pluginInstanceName = `inst${pluginClsName}`;
-    const pluginCode = PluginStore.get(pluginClsName).bundle;
+    const pluginStoreEntry:StoreEntry = PluginStore.get(pluginClsName);
+    if (!pluginStoreEntry) {
+      throw new Error(`Plugin ${pluginClsName} not registered`);
+    }
+    if (!pluginStoreEntry.bundle) {
+      throw new Error(`Bundle ${pluginClsName} not present`);
+    }
 
     this.logger.debug('injecting plugin in browser tab: %s', pluginClsName);
     const code = `
@@ -496,7 +495,7 @@ export default class Scraper extends EventEmitter {
          try {
            // instantiate plugin instance, one time only, multiple plugin invocations will retain the previous plugin state
            if (!window.${pluginInstanceName}) {
-             ${pluginCode}
+             ${pluginStoreEntry.bundle}
              window.${pluginInstanceName} = new ${pluginClsName}(${JSON.stringify(plugin.opts)})
            }
 
@@ -554,7 +553,7 @@ export default class Scraper extends EventEmitter {
       }
 
       // need to init the plugins as one of the plugins may contain info related to the exported columns
-      project.plugins = project.initPlugins(!!this.browserClient);
+      project.plugins = await project.initPlugins(!!this.browserClient);
 
       switch (opts.type) {
         case 'csv':

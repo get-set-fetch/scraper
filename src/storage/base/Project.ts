@@ -1,7 +1,7 @@
 import Entity, { IStaticEntity } from './Entity';
 import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
-import PluginStore from '../../pluginstore/PluginStore';
+import PluginStore, { StoreEntry } from '../../pluginstore/PluginStore';
 import { LogWrapper } from '../../logger/Logger';
 
 /** Groups resources sharing the same scrape configuration and discovered from the same initial URLs. */
@@ -28,9 +28,23 @@ export default abstract class Project extends Entity {
     }
   }
 
-  initPlugins(browserClientPresent:boolean):Plugin[] {
+  async initPlugins(browserClientPresent:boolean):Promise<Plugin[]> {
+    // register project external plugins if available
+    const externalPluginOpts = this.pluginOpts.filter(pluginOpts => pluginOpts.path);
+    for (let i = 0; i < externalPluginOpts.length; i += 1) {
+      if (!PluginStore.get(externalPluginOpts[i].name)) {
+        // eslint-disable-next-line no-await-in-loop
+        await PluginStore.addEntry(externalPluginOpts[i].path);
+      }
+    }
+
     const plugins = this.pluginOpts.map((pluginOpt:PluginOpts) => {
-      const PluginCls = PluginStore.get(pluginOpt.name).Cls;
+      const pluginStoreEntry:StoreEntry = PluginStore.get(pluginOpt.name);
+      if (!pluginStoreEntry) {
+        throw new Error(`Plugin ${pluginOpt.name} not registered`);
+      }
+
+      const PluginCls = pluginStoreEntry.Cls;
       if (!PluginCls) throw new Error(`missing class for plugin ${pluginOpt.name}`);
 
       return new PluginCls(pluginOpt);

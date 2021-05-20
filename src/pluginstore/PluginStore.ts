@@ -93,9 +93,6 @@ export default class PluginStore {
    * @param name - constructor name
    */
   static get(name: string):StoreEntry {
-    if (!PluginStore.store.has(name)) {
-      throw new Error(`Plugin ${name} not registered`);
-    }
     return PluginStore.store.get(name);
   }
 
