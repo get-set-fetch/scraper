@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 import Project, { IStaticProject } from '../../../src/storage/base/Project';
+import Resource from '../../../src/storage/base/Resource';
 import Storage from '../../../src/storage/base/Storage';
 
 export default function crudProject(storage: Storage) {
@@ -126,6 +127,19 @@ export default function crudProject(storage: Storage) {
       const actualProject = await Project.get(expectedProject.id);
 
       assert.isUndefined(actualProject);
+    });
+
+    it(`${storage.config.client} project saveResources`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+
+      const resources:Partial<Resource>[] = [];
+      for (let i = 0; i < 50; i += 1) {
+        resources.push({ url: `url${i}` });
+      }
+      await projectById.saveResources(resources);
+      const savedResources = await projectById.getResources();
+
+      assert.strictEqual(savedResources.length, 50);
     });
   });
 }
