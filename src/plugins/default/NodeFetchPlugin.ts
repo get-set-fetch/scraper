@@ -24,6 +24,10 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
             'Accept-Encoding': 'br,gzip,deflate',
           },
         },
+        rejectUnauthorized: {
+          type: 'boolean',
+          default: true,
+        },
       },
     } as const;
   }
@@ -71,6 +75,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         host: hostname,
         headers: reqHeaders,
         timeout: 10 * 1000,
+        rejectUnauthorized: this.opts.rejectUnauthorized,
         ...resource.proxy,
       };
       this.logger.debug(opts, 'Request Options');
