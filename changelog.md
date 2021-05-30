@@ -3,6 +3,9 @@
 ### Unreleased
 - Command Line
   - fixed a bug where absolute paths were treated as relative
+- Plugins
+  - NodeFetchPlugin: 
+    - new rejectUnauthorized option
 ### 0.5.0 - 2021-05-20
 - Command Line
   - external plugins can be specified in the config file via pluginOpts.path
