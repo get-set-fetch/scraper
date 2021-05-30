@@ -3,7 +3,7 @@
 /* eslint-disable no-case-declarations */
 /* eslint-disable no-console */
 import fs from 'fs';
-import { join, dirname, extname, parse } from 'path';
+import { join, dirname, extname, parse, isAbsolute } from 'path';
 import pino from 'pino';
 
 import { PlaywrightClient, PuppeteerClient, CheerioClient, JsdomClient, BrowserClient,
@@ -25,6 +25,10 @@ const defaultArgObj = {
 };
 
 type ArgObjType = typeof defaultArgObj;
+
+function getFullPath(relativeOrAbsolutePath:string):string {
+  return isAbsolute(relativeOrAbsolutePath) ? relativeOrAbsolutePath : join(process.cwd(), relativeOrAbsolutePath);
+}
 
 /**
  * Takes --arg1 val1 --arg2 process.argv array and creates a plain object {arg1: val1, arg2: val2}.
@@ -104,14 +108,20 @@ export function invokeLogger(argObj:ArgObjType) {
   const { logLevel, logDestination } = argObj;
 
   if (logLevel && (typeof logLevel) !== 'string') throw new Error('invalid loglevel value');
-  if (logDestination && (typeof logDestination) !== 'string') throw new Error('invalid logdestination value');
 
-  console.log(`setting up logger - level: ${logLevel || 'default'}, destination: ${logDestination || 'console'}`);
+  let fullLogPath:string;
+  if (logDestination) {
+    if (typeof logDestination !== 'string') throw new Error('invalid logdestination value');
+    fullLogPath = getFullPath(<string>logDestination);
+    if (!fs.existsSync(dirname(fullLogPath))) throw new Error(`log dirpath ${dirname(fullLogPath)} does not exist`);
+  }
+
+  console.log(`setting up logger - level: ${logLevel || 'default'}, destination: ${fullLogPath || 'console'}`);
   setLogger(
     {
       level: logLevel || 'warn',
     },
-    logDestination ? pino.destination(join(process.cwd(), <string>logDestination)) : null,
+    logDestination ? pino.destination(fullLogPath) : null,
   );
 }
 
@@ -163,7 +173,7 @@ export function invokeScraper(argObj:ArgObjType) {
   const { config, overwrite, discover } = argObj;
 
   if ((typeof config) !== 'string') throw new Error('invalid config path');
-  const fullConfigPath = join(process.cwd(), config);
+  const fullConfigPath = getFullPath(config);
   if (!fs.existsSync(fullConfigPath)) throw new Error(`config path ${fullConfigPath} does not exist`);
   console.log(`using scrape configuration file ${fullConfigPath}`);
 
@@ -207,7 +217,7 @@ export function invokeScraper(argObj:ArgObjType) {
   });
 
   if (argObj.export) {
-    const exportPath = join(process.cwd(), argObj.export);
+    const exportPath = getFullPath(argObj.export);
     if (!fs.existsSync(dirname(exportPath))) throw new Error(`export path ${dirname(exportPath)} does not exist`);
     console.log(`scraped data will be exported to ${exportPath}`);
 

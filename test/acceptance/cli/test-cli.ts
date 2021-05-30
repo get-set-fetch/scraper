@@ -63,7 +63,7 @@ describe('Command Line Interface', () => {
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel error',
       { cwd: join(__dirname, '../../../bin') },
-      (err, stdout, stderr) => {
+      (err, stdout) => {
         resolve(stdout);
       },
     ));
@@ -255,9 +255,9 @@ describe('Command Line Interface', () => {
     assert.sameOrderedMembers(expectedContent, csvContentB);
   });
 
-  it('new project with invalid resources path', async () => {
+  it('new project with invalid relative resources path', async () => {
     const { stderr } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-with-invalid-external-resources.json --loglevel info --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-invalid-external-resources.json',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout, stderr) => {
         resolve({ stdout, stderr });
@@ -265,6 +265,54 @@ describe('Command Line Interface', () => {
     ));
 
     assert.isTrue(/non-existent-resources\.csv does not exist/.test(stderr), '"non-existent-resources.csv does not exist" log entry not found');
+  });
+
+  it('new project with invalid relative config path', async () => {
+    const { stderr } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
+      './gsfscrape --config config.json',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
+      },
+    ));
+
+    assert.isTrue(/config\.json does not exist/.test(stderr), '"config.json does not exist" log entry not found');
+  });
+
+  it('new project with invalid absolute config path', async () => {
+    const { stderr } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
+      './gsfscrape --config /home/config.json',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
+      },
+    ));
+
+    assert.isTrue(/\/home\/config\.json does not exist/.test(stderr), '"home/config.json does not exist" log entry not found');
+  });
+
+  it('new project with invalid relative logdestination path', async () => {
+    const { stderr } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --logdestination dirA/scraper.log',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
+      },
+    ));
+
+    assert.isTrue(/dirA does not exist/.test(stderr), '"log dirpath does not exist" log entry not found');
+  });
+
+  it('new project with invalid absolute logdestination path', async () => {
+    const { stderr } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --logdestination /home/dirA/scraper.log',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
+      },
+    ));
+
+    assert.isTrue(/\/home\/dirA does not exist/.test(stderr), '"log dirpath does not exist" log entry not found');
   });
 
   it('new project with external resources --scrape --loglevel info --export', async () => {
