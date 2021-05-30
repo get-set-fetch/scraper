@@ -64,7 +64,6 @@ export default class UpsertResourcePlugin extends Plugin {
     /*
     do save when:
       dynamic resources are found and scraped on the fly starting from an already scraped static resource
-      impacted resources (redirect related) need to be recorded
     */
     else {
       await resource.save();

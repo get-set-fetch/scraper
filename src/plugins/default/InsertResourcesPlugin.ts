@@ -32,21 +32,33 @@ export default class InsertResourcesPlugin extends Plugin {
     if (!resource) return false;
 
     // only save new urls if there's something to save
-    const newResourcesPresent = resource.resourcesToAdd && resource.resourcesToAdd.length > 0;
-    if (!newResourcesPresent) return false;
-
-    return true;
+    return resource.resourcesToAdd && resource.resourcesToAdd.length > 0;
   }
 
   async apply(project: Project, resource: Resource) {
     const { resourcesToAdd } = resource;
 
-    let resourcesNotInStorage:Partial<Resource>[] = [];
+    /*
+    in case of browser redirect the resource initial url it's updated with the redirect location one
+    a resource with redirect status and initial url needs to be added so we don't keep visiting it
+    always save all redirect resources, regardless of opts.maxResources
+    */
+    const redirectResources:Partial<Resource>[] = resourcesToAdd
+      .filter(resource => resource.status)
+      .map(resource => ({ ...resource, scrapedAt: new Date(Date.now()) }));
+    if (redirectResources.length > 0) {
+      await project.saveResources(redirectResources);
+    }
 
-    for (let i = 0; i < resourcesToAdd.length; i += 1) {
-      const resourceInStorage = await project.getResource(resourcesToAdd[i].url);
+    // normal, newly discovered resources
+    const newResources = resourcesToAdd.filter(resource => !resource.status);
+
+    let newResourcesNotInStorage:Partial<Resource>[] = [];
+
+    for (let i = 0; i < newResources.length; i += 1) {
+      const resourceInStorage = await project.getResource(newResources[i].url);
       if (!resourceInStorage) {
-        resourcesNotInStorage.push(Object.assign(resourcesToAdd[i], { depth: resource.depth + 1 }));
+        newResourcesNotInStorage.push(Object.assign(newResources[i], { depth: resource.depth + 1 }));
       }
     }
 
@@ -56,13 +68,15 @@ export default class InsertResourcesPlugin extends Plugin {
       const maxResourcesToAdd = Math.max(0, this.opts.maxResources - resourceCount);
 
       if (maxResourcesToAdd === 0) {
-        resourcesNotInStorage = [];
+        newResourcesNotInStorage = [];
       }
       else {
-        resourcesNotInStorage = resourcesNotInStorage.slice(0, Math.min(maxResourcesToAdd, resourcesNotInStorage.length));
+        newResourcesNotInStorage = newResourcesNotInStorage.slice(0, Math.min(maxResourcesToAdd, newResourcesNotInStorage.length));
       }
     }
 
-    await project.saveResources(resourcesNotInStorage);
+    await project.saveResources(newResourcesNotInStorage);
+
+    return { resourcesToAdd: null };
   }
 }
