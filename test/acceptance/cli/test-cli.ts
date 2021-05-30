@@ -7,6 +7,7 @@ import Storage from '../../../src/storage/base/Storage';
 import { IStaticProject } from '../../../src/storage/base/Project';
 import KnexStorage from '../../../src/storage/knex/KnexStorage';
 import { pipelines, mergePluginOpts } from '../../../src/pipelines/pipelines';
+import { completionPercentage } from '../../../src/cli/cli';
 
 describe('Command Line Interface', () => {
   let srv: GsfServer;
@@ -45,6 +46,13 @@ describe('Command Line Interface', () => {
   after(async () => {
     await storage.close();
     srv.stop();
+  });
+
+  it('completionPercentage', async () => {
+    assert.strictEqual(completionPercentage(1, 1), 0);
+    assert.strictEqual(completionPercentage(4, 3), 25);
+    assert.strictEqual(completionPercentage(3, 2), 33.33);
+    assert.strictEqual(completionPercentage(1, 0), 100);
   });
 
   it('--version', async () => {

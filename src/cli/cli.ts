@@ -30,6 +30,10 @@ function getFullPath(relativeOrAbsolutePath:string):string {
   return isAbsolute(relativeOrAbsolutePath) ? relativeOrAbsolutePath : join(process.cwd(), relativeOrAbsolutePath);
 }
 
+export function completionPercentage(resourceNo: number, unscrapedResourceNo: number) {
+  return Math.floor(((resourceNo - unscrapedResourceNo) / resourceNo) * 10000) / 100;
+}
+
 /**
  * Takes --arg1 val1 --arg2 process.argv array and creates a plain object {arg1: val1, arg2: val2}.
  * @param args - process.argv
@@ -212,8 +216,8 @@ export function invokeScraper(argObj:ArgObjType) {
   scraper.addListener(ScrapeEvent.ResourceScraped, async (project:Project) => {
     const resourceNo = await project.countResources();
     const unscrapedResourceNo = await project.countUnscrapedResources();
-    const completionPercentage = Math.floor(((resourceNo - unscrapedResourceNo) / resourceNo) * 100);
-    console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${completionPercentage}%`);
+    const prct = completionPercentage(resourceNo, unscrapedResourceNo);
+    console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${prct}%`);
   });
 
   if (argObj.export) {
