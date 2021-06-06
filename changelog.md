@@ -4,6 +4,8 @@
 - Command Line
   - fixed a bug where absolute paths were treated as relative
   - new options: save, scrape, retry
+- Scraper
+  - gracefully shutdown on SIGTERM, SIGINT
 - Plugins
   - NodeFetchPlugin: 
     - new rejectUnauthorized option
