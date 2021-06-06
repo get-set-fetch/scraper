@@ -97,9 +97,9 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Project sitea.com scraping complete/.test(logContent), '"project scraping complete" log entry not found');
   });
 
-  it('new project --config --loglevel info --scrape', async () => {
+  it('new project --config --loglevel info --scrape --report 10', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape --report 10',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -364,9 +364,9 @@ describe('Command Line Interface', () => {
     assert.isTrue(/\/home\/dirA does not exist/.test(stderr), '"log dirpath does not exist" log entry not found');
   });
 
-  it('new project with external resources --scrape --loglevel info --export', async () => {
+  it('new project with external resources --scrape --report --loglevel info --export', async () => {
     const { stdout } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --loglevel info --scrape --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --loglevel info --scrape --report 10 --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout, stderr) => {
         resolve({ stdout, stderr });
@@ -384,7 +384,6 @@ describe('Command Line Interface', () => {
 
     // check scraping status
     assert.isTrue(/progress \(scraped \/ total resources\): 1 \/ 4 \| 25%/.test(stdout), '"Scrape progress ... 25%" log entry not found');
-    assert.isTrue(/progress \(scraped \/ total resources\): 4 \/ 4 \| 100%/.test(stdout), '"Scrape progress ... 100%" log entry not found');
 
     const csvContent:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export.csv')).toString('utf-8').split('\n');
 

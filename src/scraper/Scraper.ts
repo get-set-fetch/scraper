@@ -116,7 +116,6 @@ export default class Scraper extends EventEmitter {
    */
   gracefullStop(signal: NodeJS.Signals) {
     process.on(signal, () => {
-      console.log('signal !! ewcwived');
       this.logger.info(`${signal} signal received`);
 
       // in-between discovery retries, no scraping going on, can exit directly

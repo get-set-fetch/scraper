@@ -25,6 +25,7 @@ const defaultArgObj = {
   save: false,
   scrape: false,
   retry: null,
+  report: null,
 };
 
 type ArgObjType = typeof defaultArgObj;
@@ -177,7 +178,7 @@ function initDomClient(domOpts):BrowserClient|IDomClientConstructor {
 }
 
 export async function invokeScraper(argObj:ArgObjType) {
-  const { config, overwrite, discover, save, scrape, retry } = argObj;
+  const { config, overwrite, discover, save, scrape, retry, report } = argObj;
 
   if ((typeof config) !== 'string') throw new Error('invalid config path');
   const fullConfigPath = getFullPath(config);
@@ -217,12 +218,25 @@ export async function invokeScraper(argObj:ArgObjType) {
 
   const scraper = new Scraper(storage, domClient, scrapeOptions);
 
-  scraper.addListener(ScrapeEvent.ResourceScraped, async (project:Project) => {
-    const resourceNo = await project.countResources();
-    const unscrapedResourceNo = await project.countUnscrapedResources();
-    const prct = completionPercentage(resourceNo, unscrapedResourceNo);
-    console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${prct}%`);
-  });
+  // report progress to console every `report` seconds
+  if (report) {
+    const reportProgressFnc = async (project:Project) => {
+      const resourceNo = await project.countResources();
+      const unscrapedResourceNo = await project.countUnscrapedResources();
+      const prct = completionPercentage(resourceNo, unscrapedResourceNo);
+      console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${prct}%`);
+    };
+
+    let reportTimeout:NodeJS.Timeout;
+    scraper.once(ScrapeEvent.ResourceScraped, async (project:Project) => {
+      reportProgressFnc(project);
+      reportTimeout = setInterval(reportProgressFnc, 1000 * report, project);
+    });
+
+    scraper.on(ScrapeEvent.ProjectScraped, async () => {
+      clearInterval(reportTimeout);
+    });
+  }
 
   if (argObj.export) {
     const exportPath = getFullPath(argObj.export);
