@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { join } from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { GsfServer, ScrapingSuite } from '@get-set-fetch/test-utils';
 import Storage from '../../../src/storage/base/Storage';
 import { IStaticProject } from '../../../src/storage/base/Project';
@@ -48,13 +48,6 @@ describe('Command Line Interface', () => {
     srv.stop();
   });
 
-  it('completionPercentage', async () => {
-    assert.strictEqual(completionPercentage(1, 1), 0);
-    assert.strictEqual(completionPercentage(4, 3), 25);
-    assert.strictEqual(completionPercentage(3, 2), 33.33);
-    assert.strictEqual(completionPercentage(1, 0), 100);
-  });
-
   it('--version', async () => {
     const packageFile = fs.readFileSync(join(__dirname, '../../../package.json')).toString('utf-8');
     const { version } = JSON.parse(packageFile);
@@ -67,9 +60,9 @@ describe('Command Line Interface', () => {
     assert.strictEqual(stdout, `@get-set-fetch/scraper - v${version}`);
   });
 
-  it('--config --loglevel error', async () => {
+  it('new project --config --loglevel error --scrape', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel error',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel error --scrape',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -80,9 +73,9 @@ describe('Command Line Interface', () => {
     assert.isTrue(/using sqlite file/.test(lastLine), 'last stdout line should mention sqlite file');
   });
 
-  it('--config --loglevel info --logdestination', async () => {
+  it('new project --config --loglevel info --logdestination --scrape', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --logdestination ../test/tmp/scrape.log',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --logdestination ../test/tmp/scrape.log --scrape',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -104,9 +97,9 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Project sitea.com scraping complete/.test(logContent), '"project scraping complete" log entry not found');
   });
 
-  it('new project --config --loglevel info', async () => {
+  it('new project --config --loglevel info --scrape', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -126,7 +119,7 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Project sitea.com scraping complete/.test(stdout), '"project scraping complete" log entry not found');
   });
 
-  it('existing project --config --loglevel info --overwrite', async () => {
+  it('existing project --config --loglevel info --scrape --overwrite', async () => {
     const project = new Project({
       name: 'sitea.com',
       pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
@@ -135,7 +128,7 @@ describe('Command Line Interface', () => {
     await project.batchInsertResources(config.scrape.resources);
 
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --overwrite',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape --overwrite',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -145,7 +138,7 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Overwriting project sitea.com/.test(stdout), '"Overwriting project sitea.com" log entry not found');
   });
 
-  it('existing project --config --loglevel info --overwrite false', async () => {
+  it('existing project --config --loglevel info --scrape --overwrite false', async () => {
     const project = new Project({
       name: 'sitea.com',
       pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
@@ -155,7 +148,7 @@ describe('Command Line Interface', () => {
 
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -165,10 +158,9 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Existing project sitea.com will be used/.test(stdout), '"Existing project sitea.com will be used" log entry not found');
   });
 
-  it('new project --config --loglevel info --export', async () => {
-    // by default overwrite is false, just make sure --overwrite flag is not present
+  it('new project --config --loglevel info --scrape --export', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -188,10 +180,9 @@ describe('Command Line Interface', () => {
     );
   });
 
-  it('new project with custom plugin --config --loglevel debug --export', async () => {
-    // by default overwrite is false, just make sure --overwrite flag is not present
+  it('new project with custom plugin --config --loglevel debug --scrape --export', async () => {
     const stdout = await new Promise<string>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry-custom-plugin.json --loglevel info --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry-custom-plugin.json --loglevel info --scrape --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout) => {
         resolve(stdout);
@@ -212,7 +203,6 @@ describe('Command Line Interface', () => {
   });
 
   it('new project --config --loglevel info --export missing --exportType', async () => {
-    // by default overwrite is false, just make sure --overwrite flag is not present
     const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.txt',
       { cwd: join(__dirname, '../../../bin') },
@@ -223,6 +213,58 @@ describe('Command Line Interface', () => {
 
     assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
     assert.isTrue(/missing --exportType/.test(stderr), '"missing --exportType" log entry not found');
+  });
+
+  it('new project --save --discover --retry 1 --loglevel info | SIGTERM', async () => {
+    const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>(resolve => {
+      const childProcess = execFile(
+        './gsfscrape',
+        [
+          '--config', '../test/acceptance/cli/config/config-single-page-single-content-entry.json',
+          '--save', '--discover', '--retry', '1', '--loglevel', 'info',
+        ],
+        {
+          cwd: join(__dirname, '../../../bin'),
+        },
+        (err, stdout, stderr) => {
+          resolve({ stdout, stderr });
+        },
+      );
+
+      const debug = false;
+
+      if (debug) {
+        childProcess.stdout.on('data', data => {
+          console.log(`stdout:${data}`);
+        });
+
+        childProcess.stderr.on('data', data => {
+          console.log(`stderr:${data}`);
+        });
+      }
+
+      /*
+      keep cli in a discovery loop for ~1 min (mocha timeout is set at 55s, don't exceed that)
+      this way we may find memory leaks reflected in stderr
+      "MaxListenersExceededWarning: Possible EventEmitter memory leak detected" was found this way
+      */
+      setTimeout(() => {
+        childProcess.kill('SIGTERM');
+      }, 50 * 1000);
+    });
+
+    if (stderr) {
+      console.log(stderr);
+      throw new Error('error encountered during discover loop');
+    }
+
+    const discoverEntryCount = (stdout.match(/Discovering new project/g) || []).length;
+    assert.isTrue(discoverEntryCount > 45);
+
+    assert.isTrue(/index\.html successfully scraped/.test(stdout), '"index.html successfully scraped" log entry not found');
+    assert.isTrue(/Project sitea\.com scraping complete/.test(stdout), '"Project sitea.com scraping complete" log entry not found');
+    assert.isTrue(/SIGTERM signal received/.test(stdout), '"signal received" log entry not found');
+    assert.isTrue(/no in-progress scraping detected/.test(stdout), '"no in-progress scraping detected" log entry not found');
   });
 
   it('existing projects --discover --loglevel info --export', async () => {
@@ -240,7 +282,6 @@ describe('Command Line Interface', () => {
     await projectB.save();
     await projectB.batchInsertResources(config.scrape.resources);
 
-    // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --discover --loglevel info --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
@@ -325,7 +366,7 @@ describe('Command Line Interface', () => {
 
   it('new project with external resources --scrape --loglevel info --export', async () => {
     const { stdout } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
-      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --loglevel info --export ../test/tmp/export.csv',
+      './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --loglevel info --scrape --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
       (err, stdout, stderr) => {
         resolve({ stdout, stderr });
@@ -354,5 +395,24 @@ describe('Command Line Interface', () => {
     ];
 
     assert.sameOrderedMembers(expectedContent, csvContent);
+  });
+
+  it('new project --save --loglevel info', async () => {
+    const stdout = await new Promise<string>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --save --loglevel info',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout) => {
+        resolve(stdout);
+      },
+    ));
+
+    assert.isTrue(/New project sitea.com saved/.test(stdout), '"New project sitea.com saved" log entry not found');
+  });
+
+  it('completionPercentage', async () => {
+    assert.strictEqual(completionPercentage(1, 1), 0);
+    assert.strictEqual(completionPercentage(4, 3), 25);
+    assert.strictEqual(completionPercentage(3, 2), 33.33);
+    assert.strictEqual(completionPercentage(1, 0), 100);
   });
 });

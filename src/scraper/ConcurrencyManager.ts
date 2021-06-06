@@ -134,6 +134,9 @@ export default class ConcurrencyManager {
       domain: {},
       session: {},
     };
+
+    this.resourceScraped = this.resourceScraped.bind(this);
+    this.resourceError = this.resourceError.bind(this);
   }
 
   /**

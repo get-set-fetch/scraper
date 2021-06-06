@@ -22,6 +22,9 @@ const defaultArgObj = {
   export: null,
   exportType: null,
   discover: false,
+  save: false,
+  scrape: false,
+  retry: null,
 };
 
 type ArgObjType = typeof defaultArgObj;
@@ -173,8 +176,8 @@ function initDomClient(domOpts):BrowserClient|IDomClientConstructor {
   return domClient;
 }
 
-export function invokeScraper(argObj:ArgObjType) {
-  const { config, overwrite, discover } = argObj;
+export async function invokeScraper(argObj:ArgObjType) {
+  const { config, overwrite, discover, save, scrape, retry } = argObj;
 
   if ((typeof config) !== 'string') throw new Error('invalid config path');
   const fullConfigPath = getFullPath(config);
@@ -209,6 +212,7 @@ export function invokeScraper(argObj:ArgObjType) {
   const scrapeOptions:ScrapeOptions = {
     overwrite,
     discover,
+    retry,
   };
 
   const scraper = new Scraper(storage, domClient, scrapeOptions);
@@ -257,11 +261,16 @@ export function invokeScraper(argObj:ArgObjType) {
     console.error(err);
   });
 
-  if (discover) {
-    scraper.discover(concurrencyOpts, processOpts);
+  if (save) {
+    await scraper.save(scrapeConfig);
   }
-  else {
+
+  // scrape and discover options are mutually exclusive
+  if (scrape) {
     scraper.scrape(scrapeConfig, concurrencyOpts, processOpts);
+  }
+  else if (discover) {
+    scraper.discover(concurrencyOpts, processOpts);
   }
 }
 

@@ -3,6 +3,7 @@
 ### Unreleased
 - Command Line
   - fixed a bug where absolute paths were treated as relative
+  - new options: save, scrape, retry
 - Plugins
   - NodeFetchPlugin: 
     - new rejectUnauthorized option
