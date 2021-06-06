@@ -141,5 +141,19 @@ export default function crudProject(storage: Storage) {
 
       assert.strictEqual(savedResources.length, 50);
     });
+
+    it(`${storage.config.client} project countResources - exact count`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+
+      const resources:Partial<Resource>[] = [];
+      for (let i = 0; i < 50; i += 1) {
+        resources.push({ projectId: expectedProject.id, url: `url${i}` });
+      }
+      await projectById.saveResources(resources);
+
+      const resourceNo = await projectById.countResources();
+
+      assert.strictEqual(resourceNo, 50);
+    });
   });
 }

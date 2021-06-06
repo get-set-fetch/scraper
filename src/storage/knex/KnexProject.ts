@@ -3,6 +3,7 @@
 import { createReadStream } from 'fs';
 import { pipeline, Writable } from 'stream';
 
+import { Knex } from 'knex';
 import Resource, { ResourceQuery } from '../base/Resource';
 import Project from '../base/Project';
 import KnexStorage from './KnexStorage';
@@ -33,6 +34,27 @@ export default class KnexProject extends Project {
         this.storage.jsonCol(builder, 'pluginOpts');
       },
     );
+
+    // https://www.postgresql.org/message-id/20050810133157.GA46247@winnie.fuhr.org
+    // https://www.citusdata.com/blog/2016/10/12/count-performance/
+    if (this.storage.client === 'pg') {
+      await this.storage.knex.raw(`
+        CREATE FUNCTION count_estimate(query text) RETURNS integer AS $$
+        DECLARE
+            rec   record;
+            rows  integer;
+        BEGIN
+            FOR rec IN EXECUTE 'EXPLAIN ' || query LOOP
+                rows := substring(rec."QUERY PLAN" FROM ' rows=([[:digit:]]+)');
+                EXIT WHEN rows IS NOT NULL;
+            END LOOP;
+        
+        
+            RETURN rows;
+        END;
+        $$ LANGUAGE plpgsql VOLATILE STRICT;
+      `);
+    }
   }
 
   static async get(nameOrId: number | string):Promise<Project> {
@@ -62,8 +84,26 @@ export default class KnexProject extends Project {
     return (<typeof KnexProject> this.constructor);
   }
 
-  async countResources():Promise<number> {
-    const [ result ] = await this.Constructor.storage.Resource.builder.where('projectId', this.id).count('id', { as: 'count' });
+  /**
+   * Uses count(*) for exact counting. Just for postgresql uses ANALYZE output for count estimation.
+   * Estimation is orders of magnitude faster than exact count.
+   * @param estimate - whether to make an estimation or an exact count
+   * @returns
+   */
+  async countResources(estimate?:boolean):Promise<number> {
+    const { knex } = this.Constructor.storage;
+
+    let selectCount:Knex.QueryBuilder;
+
+    if (estimate && this.Constructor.storage.client === 'pg') {
+      selectCount = (await knex.raw(`SELECT count_estimate('SELECT 1 FROM resources WHERE "projectId" = ${this.id}') as "count"`)).rows;
+    }
+    else {
+      // regular table storage scan
+      selectCount = this.Constructor.storage.Resource.builder.where('projectId', this.id).count('*', { as: 'count' });
+    }
+
+    const [ result ] = await selectCount;
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
   }
 
