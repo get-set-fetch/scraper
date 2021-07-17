@@ -307,7 +307,7 @@ export function invoke(argv: string[]) {
   }
 }
 
-export default function cli(args) {
+function cli(args) {
   try {
     invoke(args);
   }
@@ -315,3 +315,5 @@ export default function cli(args) {
     console.error(err.toString());
   }
 }
+
+cli(process.argv);

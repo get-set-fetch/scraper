@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "target": "es2020",
+    "strict": false,
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "allowJs": true,
+    "rootDir": "src",
+    "outDir": "dist/cjs",
+    "declaration": true,
+    "newLine": "LF",
+    "preserveConstEnums": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src"
+  ]
+}
