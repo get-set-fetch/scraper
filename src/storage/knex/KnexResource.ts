@@ -35,6 +35,14 @@ export default class KnexResource extends Resource {
         this.storage.binaryCol(builder, 'data');
       },
     );
+
+    /*
+    pg optimizations
+    1. create index for getResourceToScrape:
+    */
+    if (storage.client === 'pg') {
+      await storage.knex.raw('CREATE INDEX resources_toscrape_idx ON resources ("projectId") WHERE ("scrapeInProgress" = false) AND ("scrapedAt" IS NULL);');
+    }
   }
 
   static async get(resourceId:number):Promise<Resource> {
@@ -87,22 +95,53 @@ export default class KnexResource extends Resource {
     return this.builder.del();
   }
 
-  // find a resource to scrape and set its scrapeInProgress flag
+  /**
+   * Find a resource to scrape and set its scrapeInProgress flag
+   * @param projectId - which project to extract the resource from
+   * @returns - null if no to-be-scraped resource has been found
+   */
   static async getResourceToScrape(projectId:number):Promise<Resource> {
     let resource:Resource = null;
 
+    // pg optimization
+    if (this.storage.client === 'pg') {
+      const query = this.storage.knex.raw(
+        `
+          update "resources" set "scrapeInProgress" = true
+          where "id" = (
+            select "id" from "resources" 
+            where "projectId" = ? and "scrapeInProgress" = false and "scrapedAt" is null 
+            limit 1 
+            for update skip locked
+          )
+          returning "id", "url", "depth";
+        `,
+        projectId,
+      );
+
+      const result = await query;
+
+      if (result.rows && result.rows.length === 1) {
+        const [ rawResource ] = await result.rows;
+        return new this.storage.Resource({ ...rawResource, projectId, scrapeInProgress: true, scrapedAt: null });
+      }
+
+      return null;
+    }
+
+    // generic approach
     await this.storage.knex.transaction(async trx => {
-      // block SELECT FOR UPDATE execution of other concurrent transactions till the current one issues a COMMIT
       const rawResource = await this.builder
-        .transacting(trx).forUpdate()
-        // try to find a resource matching {projectId, scrapeInProgress : false, scrapedAt: undefined}
+        .transacting(trx)
         .where({ projectId, scrapeInProgress: false, scrapedAt: null })
-        .first();
+        .first()
+        .forUpdate();
 
       if (rawResource) {
+        await this.builder.transacting(trx).where('id', rawResource.id).update('scrapeInProgress', true);
+        await trx.commit();
         resource = new this.storage.Resource(rawResource);
         resource.scrapeInProgress = true;
-        await this.builder.transacting(trx).where('id', resource.id).update('scrapeInProgress', true);
       }
     });
 

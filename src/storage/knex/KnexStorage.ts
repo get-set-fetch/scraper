@@ -135,4 +135,11 @@ export default class KnexStorage extends Storage {
       builder.string(colName);
     }
   }
+
+  btreeIdx(builder:Knex.CreateTableBuilder, colName: string) {
+    // knex supports btrees only postgresql/mysql
+    if (this.client === 'pg' || this.client === 'mysql') {
+      builder.index(colName, undefined, 'btree');
+    }
+  }
 }

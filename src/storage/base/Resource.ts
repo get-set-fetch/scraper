@@ -75,6 +75,9 @@ export default abstract class Resource extends Entity {
     return [ 'id', 'projectId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'status', 'contentType', 'content', 'data', 'parent' ];
   }
 
+  /**
+   * Only serialize some properties when invoking plugins in DOM with a Resource argument
+   */
   toExecJSON() {
     const jsonObj = { ...this.toJSON() };
 

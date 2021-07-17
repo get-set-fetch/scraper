@@ -29,7 +29,7 @@ export default class KnexProject extends Project {
       'projects',
       builder => {
         builder.increments('id').primary();
-        builder.string('name');
+        builder.string('name').unique();
 
         this.storage.jsonCol(builder, 'pluginOpts');
       },
@@ -85,6 +85,7 @@ export default class KnexProject extends Project {
   }
 
   /**
+   * Number of total resources linked to current project.
    * Uses count(*) for exact counting. Just for postgresql uses ANALYZE output for count estimation.
    * Estimation is orders of magnitude faster than exact count.
    * @param estimate - whether to make an estimation or an exact count
@@ -107,10 +108,29 @@ export default class KnexProject extends Project {
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
   }
 
-  async countUnscrapedResources():Promise<number> {
-    const [ result ] = await this.Constructor.storage.Resource.builder.where(
-      { projectId: this.id, scrapedAt: null, scrapeInProgress: false },
-    ).count('id', { as: 'count' });
+  /**
+   * Number of unscraped resources linked to current project.
+   * Uses count(*) for exact counting. Just for postgresql uses ANALYZE output for count estimation.
+   * Estimation is orders of magnitude faster than exact count.
+   * @param estimate - whether to make an estimation or an exact count
+   * @returns
+   */
+  async countUnscrapedResources(estimate?:boolean):Promise<number> {
+    const { knex } = this.Constructor.storage;
+
+    let selectCount:Knex.QueryBuilder;
+
+    if (estimate && this.Constructor.storage.client === 'pg') {
+      selectCount = (await knex.raw(`SELECT count_estimate('SELECT 1 FROM resources WHERE "projectId" = ${this.id} AND "scrapedAt" = NULL AND "scrapeInProgress" = false') as "count"`)).rows;
+    }
+    else {
+      // regular table storage scan
+      selectCount = this.Constructor.storage.Resource.builder.where(
+        { projectId: this.id, scrapedAt: null, scrapeInProgress: false },
+      ).count('id', { as: 'count' });
+    }
+
+    const [ result ] = await selectCount;
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
   }
 

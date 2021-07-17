@@ -58,9 +58,19 @@ export default abstract class Project extends Entity {
     return plugins;
   }
 
-  abstract countResources():Promise<number>;
+  /**
+   * Number of total resources linked to current project.
+   * @param estimate - whether to make an estimation or an exact count
+   * @returns
+   */
+  abstract countResources(estimate?:boolean):Promise<number>;
 
-  abstract countUnscrapedResources():Promise<number>;
+  /**
+   * Number of unscraped resources linked to current project.
+   * @param estimate - whether to make an estimation or an exact count
+   * @returns
+   */
+  abstract countUnscrapedResources(estimate?:boolean):Promise<number>;
 
   abstract getResourceToScrape():Promise<Resource>;
 
@@ -82,10 +92,16 @@ export default abstract class Project extends Entity {
     return [ 'id', 'name', 'pluginOpts' ];
   }
 
+  /**
+   * Only serialize some properties when invoking plugins in DOM with a Project argument
+   */
   async toExecJSON() {
-    const jsonObj = this.toJSON();
-    const resourceCount = await this.countResources();
-    return { ...jsonObj, resourceCount };
+    const jsonObj = { ...this.toJSON() };
+
+    // plugins running in DOM don't need the project pluginOpts
+    delete jsonObj.pluginOpts;
+
+    return jsonObj;
   }
 }
 
