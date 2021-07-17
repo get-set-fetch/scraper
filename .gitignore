@@ -116,3 +116,6 @@ examples/data
 # test tmp dir
 test/tmp
 !test/tmp/*.gitignore
+
+# vscode settings
+.vscode
