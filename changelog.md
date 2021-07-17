@@ -3,12 +3,14 @@
 ### Unreleased
 - Command Line
   - fixed a bug where absolute paths were treated as relative
-  - new options: save, scrape, retry
+  - new options: save, scrape, retry, report
 - Scraper
   - gracefully shutdown on SIGTERM, SIGINT
 - Plugins
   - NodeFetchPlugin: 
     - new rejectUnauthorized option
+- Storage
+  - Postgresql performance improvements
 ### 0.5.0 - 2021-05-20
 - Command Line
   - external plugins can be specified in the config file via pluginOpts.path
