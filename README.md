@@ -825,9 +825,13 @@ Cli usage covers two main use cases: (create and scrape a new project)[create-an
 | loglevel | warn | log level |
 | logdestination | console | log filepath |
 | config | - | config filepath. Examples: [new project](./test/acceptance/cli/static-single-page-single-content-entry.json), [new project with external resources from csv file using resourcePath](./test/acceptance/cli/static-with-external-resources.json) |
-| overwrite | false | When creating a new project, whether or not to overwrite an already existing one with the same name
-| discover | false | Sequentially scrape existing projects until there are no more resources to be scraped
+| save | false | Save the project defined in the config file 
+| overwrite | false | When creating a new project, whether or not to overwrite an already existing one with the same name.
+| scrape | false | Scrape the project defined in the config file. Attempt to save it first.
+| discover | false | Sequentially scrape existing projects until there are no more resources to be scraped.
+| retry | - | Coupled with discover option. If set, don't exit after the discovery process completes. Reinitiate project discovery after the specified number of seconds.
 | export | - | Export resources as zip or csv after scraping completes using the specified filepath. If in discovery mode each project will be exported in a separate file containing the project name.
+| report | - | Display scrape progress every `report` seconds.
 
 When you only need the cli, install the package and its peer dependencies globally.
 ```bash
@@ -835,14 +839,27 @@ npm install -g @get-set-fetch/scraper knex sqlite3 cheerio
 ```
 The above uses knex with sqlite3 for storage, cheerio as a dom client.
 
+
+```bash
+# Create a new project
+gsfscrape --config scrape-config.json --save --loglevel info --logdestination scrape.log --overwrite --export project.csv
+```
+
 ```bash
 # Create and scrape a new project
-gsfscrape --config scrape-config.json --loglevel info --logdestination scrape.log --overwrite --export project.csv
+gsfscrape --config scrape-config.json --scrape --loglevel info --logdestination scrape.log --overwrite --export project.csv
 ```
 
 ```bash
 # Scrape existing projects
+# Exit when there are no more resources to scrape
 gsfscrape --config scrape-config.json --discover --loglevel info --logdestination scrape.log --export project.csv
+```
+
+```bash
+# Scrape existing projects
+# After there are no more resources to scrape, retry every 60 seconds
+gsfscrape --config scrape-config.json --discover --retry 60 --loglevel info --logdestination scrape.log
 ```
 
 ### Configuration File
