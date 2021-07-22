@@ -1,0 +1,48 @@
+{
+  "storage": {
+    "client": "pg",
+    "useNullAsDefault": true,
+    "connection": {
+      "host": "pg",
+      "port": "5432",
+      "user": "gsf-user",
+      "password": "gsf-pswd",
+      "database": "gsf-db"
+    },
+    "debug": false
+  },
+  "dom": {
+    "client": "puppeteer"
+  },
+  "scrape": {
+    "name": "myProj",
+    "pipeline": "browser-static-content",
+    "pluginOpts": [
+      {
+        "name": "BrowserFetchPlugin"
+      },
+      {
+        "name": "ExtractHtmlContentPlugin",
+        "selectorPairs": [
+          {
+            "contentSelector": "h1",
+            "label": "main title"
+          }
+        ]
+      },
+      {
+        "name": "InsertResourcesPlugin",
+        "maxResources": 2
+      },
+      {
+        "name": "UpsertResourcePlugin",
+        "keepHtmlData": true
+      }
+    ],
+    "resources": [
+      {
+        "url": "https://en.wikipedia.org/wiki/Web_scraping"
+      }
+    ]
+  }
+}
