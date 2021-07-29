@@ -21,7 +21,6 @@
   },
   "module": "dist/esm/index.js",
   "scripts": {
-    "patch": "patch-package",
     "link:gsf": "npm link ../test-utils",
     "lint": "eslint src/**/*.ts",
     "test:unit:single": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --grep \"ConfigHash\" --exclude test/unit/storage/**/*",
@@ -49,7 +48,6 @@
     "@types/cheerio": "^0.22.23",
     "@types/jsdom": "^16.2.6",
     "@types/json-schema": "^7.0.6",
-    "@types/jszip": "^3.4.1",
     "@types/mocha": "^8.0.3",
     "@types/node": "^14.14.25",
     "@types/pako": "^1.0.1",
@@ -74,7 +72,7 @@
     "ts-node": "^9.1.1"
   },
   "peerDependencies": {
-    "cheerio": "1.0.0-rc.5",
+    "cheerio": "1.0.0-rc.10",
     "jsdom": ">= 16.4.0",
     "knex": ">= 0.95",
     "sqlite3": ">= 5.0",
@@ -89,9 +87,8 @@
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.0.1",
     "@rollup/plugin-typescript": "^8.1.0",
-    "jszip": "https://github.com/Stuk/jszip#3db5fdc",
+    "jszip": "^3.7.0",
     "pako": "^2.0.2",
-    "patch-package": "^6.2.2",
     "pino": "^6.8.0",
     "rollup": "^2.33.2",
     "tslib": "^2.0.1",
