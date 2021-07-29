@@ -16,9 +16,11 @@ var BaseJs = {
   BaseJsB: BaseJsB$1
 };
 
+var require$$0 = BaseJs;
+
 /* eslint-disable */
 
-const { BaseJsB } = BaseJs;
+const { BaseJsB } = require$$0;
 
 class ExtendedDomRead extends BaseJsB {
   opts = {

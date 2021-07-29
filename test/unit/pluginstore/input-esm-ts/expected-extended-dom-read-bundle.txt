@@ -8,12 +8,9 @@ class BaseTsB {
 }
 
 class ExtendedDomRead extends BaseTsB {
-    constructor() {
-        super(...arguments);
-        this.opts = {
-            domRead: true,
-        };
-    }
+    opts = {
+        domRead: true,
+    };
     sum(a, b) {
         return this.tsb(a, b);
     }
