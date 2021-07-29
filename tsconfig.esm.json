@@ -12,7 +12,8 @@
     "outDir": "dist/esm",
     "declaration": true,
     "newLine": "LF",
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "useDefineForClassFields": false
   },
   
   "include": [

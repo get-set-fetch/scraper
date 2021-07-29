@@ -11,7 +11,8 @@
     "outDir": "dist/cjs",
     "declaration": true,
     "newLine": "LF",
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "useDefineForClassFields": false
   },
   "include": [
     "src"

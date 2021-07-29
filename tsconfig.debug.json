@@ -12,7 +12,8 @@
     "declaration": true,
     "newLine": "LF",
     "preserveConstEnums": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "useDefineForClassFields": true
   },
   "include": [
     "src"

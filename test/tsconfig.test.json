@@ -8,6 +8,7 @@
       "module": "commonjs",
       "allowJs": true,
       "newLine": "LF",
+      "useDefineForClassFields": false
   },
   "include": [
     "../test"
