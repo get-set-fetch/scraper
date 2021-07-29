@@ -135,6 +135,7 @@ export default class PluginStore {
           module: 'es6',
           tsconfig: false,
           sourceMap: false,
+          useDefineForClassFields: false,
         }),
         commonjs({
           extensions: [ '.js', '.ts' ],
