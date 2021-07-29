@@ -26,9 +26,12 @@ class BaseTsB {
 }
 
 class ExtendedDomRead extends BaseJs.BaseJsB {
-    opts = {
-        domRead: true,
-    };
+    constructor() {
+        super(...arguments);
+        this.opts = {
+            domRead: true,
+        };
+    }
     sum(a, b) {
         console.log(BaseTsB);
         return this.jsb(a, b);
