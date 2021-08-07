@@ -65,33 +65,33 @@ jobs:
             storage: sqlite3
             storage_label: sqlite
             concurrency: parallel
-            client_deps: cheerio
-            storage_deps: knex sqlite3
+            client_deps: cheerio@1.0.0-rc.10
+            storage_deps: knex@0.95.8 sqlite3@5.0.2
           - client: jsdom
             storage: sqlite3
             storage_label: sqlite
             concurrency: parallel
-            client_deps: jsdom
-            storage_deps: knex sqlite3
+            client_deps: jsdom@16.6.0
+            storage_deps: knex@0.95.8 sqlite3@5.0.2
           - client: cheerio
-            client_deps: cheerio
+            client_deps: cheerio@1.0.0-rc.10
           - client: jsdom
-            client_deps: jsdom
+            client_deps: jsdom@16.6.0
           - client: puppeteer_chromium
-            client_deps: puppeteer
+            client_deps: puppeteer@10.1.0
           - client: playwright_chromium
-            client_deps: playwright-core playwright-chromium
+            client_deps: playwright-core@1.13.1 playwright-chromium@1.13.1
           - storage: sqlite3
             storage_label: sqlite
-            storage_deps: knex sqlite3
+            storage_deps: knex@0.95.8 sqlite3@5.0.2
             docker_file: 
           - storage: mysql
             storage_label: mysql
-            storage_deps: knex mysql
+            storage_deps: knex@0.95.8 mysql@2.18.1
             docker_file: ./test/config/storage/mysql/mysql.yml
           - storage: pg
             storage_label: postgresql
-            storage_deps: knex pg
+            storage_deps: knex@0.95.8 pg@8.7.1
             docker_file: ./test/config/storage/pg/pg.yml
 
     steps:
@@ -177,7 +177,7 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies so that the project can be built
-      run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
+      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@0.95.8 sqlite3@5.0.2 mysql@2.18.1 pg@8.7.1
 
     - name: Build project as cli uses dist files
       run: npm run build
