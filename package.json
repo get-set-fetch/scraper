@@ -29,6 +29,7 @@
     "test:unit:sqlite:single": "mocha --config test/.mocharc.js \"test/unit/storage/sqlite3-unit-suite.ts\" --grep \".+getResourceToScrape\"",
     "test:unit:pg": "mocha --config test/.mocharc.js \"test/unit/storage/pg-unit-suite.ts\" --grep \"BLA\"",
     "test:cli": "mocha --config test/.mocharc.js \"test/acceptance/cli/test-cli.ts\"",
+    "test:docker": "mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"",
     "test:cheerio": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3 - concurrency: parallel'",
     "test:cheerio:single": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3.+parallel.+200.+Html'",
     "test:puppeteer": "mocha --config test/.mocharc.js \"test/acceptance/puppeteer_chromium.ts\" --grep 'sqlite3 - concurrency: sequential'",

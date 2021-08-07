@@ -1,0 +1,46 @@
+{
+  "storage": {
+    "client": "sqlite3",
+    "useNullAsDefault": true,
+    "connection": {
+      "filename": "gsf.sqlite"
+    },
+    "debug": false
+  },
+  "dom": {
+    "client": "cheerio"
+  },
+  "scrape": {
+    "name": "myProj",
+    "pipeline": "dom-static-content",
+    "pluginOpts": [
+      {
+        "name": "NodeFetchPlugin",
+        "headers": {
+          "Accept-Encoding": "identity"
+        }
+      },
+      {
+        "name": "ExtractHtmlContentPlugin",
+        "selectorPairs": [
+          {
+            "contentSelector": "h1"
+          }
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://sitea.com/index.html"
+      }
+    ]
+  },
+  "concurrency": {
+    "proxyPool": [
+      {
+        "host": "host.docker.internal",
+        "port": 8080
+      }
+    ]
+  }
+}
