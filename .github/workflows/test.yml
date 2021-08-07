@@ -34,7 +34,7 @@ jobs:
     - name: Install peer dependencies (to be cached by the remaining jobs)
       # in order to lint all files peerDependencies must be installed
       # if: steps.cache.outputs.cache-hit != 'true'
-      run: npm install cheerio jsdom puppeteer playwright-core playwright-chromium knex sqlite3 mysql pg
+      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@0.95.8 sqlite3@5.0.2 mysql@2.18.1 pg@8.7.1
 
     - name: Lint check
       run: npm run lint
@@ -187,6 +187,33 @@ jobs:
 
     - name: cli tests
       run: npx nyc mocha --config test/.mocharc.js \"test/acceptance/cli/test-cli.ts\"
+
+  docker:
+    name: docker tests
+    runs-on: ubuntu-18.04
+    needs: acceptance
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Cache node modules
+      uses: actions/cache@v2
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        # can't cache based on package-lock.json as it doesn't contain the peerDependencies we want to cache
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+
+    - name: Setup node 12
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Docker tests
+      run: mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
 
   coverage:
     name: coverage
