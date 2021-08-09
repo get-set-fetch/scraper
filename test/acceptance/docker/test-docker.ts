@@ -43,7 +43,7 @@ describe('Docker', () => {
   it('--build-arg DOM_CLIENT=cheerio --build-arg STORAGE=sqlite --build-arg VERSION=source', async () => {
     // build image
     const dockerBuildStdout = await new Promise<string>(resolve => exec(
-      'docker buildx build --progress=plain --output type=image -t getsetfetch . --build-arg DOM_CLIENT=cheerio --build-arg STORAGE=sqlite --build-arg VERSION=source',
+      'docker buildx build --progress=plain --output type=image --tag getsetfetch . --build-arg DOM_CLIENT=cheerio --build-arg STORAGE=sqlite --build-arg VERSION=source',
       { cwd: join(__dirname, '../../../docker') },
       (err, stdout, stderr) => {
         console.log(err);
@@ -54,7 +54,7 @@ describe('Docker', () => {
     ));
 
     // check image was succesfully built
-    assert.isTrue(/naming to docker.io\/library\/getsetfetch/.test(dockerBuildStdout), '"naming to docker.io/library/getsetfetch" docker build entry not found');
+    assert.isTrue(/exporting to image/.test(dockerBuildStdout), '"exporting to image" docker build entry not found');
 
     // create full config file
     const config = JSON.parse(fs.readFileSync(join(__dirname, 'config', 'base-config.json')).toString('utf-8'));
