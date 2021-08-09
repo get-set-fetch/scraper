@@ -43,7 +43,7 @@ describe('Docker', () => {
   it('--build-arg DOM_CLIENT=cheerio --build-arg STORAGE=sqlite --build-arg VERSION=source', async () => {
     // build image
     const dockerBuildStdout = await new Promise<string>(resolve => exec(
-      'docker buildx build --progress=plain --load -t getsetfetch . --build-arg DOM_CLIENT=cheerio --build-arg STORAGE=sqlite --build-arg VERSION=source',
+      'docker buildx build --progress=plain --output type=image -t getsetfetch . --build-arg DOM_CLIENT=cheerio --build-arg STORAGE=sqlite --build-arg VERSION=source',
       { cwd: join(__dirname, '../../../docker') },
       (err, stdout, stderr) => {
         console.log(err);
