@@ -12,11 +12,11 @@ RUN apk add --no-cache nodejs npm git
 # install chromium (91.0.4472.164-r0) package, https://pkgs.alpinelinux.org/packages?name=chromium&branch=v3.14
 # puppeteer v9.1.1 works with this chromium version, https://github.com/puppeteer/puppeteer/releases
 RUN if [ "$BROWSER_CLIENT" = "puppeteer" ] ; then apk add --no-cache \
-      chromium \
-      nss \
-      freetype \
-      harfbuzz \
-      ca-certificates \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
     ttf-freefont; fi
 
 # puppeteer env variables
@@ -67,7 +67,3 @@ ENTRYPOINT ["/home/gsfuser/scraper/bin/gsfscrape"]
 
 # default arguments
 CMD [ "--version" ]
-
-# Build @get-set-fetch/scraper
-RUN npm install \
-    && npm run build
