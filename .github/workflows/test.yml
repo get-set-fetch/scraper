@@ -9,6 +9,7 @@ on:
 jobs:
   unit:
     name: unit tests
+    if: false # temporary skip job
     runs-on: ubuntu-18.04
 
     steps:
@@ -50,6 +51,7 @@ jobs:
         parallel: true
 
   acceptance:
+    if: false # temporary skip job
     name: ${{ matrix.client }} - ${{ matrix.storage_label }} - ${{ matrix.concurrency }}
     runs-on: ubuntu-18.04
     needs: unit
@@ -154,6 +156,7 @@ jobs:
    
   cli:
     name: cli tests
+    if: false # temporary skip job
     runs-on: ubuntu-18.04
     needs: unit
 
@@ -224,6 +227,7 @@ jobs:
 
   coverage:
     name: coverage
+    if: false # temporary skip job
     runs-on: ubuntu-18.04
     needs: [cli, acceptance]
     
