@@ -1,5 +1,10 @@
 FROM alpine:3.14
 
+# 1000 is the first UID assigned to a non root user (debian, ubuntu)
+# this can mitigate permissions issues when mapping volumes between host and container
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
 ARG STORAGE
 ARG BROWSER_CLIENT
 ARG DOM_CLIENT
@@ -25,19 +30,20 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # add user so we don't need --no-sandbox, https://developers.google.com/web/tools/puppeteer/troubleshooting#running-on-alpine
-RUN addgroup -S gsfuser && adduser -S -g gsfuser gsfuser \
-    && mkdir -p /home/gsfuser/Downloads /home/gsfuser/scraper /app \
-    && chown -R gsfuser:gsfuser /home/gsfuser \
-    && chown -R gsfuser:gsfuser /app
+# match uid, gid coming from the host user
+RUN addgroup --system --gid $GROUP_ID gsfuser
+RUN adduser --system --uid $USER_ID --ingroup gsfuser gsfuser
 
 # run everything after as non-privileged user
 USER gsfuser
+
+RUN mkdir -p /home/gsfuser/Downloads /home/gsfuser/scraper
 
 # install and build get-set-fetch/scraper from github sources
 RUN if [ "$VERSION" = "source" ] ; then \
     git clone https://github.com/get-set-fetch/scraper.git /home/gsfuser/scraper \
     && cd /home/gsfuser/scraper \
-    && npm install \
+    && npm ci \
     && npm run build; fi
 
 WORKDIR /home/gsfuser/scraper
