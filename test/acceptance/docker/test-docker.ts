@@ -63,7 +63,6 @@ describe('Docker', () => {
       '--progress=plain',
       '--output=type=docker',
       `--tag ${DOCKER_IMG_NAME}`,
-      '--build-arg DOM_CLIENT=cheerio',
       `--build-arg STORAGE=${storage}`,
       `--build-arg VERSION=${version}`,
 
