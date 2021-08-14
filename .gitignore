@@ -119,3 +119,6 @@ test/tmp
 
 # vscode settings
 .vscode
+
+# act workflows
+workflow

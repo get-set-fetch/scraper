@@ -8,6 +8,7 @@ on:
 
 jobs:
   audit:
+    if: ${{ !github.event.act }}
     runs-on: ubuntu-18.04
 
     steps:
