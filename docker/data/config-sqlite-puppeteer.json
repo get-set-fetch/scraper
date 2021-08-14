@@ -1,0 +1,42 @@
+{
+  "storage": {
+    "client": "sqlite3",
+    "useNullAsDefault": true,
+    "connection": {
+      "filename": "gsf.sqlite"
+    },
+    "debug": false
+  },
+  "dom": {
+    "client": "puppeteer",
+    "ignoreHTTPSErrors": true,
+    "args": [
+      "--ignore-certificate-errors",
+      "--no-first-run",
+      "--single-process"
+    ]
+  },
+  "scrape": {
+    "name": "myProj",
+    "pipeline": "browser-static-content",
+    "pluginOpts": [
+      {
+        "name": "ExtractHtmlContentPlugin",
+        "selectorPairs": [
+          {
+            "contentSelector": "h3"
+          }
+        ]
+      },
+	  {
+        "name": "InsertResourcesPlugin",
+        "maxResources": 1
+      }
+    ],
+    "resources": [
+      {
+        "url": "https://getsetfetch.org/index.html"
+      }
+    ]
+  }
+}

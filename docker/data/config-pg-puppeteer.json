@@ -19,20 +19,17 @@
     "pipeline": "browser-static-content",
     "pluginOpts": [
       {
-        "name": "BrowserFetchPlugin"
-      },
-      {
         "name": "ExtractHtmlContentPlugin",
         "selectorPairs": [
           {
-            "contentSelector": "h1",
-            "label": "main title"
+            "contentSelector": "h3",
+            "label": "headline"
           }
         ]
       },
       {
         "name": "InsertResourcesPlugin",
-        "maxResources": 2
+        "maxResources": 1
       },
       {
         "name": "UpsertResourcePlugin",
@@ -41,7 +38,7 @@
     ],
     "resources": [
       {
-        "url": "https://en.wikipedia.org/wiki/Web_scraping"
+        "url": "https://getsetfetch.org/index.html"
       }
     ]
   }
