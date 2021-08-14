@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { join } from 'path';
 import Resource from '../storage/base/Resource';
 import Exporter, { ExportOptions } from './Exporter';
 import { getLogger } from '../logger/Logger';

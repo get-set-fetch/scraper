@@ -15,12 +15,6 @@
     "pipeline": "dom-static-content",
     "pluginOpts": [
       {
-        "name": "NodeFetchPlugin",
-        "headers": {
-          "Accept-Encoding": "identity"
-        }
-      },
-      {
         "name": "ExtractHtmlContentPlugin",
         "selectorPairs": [
           {
@@ -38,7 +32,7 @@
   "concurrency": {
     "proxyPool": [
       {
-        "host": "host.docker.internal",
+        "host": "127.0.0.1",
         "port": 8080
       }
     ]
