@@ -1,8 +1,8 @@
-For both docker build and run commands make this repo `docker` directory the current working directory.
+For both docker build and run commands make this repo directory the current working directory.
 
 ## Build
 All scraper images are based on alpine:3.14 docker image.
-You have to build the images locally, they're not published on Docker Hub.
+You have to build the images locally; they're not published on Docker Hub.
 A set of built-time variables allows you to customize the docker image.
 
  Built-time Variable | Values | Default |
@@ -42,13 +42,13 @@ docker build \
 
 
 ## Run
-All examples contain config, log, sqlite, csv files under `/home/gsfuser/scraper/data` container path mounted from the host for easy access to logs and exported scraped content. Remaining arguments represent [CLI arguments](../scraper#command-line-interface).
+All examples contain config, log, sqlite, csv files under `/home/gsfuser/scraper/data` container path mounted from the host for easy access to logs and exported scraped content. Remaining arguments represent [CLI arguments](/get-set-fetch/scraper#command-line-interface).
 
 
 Log, scrape and export data using [config-sqlite-cheerio.json](data/config-sqlite-cheerio.json).
 ```bash
 docker run \
--v <host_dir/scraper/docker/data>:/home/gsfuser/scraper/data getsetfetch:latest \
+-v <host_dir>/scraper/docker/data:/home/gsfuser/scraper/data getsetfetch:latest \
 --version \
 --config data/config-sqlite-cheerio.json \
 --save \
@@ -62,7 +62,8 @@ docker run \
 Log, scrape and export data using [config-sqlite-puppeteer.json](data/config-sqlite-puppeteer.json). Use either `--security-opt seccomp=unconfined` or `--security-opt seccomp=data/chromium-security-profile.json` ([source blog](https://blog.jessfraz.com/post/how-to-use-new-docker-seccomp-profiles/)) to allow Chromium syscalls.
 ```bash
 docker run \
--v <host_dir/scraper/docker/data>:/home/gsfuser/scraper/data getsetfetch:latest \
+--security-opt seccomp=unconfined
+-v <host_dir>/scraper/docker/data:/home/gsfuser/scraper/data getsetfetch:latest \
 --version \
 --config data/config-sqlite-puppeteer.json \
 --save \
@@ -71,7 +72,6 @@ docker run \
 --loglevel info \
 --logdestination data/scrape.log \
 --export data/export.csv
---security-opt seccomp=unconfined
 ```
 
 You can also start the scraper as a [docker-compose service](pg-puppeteer/docker-compose.yml). This example scrapes using puppeteer and postgresql. Remember to build the corresponding image `--build-arg STORAGE=pg --build-arg BROWSER_CLIENT=puppeteer` first :)

@@ -56,6 +56,7 @@ An ordered list of plugins (builtin or custom) is executed against each to be sc
   * [ZIP Exporter](#zip-exporter)
 - [Logging](#logging)
 - [Command Line Interface](#command-line-interface)
+- [Docker](./docker/docker.md)
 - [Examples](#examples)
   * [Table Scraping](#table-scraping)
   * [Product Details](#product-details)

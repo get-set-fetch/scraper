@@ -12,7 +12,13 @@
     "debug": false
   },
   "dom": {
-    "client": "puppeteer"
+    "client": "puppeteer",
+    "ignoreHTTPSErrors": true,
+    "args": [
+      "--ignore-certificate-errors",
+      "--no-first-run",
+      "--single-process"
+    ]
   },
   "scrape": {
     "name": "myProj",

@@ -6,17 +6,23 @@ services:
       POSTGRES_USER: gsf-user
       POSTGRES_PASSWORD: gsf-pswd
       POSTGRES_DB: gsf-db
-    ports:
-      - 54320:5432
 
   gsf:
     image: getsetfetch:latest
-    working_dir: /home/pptruser/scraper
+    command: >
+      --version
+      --config data/config-pg-puppeteer.json
+      --save
+      --overwrite
+      --scrape
+      --loglevel info
+      --logdestination data/scrape.log
+      --export data/export.csv
+
     volumes:
-      - ./data:/home/pptruser/scraper/data
-    command: sh -c "./bin/gsfscrape --config ./data/config.json --loglevel debug --logdestination ./data/scrape.log --save --overwrite --scrape --export ./data/project.csv"
+      - ../data:/home/gsfuser/scraper/data
     security_opt:
-      - seccomp:"./chrome.json"
+      - seccomp:"../data/chromium-security-profile.json"
     depends_on:
     - pg
       
