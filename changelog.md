@@ -1,6 +1,10 @@
 ## Changelog
 
 ### Unreleased
+
+### 0.6.0 - 2021-08-15
+- Docker
+  - added Dockerfile with docker and docker-compose examples
 - Command Line
   - fixed a bug where absolute paths were treated as relative
   - new options: save, scrape, retry, report
