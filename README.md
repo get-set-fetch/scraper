@@ -64,6 +64,7 @@ An ordered list of plugins (builtin or custom) is executed against each to be sc
   * [Infinite Scrolling](#infinite-scrolling)
   * [Custom Plugins](#custom-plugins)
 - [Changelog](changelog.md)
+- [For Developers](./developers.md)
 - [Browser Extension](#browser-extension)
 
 ## Getting Started
