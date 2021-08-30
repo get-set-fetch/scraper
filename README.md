@@ -7,6 +7,8 @@
 
 # Node.js web scraper
 
+get-set, Fetch! is a plugin based, nodejs web scraper. It scrapes, stores and exports data. At its core, an ordered list of plugins (default or custom defined) is executed against each to be scraped web resource.
+
 Supports multiple storage options: SQLite, MySQL, PostgreSQL.  
 Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom. 
 
