@@ -6,12 +6,12 @@ import fs from 'fs';
 import { join, dirname, extname, parse, isAbsolute } from 'path';
 import pino from 'pino';
 
-import { PlaywrightClient, PuppeteerClient, CheerioClient, JsdomClient, BrowserClient,
-  IDomClientConstructor,
-  Scraper, ScrapeEvent, ScrapeOptions,
-  setLogger,
-  Storage, StorageConfig, initStorage as initStorageUtil,
-  Project } from '../index';
+import { Scraper, ScrapeEvent, ProjectOptions,
+  setLogger, StorageConfig, Project } from '../index';
+import { getPackageDir } from '../plugins/file-utils';
+import { ConcurrencyOptions } from '../scraper/ConcurrencyManager';
+import { RuntimeOptions } from '../scraper/RuntimeMetrics';
+import { ClientOptions, CliOptions } from '../scraper/Scraper';
 
 const defaultArgObj = {
   version: false,
@@ -100,14 +100,8 @@ export function readArgs(args: string[]):Partial<ArgObjType> {
 }
 
 export function invokeVersion() {
-  // get closest package.json
-  const parentPath: string[] = [];
-  while (!fs.existsSync(join(__dirname, ...parentPath, 'package.json'))) {
-    parentPath.push('..');
-  }
-
-  // output version
-  const packageFile = fs.readFileSync(join(__dirname, ...parentPath, 'package.json')).toString('utf-8');
+  const packageDir = getPackageDir(__dirname);
+  const packageFile = fs.readFileSync(join(packageDir, 'package.json')).toString('utf-8');
   const { version } = JSON.parse(packageFile);
   console.log(`@get-set-fetch/scraper - v${version}`);
 }
@@ -133,7 +127,7 @@ export function invokeLogger(argObj:ArgObjType) {
   );
 }
 
-function initStorage(fullConfigPath: string, storageConfig:StorageConfig):Storage {
+function updateStorageOpts(fullConfigPath: string, storageConfig:StorageConfig):StorageConfig {
   if (!storageConfig) throw new Error('missing storage options');
   if (!storageConfig.client) throw new Error('missing storage client');
 
@@ -145,36 +139,7 @@ function initStorage(fullConfigPath: string, storageConfig:StorageConfig):Storag
     }
   }
 
-  return initStorageUtil(storageConfig);
-}
-
-function initDomClient(domOpts):BrowserClient|IDomClientConstructor {
-  if (!domOpts) throw new Error('missing DOM options');
-  if (!domOpts.client) throw new Error('missing DOM client');
-
-  let domClient;
-  switch (domOpts.client) {
-    case 'cheerio':
-      if (!CheerioClient) throw new Error('cheerio package not installed');
-      domClient = CheerioClient;
-      break;
-    case 'jsdom':
-      if (!JsdomClient) throw new Error('jsdom package not installed');
-      domClient = JsdomClient;
-      break;
-    case 'puppeteer':
-      if (!PuppeteerClient) throw new Error('puppeteer package not installed');
-      domClient = new PuppeteerClient(domOpts);
-      break;
-    case 'playwright':
-      if (!PlaywrightClient) throw new Error('playwright-core package not installed');
-      domClient = new PlaywrightClient(domOpts);
-      break;
-    default:
-      throw new Error(`invalid DOM client ${domOpts.client}`);
-  }
-
-  return domClient;
+  return storageConfig;
 }
 
 export async function invokeScraper(argObj:ArgObjType) {
@@ -186,37 +151,40 @@ export async function invokeScraper(argObj:ArgObjType) {
   console.log(`using scrape configuration file ${fullConfigPath}`);
 
   const configFile = fs.readFileSync(fullConfigPath).toString('utf-8');
-  const { storage: storageConfig, dom: domOpts, scrape: scrapeConfig, concurrency: concurrencyOpts, process: processOpts } = JSON.parse(configFile);
+  const {
+    storage: storageOpts,
+    client: clientOpts,
+    project: projectOpts,
+    concurrency: concurrencyOpts,
+    runtime: runtimeOpts,
+  }: {
+    storage: StorageConfig,
+    client: ClientOptions,
+    project: ProjectOptions,
+    concurrency: ConcurrencyOptions,
+    runtime: RuntimeOptions
+  } = JSON.parse(configFile);
 
-  if (!scrapeConfig.name && !discover) {
+  if (!projectOpts.name && !discover) {
     throw new Error('missing scrape.name');
   }
 
   // get an absolute resource path based on the relative path from the configuration file path
-  if (scrapeConfig.resourcePath) {
-    scrapeConfig.resourcePath = join(dirname(fullConfigPath), scrapeConfig.resourcePath);
-    if (!fs.existsSync(scrapeConfig.resourcePath)) throw new Error(`resource path ${scrapeConfig.resourcePath} does not exist`);
+  if (projectOpts.resourcePath) {
+    projectOpts.resourcePath = join(dirname(fullConfigPath), projectOpts.resourcePath);
+    if (!fs.existsSync(projectOpts.resourcePath)) throw new Error(`resource path ${projectOpts.resourcePath} does not exist`);
   }
 
   // get absolute plugins paths based on the relative path from the configuration file path
-  if (scrapeConfig.pluginOpts) {
-    const externalPluginOpts = scrapeConfig.pluginOpts.filter(pluginOpts => pluginOpts.path);
+  if (projectOpts.pluginOpts) {
+    const externalPluginOpts = projectOpts.pluginOpts.filter(pluginOpts => pluginOpts.path);
     externalPluginOpts.forEach(pluginOpts => {
       pluginOpts.path = join(dirname(fullConfigPath), pluginOpts.path);
       if (!fs.existsSync(pluginOpts.path)) throw new Error(`plugin path ${pluginOpts.path} does not exist`);
     });
   }
 
-  const storage = initStorage(fullConfigPath, storageConfig);
-  const domClient = initDomClient(domOpts);
-
-  const scrapeOptions:ScrapeOptions = {
-    overwrite,
-    discover,
-    retry,
-  };
-
-  const scraper = new Scraper(storage, domClient, scrapeOptions);
+  const scraper = new Scraper(updateStorageOpts(fullConfigPath, storageOpts), clientOpts);
 
   // report progress to console every `report` seconds
   if (report) {
@@ -275,16 +243,22 @@ export async function invokeScraper(argObj:ArgObjType) {
     console.error(err);
   });
 
+  const cliOpts:CliOptions = {
+    overwrite,
+    discover,
+    retry,
+  };
+
   if (save) {
-    await scraper.save(scrapeConfig);
+    await scraper.save(projectOpts, cliOpts);
   }
 
   // scrape and discover options are mutually exclusive
   if (scrape) {
-    scraper.scrape(scrapeConfig, concurrencyOpts, processOpts);
+    scraper.scrape(projectOpts, concurrencyOpts, runtimeOpts, cliOpts);
   }
   else if (discover) {
-    scraper.discover(concurrencyOpts, processOpts);
+    scraper.discover(concurrencyOpts, runtimeOpts, cliOpts);
   }
 }
 
