@@ -1,7 +1,8 @@
 /* eslint-disable object-curly-newline */
+import { destination } from 'pino';
 import { encode, KnexStorage, PuppeteerClient, Scraper, setLogger, ScrapeEvent } from '../src/index';
 
-setLogger({ level: 'info' });
+setLogger({ level: 'info' }, destination('./scraping.log'));
 
 const knexConfig = {
   client: 'sqlite3',
@@ -23,9 +24,9 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePnXQdMJrZNNDoMgEIWvQrqSNNWm3bnoCXoHMpYRiYBGsE1v30FDf+JCF12QwFu8N5n38TYz4NQICq/ahy2EruH4Q8Kn0OOSmW3gLmml7gzmFgNICMD2rKcziw/d6unGgixdaA63RhuZnTi7MChr8gyzRFHpR6QF7OKE/0g78y933yO0hA7LLAFHXfK4/pWu0E3ePUoNeTeoIr6K2JDoapEG9qJ6CjfaCocoO2rpjiIFxpgXe3Oswg==';
+const projectHash = 'ePnXQdMJrZNNDoMgEIWvQrqSNNWm3bnoCXoHMpYRiYBGsE1v30FDf+JCF12QwFu8N5n38TYz4NQICq/ahy2EruH4Q8Kn0OOSmW3gLmml7gzmFgNICMD2rKcziw/d6unGgixdaA63RhuZnTi7MChr8gyzRFHpR6QF7OKE/0g78y933yO0hA7LLAFHXfK4/pWu0E3ePUoNeTeoIr6K2JDoapEG9qJ6CjfaCocoO2rpjiIFxpgXe3Oswg==';
 
-const scrapeConfig = {
+const projectOpts = {
   name: 'languageList',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -59,4 +60,4 @@ scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await storage.close();
 });
 
-scraper.scrape(scrapeHash);
+scraper.scrape(projectOpts);

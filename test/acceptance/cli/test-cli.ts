@@ -122,10 +122,10 @@ describe('Command Line Interface', () => {
   it('existing project --config --loglevel info --scrape --overwrite', async () => {
     const project = new Project({
       name: 'sitea.com',
-      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+      pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await project.save();
-    await project.batchInsertResources(config.scrape.resources);
+    await project.batchInsertResources(config.project.resources);
 
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape --overwrite',
@@ -141,10 +141,10 @@ describe('Command Line Interface', () => {
   it('existing project --config --loglevel info --scrape --overwrite false', async () => {
     const project = new Project({
       name: 'sitea.com',
-      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+      pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await project.save();
-    await project.batchInsertResources(config.scrape.resources);
+    await project.batchInsertResources(config.project.resources);
 
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
@@ -270,17 +270,17 @@ describe('Command Line Interface', () => {
   it('existing projects --discover --loglevel info --export', async () => {
     const projectA = new Project({
       name: 'projectA',
-      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+      pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await projectA.save();
-    await projectA.batchInsertResources(config.scrape.resources);
+    await projectA.batchInsertResources(config.project.resources);
 
     const projectB = new Project({
       name: 'projectB',
-      pluginOpts: mergePluginOpts(pipelines[config.scrape.pipeline].defaultPluginOpts, config.scrape.pluginOpts),
+      pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await projectB.save();
-    await projectB.batchInsertResources(config.scrape.resources);
+    await projectB.batchInsertResources(config.project.resources);
 
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --discover --loglevel info --export ../test/tmp/export.csv',

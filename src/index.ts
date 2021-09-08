@@ -34,7 +34,7 @@ export { default as Project } from './storage/base/Project';
 export { default as Resource } from './storage/base/Resource';
 export { default as Plugin, PluginOpts } from './plugins/Plugin';
 export { default as PluginStore, StoreEntry } from './pluginstore/PluginStore';
-export { default as Scraper, ScrapeConfig, ScrapeEvent, ScrapeOptions } from './scraper/Scraper';
+export { default as Scraper, ScrapeConfig, ProjectOptions, ScrapeEvent } from './scraper/Scraper';
 
 export { getLogger, setLogger } from './logger/Logger';
 export { encode, decode } from './confighash/config-hash';

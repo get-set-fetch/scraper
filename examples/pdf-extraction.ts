@@ -22,9 +22,9 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePnXQdMJjZLBDsIgEER/pfGkB6ht4kEP/oVnQmEtG1toYCnx74XE2Gg09baH3dnMzHuJKTejvkxaUj77g9A1HN9IWApt17Hg4cpGAELbMw+T88QGDHSyZJgyOOjtYVedK/ljT4gc5LgpOX3odpHIWdYNEVgn1a33LlpdpL6AaBqu79nS4liIUn/+VoJbSTmlxJNxHC3VMILvwSqEUGsMIEMerJthyMreWTmjj4G1++ZYB6QoS9dPR6H8egBynpe2';
+const projectHash = 'ePnXQdMJjZLBDsIgEER/pfGkB6ht4kEP/oVnQmEtG1toYCnx74XE2Gg09baH3dnMzHuJKTejvkxaUj77g9A1HN9IWApt17Hg4cpGAELbMw+T88QGDHSyZJgyOOjtYVedK/ljT4gc5LgpOX3odpHIWdYNEVgn1a33LlpdpL6AaBqu79nS4liIUn/+VoJbSTmlxJNxHC3VMILvwSqEUGsMIEMerJthyMreWTmjj4G1++ZYB6QoS9dPR6H8egBynpe2';
 
-const scrapeConfig = {
+const projectOpts = {
   name: 'covidUpdates',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -54,4 +54,4 @@ scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await storage.close();
 });
 
-scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
+scraper.scrape(projectOpts, { domain: { delay: 1000 } });

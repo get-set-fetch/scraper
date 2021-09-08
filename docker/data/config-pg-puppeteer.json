@@ -11,14 +11,16 @@
     },
     "debug": false
   },
-  "dom": {
-    "client": "puppeteer",
-    "ignoreHTTPSErrors": true,
-    "args": [
-      "--ignore-certificate-errors",
-      "--no-first-run",
-      "--single-process"
-    ]
+  "client": {
+    "name": "puppeteer",
+    "opts": {
+      "ignoreHTTPSErrors": true,
+      "args": [
+        "--ignore-certificate-errors",
+        "--no-first-run",
+        "--single-process"
+      ]
+    }
   },
   "scrape": {
     "name": "myProj",

@@ -7,10 +7,10 @@
     },
     "debug": false
   },
-  "dom": {
-    "client": "cheerio"
+  "client": {
+    "name": "cheerio"
   },
-  "scrape": {
+  "project": {
     "name": "myProj",
     "pipeline": "dom-static-content",
     "pluginOpts": [

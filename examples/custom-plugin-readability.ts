@@ -1,6 +1,6 @@
 /* eslint-disable object-curly-newline */
 import { join } from 'path';
-import { KnexStorage, PluginStore, PuppeteerClient, ScrapeConfig, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
+import { KnexStorage, PluginStore, PuppeteerClient, ProjectOptions, Scraper, setLogger, ScrapeEvent, encode } from '../src/index';
 
 setLogger({ level: 'info' });
 
@@ -24,8 +24,8 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePnXQdMJgxuWlJTsl1peTEziJJQSURIBIi4NiUgR0RlFqWkKcbYK6vp5QNfol6QmZ+Tl5+SnV+qqx4IcjPA9KBlCYw9uWVFqQU5iMoFMgSsJExeNpoQCuLy8XA8YmOBwRvMDyAMAGh2DWw==';
-const scrapeConfig:ScrapeConfig = {
+const projectHash = 'ePnXQdMJgxuWlJTsl1peTEziJJQSURIBIi4NiUgR0RlFqWkKcbYK6vp5QNfol6QmZ+Tl5+SnV+qqx4IcjPA9KBlCYw9uWVFqQU5iMoFMgSsJExeNpoQCuLy8XA8YmOBwRvMDyAMAGh2DWw==';
+const projectOpts:ProjectOptions = {
   name: 'bbcNews',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -60,8 +60,8 @@ const scrapeConfig:ScrapeConfig = {
   scraper.on(ScrapeEvent.ProjectScraped, async () => {
     await scraper.export('./examples/data/readability.csv', { type: 'csv' });
     await storage.close();
-    console.log(encode(scrapeConfig));
+    console.log(encode(projectOpts));
   });
 
-  scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
+  scraper.scrape(projectOpts, { domain: { delay: 1000 } });
 })();

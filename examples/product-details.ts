@@ -22,8 +22,8 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePnXQdMJnVTLTsMwEPwVK1yKRBwl4YRUUNsTUiU4caEIbVIrtprYlZ246oVvZ9cW0EKkAEd7H+OZnfVnM3CqM35pzM79xqBTbjwzwtc8y2lXXDgBtpZIC9fGsTfG94BtgBRgtwz4ShrjxCM04kb3Mq2larez4jIhZc5byZJXSCh4DAttbDmSCKiKF3aNyQihuiaeSaGr/+3Zz+WSOT8Yu0vDa7DmYxPjmXBGagoutoqYp9WR5sHgpBKGXmLaeOnQIt/g1jA5h7xaxcE3qUUpdUMXbg/6GW3X0brPN0mMPEE7iE3ycoIUA8xT5C94YxjCK3FYmUH33zBCgNUUIeEnfIz/k25VZcEeubFNFsVw2cO6vC6KfJHdO4D6dRFsfYcWEvOc2r4D6BILFg==';
-const scrapeConfig = {
+const projectHash = 'ePnXQdMJnVTLTsMwEPwVK1yKRBwl4YRUUNsTUiU4caEIbVIrtprYlZ246oVvZ9cW0EKkAEd7H+OZnfVnM3CqM35pzM79xqBTbjwzwtc8y2lXXDgBtpZIC9fGsTfG94BtgBRgtwz4ShrjxCM04kb3Mq2larez4jIhZc5byZJXSCh4DAttbDmSCKiKF3aNyQihuiaeSaGr/+3Zz+WSOT8Yu0vDa7DmYxPjmXBGagoutoqYp9WR5sHgpBKGXmLaeOnQIt/g1jA5h7xaxcE3qUUpdUMXbg/6GW3X0brPN0mMPEE7iE3ycoIUA8xT5C94YxjCK3FYmUH33zBCgNUUIeEnfIz/k25VZcEeubFNFsVw2cO6vC6KfJHdO4D6dRFsfYcWEvOc2r4D6BILFg==';
+const projectOpts = {
   name: 'asimovBooks',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -77,4 +77,4 @@ scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await storage.close();
 });
 
-scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
+scraper.scrape(projectOpts, { domain: { delay: 1000 } });

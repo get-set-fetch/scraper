@@ -56,9 +56,9 @@ const { Scraper } = require('@get-set-fetch/scraper');
 const scraper = new Scraper(storage, client);
 ```
 
-#### Define a scrape configuration
+#### Define project options
 ```js
-const scrapeConfig = {
+const projectOpts = {
   name: "myScrapeProject",
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -106,7 +106,7 @@ const scrapeConfig = {
   ]
 };
 ```
-You can define a scrape configuration in multiple ways. The above example is the most direct one.
+You can define a project in multiple ways. The above example is the most direct one.
 
 You define one or more starting urls, a predefined pipeline containing a series of scrape plugins with default options, and any plugin options you want to override. See [pipelines](https://www.getsetfetch.org/node/pipelines.html) and [plugins](https://www.getsetfetch.org/node/plugins.html) for all available options.
 
@@ -131,7 +131,7 @@ A minimum delay of 5000 ms will be enforced between scraping consecutive resourc
 
 #### Start scraping
 ```js
-scraper.scrape(scrapeConfig, concurrencyOpts);
+scraper.scrape(projectOpts, concurrencyOpts);
 ```
 The entire process is asynchronous. Listen to the emitted [scrape events](https://www.getsetfetch.org/node/scrape.html#scrape-events) to monitor progress.
 

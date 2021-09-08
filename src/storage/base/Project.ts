@@ -4,7 +4,7 @@ import Resource, { ResourceQuery } from './Resource';
 import PluginStore, { StoreEntry } from '../../pluginstore/PluginStore';
 import { LogWrapper } from '../../logger/Logger';
 
-/** Groups resources sharing the same scrape configuration and discovered from the same initial URLs. */
+/** Groups resources sharing the same project configuration and discovered from the same initial URL(s). */
 export default abstract class Project extends Entity {
   logger: LogWrapper;
 

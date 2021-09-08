@@ -6,10 +6,10 @@
       "filename": "../../../tmp/db.sqlite"
     }
   },
-  "dom": {
-    "client": "cheerio"
+  "client": {
+    "name": "cheerio"
   },
-  "scrape": {
+  "project": {
     "name": "sitea.com",
     "pipeline": "dom-static-content",
     "pluginOpts": [

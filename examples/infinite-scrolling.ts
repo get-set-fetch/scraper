@@ -22,9 +22,9 @@ const client = new PuppeteerClient({ args: [
 ] });
 const scraper = new Scraper(storage, client);
 
-const scrapeHash = 'ePnXQdMJjZJRDoIwDIbv4rOjHsV4ATJhDiLbSOtcvL3tJBAyCbz1pe3fft88LLKnV95q8Kb9s/eWjni6J+XKhwXrpTTnmL6ls23/rnIm4lik+IlOqTz6PMs+5rtOsvT/gI67A36Uj+4ufJdWG/RA8qlNdvrxMrhFo7ROmO4xSilVwiOzkqLptBvFgMFoGw1MeQEnVPC7kCDHrakJaFqQ2F/CU61j';
+const projectHash = 'ePnXQdMJjZJRDoIwDIbv4rOjHsV4ATJhDiLbSOtcvL3tJBAyCbz1pe3fft88LLKnV95q8Kb9s/eWjni6J+XKhwXrpTTnmL6ls23/rnIm4lik+IlOqTz6PMs+5rtOsvT/gI67A36Uj+4ufJdWG/RA8qlNdvrxMrhFo7ROmO4xSilVwiOzkqLptBvFgMFoGw1MeQEnVPC7kCDHrakJaFqQ2F/CU61j';
 
-const scrapeConfig = {
+const projectOpts = {
   name: 'uefaPlayerRankings',
   pipeline: 'browser-static-content',
   pluginOpts: [
@@ -63,4 +63,4 @@ scraper.on(ScrapeEvent.ProjectScraped, async () => {
   await storage.close();
 });
 
-scraper.scrape(scrapeConfig, { domain: { delay: 1000 } });
+scraper.scrape(projectOpts, { domain: { delay: 1000 } });

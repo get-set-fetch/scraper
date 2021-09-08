@@ -1,6 +1,10 @@
 ## Changelog
 
 ### Unreleased
+BREAKING CHANGES: Scraper class signature has changed
+
+- Scraper
+  - class constructor and scrape() function signature update
 
 ### 0.6.0 - 2021-08-15
 - Docker
