@@ -27,7 +27,7 @@ export {
 export { default as BrowserClient } from './browserclient/BrowserClient';
 export { IDomClientConstructor } from './domclient/DomClient';
 
-export { default as Storage, StorageConfig } from './storage/base/Storage';
+export { default as Storage, StorageOptions } from './storage/base/Storage';
 export { initStorage } from './storage/storage-utils';
 
 export { default as Project } from './storage/base/Project';

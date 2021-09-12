@@ -7,7 +7,7 @@ import { join, dirname, extname, parse, isAbsolute } from 'path';
 import pino from 'pino';
 
 import { Scraper, ScrapeEvent, ProjectOptions,
-  setLogger, StorageConfig, Project } from '../index';
+  setLogger, StorageOptions, Project } from '../index';
 import { getPackageDir } from '../plugins/file-utils';
 import { ConcurrencyOptions } from '../scraper/ConcurrencyManager';
 import { RuntimeOptions } from '../scraper/RuntimeMetrics';
@@ -127,19 +127,19 @@ export function invokeLogger(argObj:ArgObjType) {
   );
 }
 
-function updateStorageOpts(fullConfigPath: string, storageConfig:StorageConfig):StorageConfig {
-  if (!storageConfig) throw new Error('missing storage options');
-  if (!storageConfig.client) throw new Error('missing storage client');
+function updateStorageOpts(fullConfigPath: string, storageOpts:StorageOptions):StorageOptions {
+  if (!storageOpts) throw new Error('missing storage options');
+  if (!storageOpts.client) throw new Error('missing storage client');
 
-  if (storageConfig.client === 'sqlite3') {
+  if (storageOpts.client === 'sqlite3') {
     // generate full sqlite3 filepath relative to config file
-    if (storageConfig.connection.filename !== ':memory:') {
-      storageConfig.connection.filename = join(dirname(fullConfigPath), storageConfig.connection.filename);
-      console.log(`using sqlite file ${storageConfig.connection.filename}`);
+    if (storageOpts.connection.filename !== ':memory:') {
+      storageOpts.connection.filename = join(dirname(fullConfigPath), storageOpts.connection.filename);
+      console.log(`using sqlite file ${storageOpts.connection.filename}`);
     }
   }
 
-  return storageConfig;
+  return storageOpts;
 }
 
 export async function invokeScraper(argObj:ArgObjType) {
@@ -158,7 +158,7 @@ export async function invokeScraper(argObj:ArgObjType) {
     concurrency: concurrencyOpts,
     runtime: runtimeOpts,
   }: {
-    storage: StorageConfig,
+    storage: StorageOptions,
     client: ClientOptions,
     project: ProjectOptions,
     concurrency: ConcurrencyOptions,

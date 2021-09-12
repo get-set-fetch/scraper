@@ -9,7 +9,7 @@ import Resource from '../storage/base/Resource';
 import Plugin, { PluginOpts } from '../plugins/Plugin';
 import PluginStore, { StoreEntry } from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
-import Storage, { StorageConfig } from '../storage/base/Storage';
+import Storage, { StorageOptions } from '../storage/base/Storage';
 import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
 import Exporter, { ExportOptions } from '../export/Exporter';
 import CsvExporter from '../export/CsvExporter';
@@ -72,7 +72,7 @@ export type ProjectOptions = {
 }
 
 export type ScrapeConfig = {
-  storage: StorageConfig | Storage,
+  storage: StorageOptions | Storage,
   client: ClientOptions | BrowserClient | IDomClientConstructor,
   project: ProjectOptions | Project,
   concurrency: ConcurrencyOptions,
@@ -105,7 +105,7 @@ export default class Scraper extends EventEmitter {
   */
   metrics: RuntimeMetrics;
 
-  constructor(storageOpts: StorageConfig | Storage, clientOpts:ClientOptions | BrowserClient | IDomClientConstructor) {
+  constructor(storageOpts: StorageOptions | Storage, clientOpts:ClientOptions | BrowserClient | IDomClientConstructor) {
     super();
 
     this.storage = this.isStorageOpts(storageOpts) ? initStorage(storageOpts) : storageOpts;
@@ -132,24 +132,25 @@ export default class Scraper extends EventEmitter {
     this.gracefullStop('SIGINT');
   }
 
-  isStorageOpts(storage): storage is StorageConfig {
+  /**
+   * Check if input is a JSON config object
+   */
+  isJSONConfig(config):boolean {
     /*
-    both ClientOptions and Storage contain 'client' property
-    differentiate by taking into account Storage is a class
+    config objects:
+    - are not functions (unlike BrowserClient/IDomClientConstructor classes)
+    - don't have function properties
     */
-    return ('client' in storage) && !('prototype' in storage);
+    return typeof config !== 'function'
+      && Object.keys(config).find(key => typeof config[key] === 'function') === undefined;
+  }
+
+  isStorageOpts(storage): storage is StorageOptions {
+    return this.isJSONConfig(storage);
   }
 
   isClientOpts(client): client is ClientOptions {
-    /*
-    both ClientOptions and IDomClientConstructor contain 'name' property
-    differentiate by taking into account IDomClientConstructor is a class
-    */
-    return ('name' in client) && !('prototype' in client);
-  }
-
-  isProjectOpts(project): project is ProjectOptions {
-    return 'overwrite' in project;
+    return this.isJSONConfig(client);
   }
 
   /**

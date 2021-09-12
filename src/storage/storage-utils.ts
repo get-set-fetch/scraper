@@ -1,8 +1,8 @@
 /* eslint-disable import/prefer-default-export */
 import { KnexStorage } from '..';
-import Storage, { StorageConfig } from './base/Storage';
+import Storage, { StorageOptions } from './base/Storage';
 
-export function initStorage(config: StorageConfig):Storage {
+export function initStorage(config: StorageOptions):Storage {
   let storage:Storage;
   switch (config.client) {
     case 'sqlite3':
