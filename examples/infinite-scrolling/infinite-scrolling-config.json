@@ -1,0 +1,71 @@
+{
+    "storage": {
+        "client": "sqlite3",
+        "useNullAsDefault": true,
+        "connection": {
+        "filename": "infinite-scrolling.sqlite"
+        },
+        "debug": false
+    },
+    "client": {
+        "name": "puppeteer",
+        "opts": {
+            "args": [
+                "--disable-gpu",
+                "--disable-dev-shm-usage",
+                "--disable-setuid-sandbox",
+                "--no-first-run",
+                "--no-sandbox",
+                "--no-zygote",
+                "--single-process"
+            ]
+        }
+    },
+    "project": {
+        "name": "HistoricalFigures",
+        "pipeline": "browser-static-content",
+        "pluginOpts": [
+		{
+                "name": "BrowserFetchPlugin",
+                "stabilityCheck": 2000,
+				"stabilityTimeout": 5000
+              },
+            {
+                "name": "ExtractUrlsPlugin",
+                "maxDepth": 0
+              },
+              {
+                "name": "ExtractHtmlContentPlugin",
+                "selectorPairs": [
+                  {
+                    "contentSelector": "li > a[data-galabel=grid-item] > span > span span:first-child",
+                    "label": "name"
+                  },
+                  {
+                    "contentSelector": "li > a[data-galabel=grid-item] > span > span span:last-child",
+                    "label": "items"
+                  }
+                ]
+              },
+              {
+                "name": "ScrollPlugin",
+                "after": "UpsertResourcePlugin",
+				"maxActions": 3,
+				"delay": 1000,
+                "stabilityCheck": 2000,
+				"stabilityTimeout": 3000
+              }
+        ],
+        "resources": [
+            {
+                "url": "https://artsandculture.google.com/incognito/category/historical-figure"
+            }
+        ]
+    },
+    "concurrency": {
+        "session": {
+            "maxRequests": 1,
+            "delay": 3000
+        }
+    }
+}

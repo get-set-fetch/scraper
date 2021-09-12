@@ -1,0 +1,44 @@
+{
+    "storage": {
+        "client": "sqlite3",
+        "useNullAsDefault": true,
+        "connection": {
+        "filename": "pdf-extraction.sqlite"
+        },
+        "debug": false
+    },
+    "client": {
+        "name": "cheerio"
+    },
+    "project": {
+        "name": "CovidUpdates",
+        "pipeline": "dom-static-content",
+        "pluginOpts": [
+            {
+                "name": "ExtractUrlsPlugin",
+                "maxDepth": 2,
+                "selectorPairs": [
+                  {
+                    "urlSelector": ".sf-meeting-report-list:nth-child(5) > a.sf-meeting-report-list__item"
+                  },
+                  {
+                    "urlSelector": ".button-blue-background > a",
+                    "titleSelector": "h1.dynamic-content__heading"
+                  }
+                ]
+              }
+        ],
+        "resources": [
+            {
+            "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/situation-reports"
+            }
+        ]
+    },
+    "concurrency": {
+        "session": {
+            "maxRequests": 1,
+            "delay": 3000
+        }
+    }
+}
+  
