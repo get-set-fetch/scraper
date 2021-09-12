@@ -7,8 +7,7 @@ import * as MimeTypes from './MimeTypes.json';
 import { getLogger } from '../logger/Logger';
 
 export type ZipExportOptions = ExportOptions & {
-  type: 'zip',
-  pageLimit?: number;
+  type: 'zip'
 }
 
 /** Provides ZIP export capabilities. */

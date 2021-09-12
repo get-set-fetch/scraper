@@ -8,7 +8,6 @@ export type CsvExportOptions = ExportOptions & {
   cols?: string[];
   fieldSeparator?: string;
   lineSeparator?: string;
-  pageLimit?: number;
 }
 
 /** Provides CSV export capabilities. */

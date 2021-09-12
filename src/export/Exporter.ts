@@ -3,6 +3,7 @@ import Project from '../storage/base/Project';
 
 export type ExportOptions = {
   type: 'csv'|'zip';
+  pageLimit?: number;
 }
 
 /** Scraped data exporters should extend this class. */
