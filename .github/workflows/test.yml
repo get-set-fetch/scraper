@@ -44,6 +44,7 @@ jobs:
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
 
     - name: Coveralls
+      if: ${{ !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -149,6 +150,7 @@ jobs:
         npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/dom-utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'
 
     - name: Coveralls for acceptance tests
+      if: ${{ !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
