@@ -1,0 +1,67 @@
+{
+    "storage": {
+        "client": "sqlite3",
+        "useNullAsDefault": true,
+        "connection": {
+        "filename": "product-details.sqlite"
+        },
+        "debug": false
+    },
+    "client": {
+        "name": "cheerio"
+    },
+    "project": {
+        "name": "AsimovBooks",
+        "pipeline": "dom-static-content",
+        "pluginOpts": [
+            {
+              "name": "ExtractUrlsPlugin",
+              "maxDepth": 3,
+              "selectorPairs": [
+                {
+                    "urlSelector": "#searchResults ~ .pagination > a.ChoosePage:nth-child(2)"
+                },
+                {
+                    "urlSelector": "h3.booktitle a.results"
+                },
+                {
+                    "urlSelector": "a.coverLook > img.cover"
+                }
+              ]
+            },
+            {
+                "name": "ExtractHtmlContentPlugin",
+                "selectorPairs": [
+                {
+                    "contentSelector": "h1.work-title",
+                    "label": "title"
+                },
+                {
+                    "contentSelector": "h2.edition-byline a",
+                    "label": "author"
+                },
+                {
+                    "contentSelector": "ul.readers-stats > li.avg-ratings > span[itemProp=\"ratingValue\"]",
+                    "label": "rating value"
+                },
+                {
+                    "contentSelector": "ul.readers-stats > li > span[itemProp=\"reviewCount\"]",
+                    "label": "review count"
+                }
+              ]
+            }
+          ],
+          "resources": [
+            {
+                "url": "https://openlibrary.org/authors/OL34221A/Isaac_Asimov?page=1"
+            }
+          ]
+    },
+    "concurrency": {
+        "session": {
+            "maxRequests": 1,
+            "delay": 3000
+        }
+    }
+}
+  

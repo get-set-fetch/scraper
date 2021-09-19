@@ -2,9 +2,12 @@ name: test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, next ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, next ]
+
+env:
+  ENABLE_CODE_COVERAGE: false
 
 jobs:
   unit:
@@ -44,6 +47,7 @@ jobs:
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
 
     - name: Coveralls
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -100,6 +104,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Cache node modules
+      if: ${{ !github.event.act }}
       uses: actions/cache@v2
       with:
         # npm cache files are stored in `~/.npm` on Linux/macOS
@@ -112,27 +117,31 @@ jobs:
       run: /bin/sh -c 'docker_file="${{ matrix.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ matrix.docker_file }} up -d; else echo "ignored, no docker file"; fi'
     
     - name: Setup node 12
+      if: ${{ !github.event.act }}
       uses: actions/setup-node@v1
       with:
         node-version: 12.x
 
     - name: Install dependencies
+      if: ${{ !github.event.act }}
       run: npm ci
 
     - name: Install storage peer dependencies for ${{ matrix.storage_label }}
+      if: ${{ !github.event.act }}
       run: npm install ${{ matrix.storage_deps }} --save
 
     - name: Install client peer dependencies for ${{ matrix.client }}
+      if: ${{ !github.event.act }}
       run: npm install ${{ matrix.client_deps }} --save
 
     - name: ${{ matrix.storage_label }} unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-      if: ${{ matrix.client == 'puppeteer_chromium' }}
+      if: ${{ matrix.client == 'puppeteer_chromium' && !github.event.act }}
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
     - name: Coveralls for unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-      if: ${{ matrix.client == 'puppeteer_chromium' }}
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && matrix.client == 'puppeteer_chromium' && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -144,6 +153,7 @@ jobs:
         npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/dom-utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'
 
     - name: Coveralls for acceptance tests
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -193,6 +203,7 @@ jobs:
 
   docker:
     name: docker tests
+    if: ${{ !github.event.act }}
     runs-on: ubuntu-20.04
     needs: acceptance
 
@@ -222,17 +233,22 @@ jobs:
       if: ${{ !github.event.act }}
       run: npm ci
 
-    - name: Docker tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
+    - name: Docker tests using branch name from push requests
+      if: github.event_name != 'pull_request'
+      run: BRANCH=${GITHUB_REF#refs/heads/} npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
+
+    - name: Docker tests using branch name from pull requests
+      if: github.event_name == 'pull_request'
+      run: BRANCH=${{ github.head_ref }} npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
 
   coverage:
     name: coverage
-    if: ${{ !github.event.act }}
     runs-on: ubuntu-18.04
     needs: [cli, acceptance]
     
     steps:
     - name: Coveralls
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -9,16 +9,13 @@ import Resource from '../storage/base/Resource';
 import Plugin, { PluginOpts } from '../plugins/Plugin';
 import PluginStore, { StoreEntry } from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
-import Storage from '../storage/base/Storage';
+import Storage, { StorageOptions } from '../storage/base/Storage';
 import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
-import Exporter, { ExportOptions } from '../export/Exporter';
-import CsvExporter from '../export/CsvExporter';
-import ZipExporter from '../export/ZipExporter';
-import { decode } from '../confighash/config-hash';
 import { IDomClientConstructor } from '../domclient/DomClient';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
 import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMetrics';
 import { initStorage } from '../storage/storage-utils';
+import initClient from '../domclient/client-utils';
 
 export const enum ScrapeEvent {
   ResourceSelected = 'resource-selected',
@@ -32,31 +29,51 @@ export const enum ScrapeEvent {
   DiscoverComplete = 'discover-complete'
 }
 
-export type ScrapeConfig = {
-  name: string,
-  pipeline: string,
-  pluginOpts: PluginOpts[]
-  resources?: {url: string, depth?: number}[];
-  resourcePath?: string;
-}
-
-export type ScrapeOptions = {
+export type CliOptions = {
   /**
    * Overwrite project if already exists.
    */
   overwrite: boolean;
 
   /**
-   * Don't restrict scraping to a particular project.
-   * Once scraping a project completes, find other existing projects to scrape from.
-   */
+    * Don't restrict scraping to a particular project.
+    * Once scraping a project completes, find other existing projects to scrape from.
+    */
   discover: boolean;
 
   /**
-   * After a discover operation completes and all projects are scraped,
-   * keep issueing discover commands at the specified interval (seconds).
-   */
+    * After a discover operation completes and all projects are scraped,
+    * keep issueing discover commands at the specified interval (seconds).
+    */
   retry: number;
+}
+
+export type ClientOptions = {
+  name: string;
+  opts?: {
+    [key: string]: any;
+  }
+}
+
+export type ProjectOptions = {
+  /**
+   * Project name
+   */
+  name: string
+
+  resources?: {url: string, depth?: number}[];
+  resourcePath?: string;
+
+  pipeline: string,
+  pluginOpts: PluginOpts[]
+}
+
+export type ScrapeConfig = {
+  storage: StorageOptions | Storage,
+  client: ClientOptions | BrowserClient | IDomClientConstructor,
+  project: ProjectOptions | Project,
+  concurrency: ConcurrencyOptions,
+  runtime: RuntimeOptions
 }
 
 /**
@@ -70,11 +87,12 @@ export default class Scraper extends EventEmitter {
   logger = getLogger('Scraper');
 
   storage: Storage;
+
   browserClient:BrowserClient;
   domClientConstruct: IDomClientConstructor;
-  opts: Partial<ScrapeOptions>;
 
   project: Project;
+
   concurrency: ConcurrencyManager;
   checkTimeout: NodeJS.Timeout;
   retryTimeout: NodeJS.Timeout;
@@ -84,16 +102,18 @@ export default class Scraper extends EventEmitter {
   */
   metrics: RuntimeMetrics;
 
-  constructor(storage: Storage, client:BrowserClient|IDomClientConstructor, opts:Partial<ScrapeOptions> = {}) {
+  constructor(storageOpts: StorageOptions | Storage, clientOpts:ClientOptions | BrowserClient | IDomClientConstructor) {
     super();
 
-    this.storage = storage;
-    if (!client) {
+    this.storage = this.isStorageOpts(storageOpts) ? initStorage(storageOpts) : storageOpts;
+
+    if (!clientOpts) {
       const err = new Error('A browser or DOM client needs to be provided');
       this.logger.error(err);
       throw err;
     }
 
+    const client = this.isClientOpts(clientOpts) ? initClient(clientOpts) : clientOpts;
     if (client instanceof BrowserClient) {
       this.browserClient = client;
     }
@@ -101,14 +121,34 @@ export default class Scraper extends EventEmitter {
       this.domClientConstruct = client;
     }
 
-    this.opts = opts;
-
     this.discover = this.discover.bind(this);
     this.stop = this.stop.bind(this);
 
     // gracefully stop scraping
     this.gracefullStop('SIGTERM');
     this.gracefullStop('SIGINT');
+  }
+
+  /**
+   * Check if input is a JSON config object
+   */
+  isJSONConfig(config):boolean {
+    /*
+    config objects:
+    - are not custom class definitions
+    - are not ciustom class instances
+    - don't have function properties
+    */
+    return config.constructor.name === 'Object'
+      && Object.keys(config).find(key => typeof config[key] === 'function') === undefined;
+  }
+
+  isStorageOpts(storage): storage is StorageOptions {
+    return this.isJSONConfig(storage);
+  }
+
+  isClientOpts(client): client is ClientOptions {
+    return this.isJSONConfig(client);
   }
 
   /**
@@ -180,26 +220,24 @@ export default class Scraper extends EventEmitter {
   }
 
   /**
-   * If scrapeConfig is a project return it without modifications.
-   * If it's a scrape configuration or a deflated scrape configuration construct a new project based on start url.
-   * Project name resolves to the start url hostname.
-   * @param scrapeConfig - project, scrape configuration or base64 deflated scrape configuration
+   * If projectOpts is a project instance return it without modifications.
+   * If it's a project configuration save a new project.
+   * @param projectOpts - project instance or configuration
+   * @param cliOpts - cli related flags like overwrite
    */
-  async initProject(scrapeConfig: Project|ScrapeConfig|string):Promise<Project> {
-    if (scrapeConfig instanceof Project) {
-      return <Project>scrapeConfig;
+  async initProject(projectOpts: Project|ProjectOptions, cliOpts: Partial<CliOptions> = {}):Promise<Project> {
+    if (projectOpts instanceof Project) {
+      return <Project>projectOpts;
     }
 
-    const scrapeDef:ScrapeConfig = typeof scrapeConfig === 'string' ? decode(scrapeConfig) : scrapeConfig;
-    if (scrapeDef.pipeline && !pipelines[scrapeDef.pipeline]) {
-      throw new Error(`Pipeline ${scrapeDef.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
+    if (projectOpts.pipeline && !pipelines[projectOpts.pipeline]) {
+      throw new Error(`Pipeline ${projectOpts.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
 
-    const projectName = scrapeDef.name;
-    let project = await this.storage.Project.get(projectName);
+    let project = await this.storage.Project.get(projectOpts.name);
 
     if (project) {
-      if (this.opts.overwrite) {
+      if (cliOpts.overwrite) {
         this.logger.info(`Overwriting project ${project.name}`);
         await project.del();
       }
@@ -210,23 +248,23 @@ export default class Scraper extends EventEmitter {
     }
 
     project = new (<IStaticProject> this.storage.Project)({
-      name: projectName,
-      pluginOpts: pipelines[scrapeDef.pipeline]
-        ? mergePluginOpts(pipelines[scrapeDef.pipeline].defaultPluginOpts, scrapeDef.pluginOpts)
-        : scrapeDef.pluginOpts,
+      name: projectOpts.name,
+      pluginOpts: pipelines[projectOpts.pipeline]
+        ? mergePluginOpts(pipelines[projectOpts.pipeline].defaultPluginOpts, projectOpts.pluginOpts)
+        : projectOpts.pluginOpts,
     });
     await project.save();
     this.logger.info(`New project ${project.name} saved`);
 
     // link resources to the project from external file
-    let { resourcePath } = scrapeDef;
+    let { resourcePath } = projectOpts;
     if (resourcePath) {
       resourcePath = isAbsolute(resourcePath) ? resourcePath : join(process.cwd(), resourcePath);
       await project.batchInsertResourcesFromFile(resourcePath);
     }
 
     // link resources to the project from inline definition
-    const { resources } = scrapeDef;
+    const { resources } = projectOpts;
     if (resources && Array.isArray(resources)) {
       await project.batchInsertResources(resources);
     }
@@ -264,18 +302,23 @@ export default class Scraper extends EventEmitter {
   }
 
   /**
-   * Scrapes available resources from the provided project. If a scrape configuration is provided creates a project first.
-   * @param project - project, scrape configuration or base64 deflated scrape configuration
+   * Scrapes available resources from the provided project. If project options are provided create the project first.
+   * @param projectOpts - project instance or project options
+   * @param concurrencyOpts - concurrency options
+   * @param runtimeOpts - runtime options
+   * @param cliOpts - command line options
    */
-  async scrape(project: Project, concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapeConfig: ScrapeConfig, concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapeHash: string, concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>):Promise<void>
-  async scrape(scrapeConfig: Project|ScrapeConfig|string, concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>):Promise<void> {
+  async scrape(
+    projectOpts: ProjectOptions | Project,
+    concurrencyOpts?: Partial<ConcurrencyOptions>,
+    runtimeOpts?: Partial<RuntimeOptions>,
+    cliOpts?: Partial<CliOptions>,
+  ):Promise<void> {
     try {
       await this.preScrape(concurrencyOpts, runtimeOpts);
 
-      // when discover flag is set ignore scrapeConfig, retrieve first project containing unscraped resources
-      if (this.opts.discover) {
+      // when discover flag is set ignore projectOpts, retrieve first project containing unscraped resources
+      if (cliOpts && cliOpts.discover) {
         this.project = await this.storage.Project.getProjectToScrape();
         if (!this.project) {
           this.logger.info('All existing project have been scraped, discovery complete');
@@ -285,7 +328,7 @@ export default class Scraper extends EventEmitter {
         }
       }
       else {
-        this.project = await this.initProject(scrapeConfig);
+        this.project = await this.initProject(projectOpts, cliOpts);
         if (!this.project) throw new Error('could not find project');
       }
 
@@ -310,12 +353,12 @@ export default class Scraper extends EventEmitter {
   /**
    * Keep discovering new projects to scrape. Once a project scraping completes, start scraping a new one.
    */
-  async discover(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>) {
+  async discover(concurrencyOpts: Partial<ConcurrencyOptions>, runtimeOpts: Partial<RuntimeOptions>, cliOpts:Partial<CliOptions>) {
     this.retryTimeout = null;
 
     const projectScrapedHandler = () => {
       this.logger.info('Discovering new project(s)');
-      this.scrape(null, concurrencyOpts, runtimeOpts);
+      this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
     };
 
     const discoveryCompleteHandler = () => {
@@ -323,8 +366,8 @@ export default class Scraper extends EventEmitter {
       this.off(ScrapeEvent.ProjectError, projectScrapedHandler);
       this.off(ScrapeEvent.DiscoverComplete, discoveryCompleteHandler);
 
-      if (this.opts.retry) {
-        this.retryTimeout = setTimeout(this.discover, this.opts.retry * 1000, concurrencyOpts, runtimeOpts);
+      if (cliOpts.retry) {
+        this.retryTimeout = setTimeout(this.discover, cliOpts.retry * 1000, concurrencyOpts, runtimeOpts, cliOpts);
       }
     };
 
@@ -333,17 +376,17 @@ export default class Scraper extends EventEmitter {
     this.on(ScrapeEvent.DiscoverComplete, discoveryCompleteHandler);
 
     this.logger.info('Discovering new project(s)');
-    this.scrape(null, concurrencyOpts, runtimeOpts);
+    this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
   }
 
-  async save(scrapeConfig: Project|ScrapeConfig|string) {
+  async save(projectOpts: ProjectOptions|Project, cliOpts:Partial<CliOptions>) {
     try {
       if (!this.storage.connected) {
         await this.storage.connect();
         this.logger.info('Storage connected');
       }
 
-      this.project = await this.initProject(scrapeConfig);
+      this.project = await this.initProject(projectOpts, cliOpts);
       if (!this.project) throw new Error('could not find project');
 
       if (this.storage && this.storage.connected) {
@@ -582,56 +625,6 @@ export default class Scraper extends EventEmitter {
     }
 
     return result;
-  }
-
-  /**
-   *
-   * @param filepath - location to store the content, relative to the current working directory. Missing directories will not be created.
-   * @param opts - export options pertinent to the selected export type. Type is required.
-   * @param project - use the provided project for export, if not available use the project currently linked to scraper
-   */
-  async export(filepath: string, opts: ExportOptions, exportProject?:Project):Promise<void> {
-    let exporter: Exporter;
-
-    try {
-      if (!(opts && opts.type)) {
-        throw new Error('specify an export type');
-      }
-
-      // scraper is not linked to a project, an external project to export was not provided
-      if (!exportProject && !this.project) {
-        throw new Error('no project linked to the current scraper instance, no external project provided');
-      }
-
-      // use a separate db connection, scrape and export have different db lifecycles and may run in parallel
-      const storage:Storage = initStorage(this.storage.config);
-      await storage.connect();
-
-      const project:Project = await storage.Project.get(exportProject ? exportProject.id : this.project.id);
-      if (!project) {
-        throw new Error(`could not find project ${exportProject ? exportProject.name : this.project.name}`);
-      }
-
-      // need to init the plugins as one of the plugins may contain info related to the exported columns
-      project.plugins = await project.initPlugins(!!this.browserClient);
-
-      switch (opts.type) {
-        case 'csv':
-          exporter = new CsvExporter(project, filepath, opts);
-          break;
-        case 'zip':
-          exporter = new ZipExporter(project, filepath, opts);
-          break;
-        default:
-          throw new Error(`unsupported export type ${opts.type}`);
-      }
-      await exporter.export();
-
-      await storage.close();
-    }
-    catch (err) {
-      this.logger.error(err, `error exporting to ${filepath} using options ${JSON.stringify(opts)}`);
-    }
   }
 
   async getResources():Promise<Resource[]> {

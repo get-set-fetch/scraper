@@ -36,6 +36,17 @@ describe('Scraper', () => {
     sandbox.restore();
   });
 
+  it('isJSONConfig', async () => {
+    assert.isTrue(scraper.isJSONConfig({ client: 'sqlite3' }));
+
+    const ClassDef = class {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      foo() {}
+    };
+    assert.isFalse(scraper.isJSONConfig(ClassDef));
+    assert.isFalse(scraper.isJSONConfig(new ClassDef()));
+  });
+
   it('preScrape - do storage.connect', async () => {
     storage.connected = false;
     await scraper.preScrape();

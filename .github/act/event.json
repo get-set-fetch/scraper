@@ -1,3 +1,8 @@
 {
-    "act": true
-}
+    "act": true,
+    "pull_request": {
+        "head": {
+            "ref": "next"
+        }
+    }
+ }

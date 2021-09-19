@@ -1,11 +1,14 @@
 import Entity, { IStaticEntity } from './Entity';
 import Plugin, { PluginOpts } from '../../plugins/Plugin';
 import Resource, { ResourceQuery } from './Resource';
+import Storage from './Storage';
 import PluginStore, { StoreEntry } from '../../pluginstore/PluginStore';
 import { LogWrapper } from '../../logger/Logger';
 
-/** Groups resources sharing the same scrape configuration and discovered from the same initial URLs. */
+/** Groups resources sharing the same project configuration and discovered from the same initial URL(s). */
 export default abstract class Project extends Entity {
+  static storage:Storage;
+
   logger: LogWrapper;
 
   id: number;
@@ -19,6 +22,10 @@ export default abstract class Project extends Entity {
 
   // populated based on countResources, usefull info to have when serializing to plugin exection in DOM
   resourceCount:number;
+
+  get Constructor():typeof Project {
+    return (<typeof Project> this.constructor);
+  }
 
   constructor(kwArgs: Partial<Project> = {}) {
     super(kwArgs);

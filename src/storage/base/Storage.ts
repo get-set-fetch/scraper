@@ -1,7 +1,7 @@
 import Resource, { IStaticResource } from './Resource';
 import Project, { IStaticProject } from './Project';
 
-export type StorageConfig = {
+export type StorageOptions = {
   client: string,
   [key: string]: any
 }
@@ -11,7 +11,7 @@ export type StorageConfig = {
  * On a succesfull db connection it returns Project and Resource classes linked to that connection.
  */
 export default abstract class Storage {
-  config: StorageConfig;
+  config: StorageOptions;
 
   connected:boolean;
 

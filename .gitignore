@@ -110,7 +110,10 @@ dist
 .dist
 
 # examples data
-examples/data
+examples/**/*.csv
+examples/**/*.zip
+examples/**/*.sqlite
+examples/**/*.log
 !examples/*.gitignore
 
 # test tmp dir

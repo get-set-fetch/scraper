@@ -65,6 +65,7 @@ describe('Docker', () => {
       `--tag ${DOCKER_IMG_NAME}`,
       `--build-arg STORAGE=${storage}`,
       `--build-arg VERSION=${version}`,
+      `--build-arg BRANCH=${process.env.BRANCH}`,
 
       /*
       parent container is a buildx_buildkit_builder docker container running as root, uid/gid = 0
@@ -143,12 +144,12 @@ describe('Docker', () => {
           filename: 'gsf.sqlite',
         },
       },
-      dom: {
-        client: 'cheerio',
+      client: {
+        name: 'cheerio',
       },
     });
 
-    config.scrape.pipeline = 'dom-static-content';
+    config.project.pipeline = 'dom-static-content';
     fs.writeFileSync(join(__dirname, '../../tmp/config.json'), JSON.stringify(config));
 
     // chown tmp dir (to be mapped inside container) to 1000:1000 (container user uid/gid)
@@ -182,7 +183,7 @@ describe('Docker', () => {
     console.log('LOGS');
     console.log(logFileContent);
     assert.isTrue(/scraping complete/.test(logFileContent), '"scraping complete" log entry not found');
-    assert.isTrue(/exporting as csv/i.test(logFileContent), '"exporting as csv" log entry not found');
+    assert.isTrue(/exporting using csvexporter/i.test(logFileContent), '"exporting using csvexporter" log entry not found');
 
     const csvFile = join(__dirname, '../../tmp/export.csv');
     if (!fs.existsSync(csvFile)) assert.fail(`${csvFile} not generated`);
@@ -212,19 +213,21 @@ describe('Docker', () => {
           filename: 'gsf.sqlite',
         },
       },
-      dom: {
-        client: 'puppeteer',
-        ignoreHTTPSErrors: true,
-        args: [
-          '--host-rules=MAP *:80 127.0.0.1:8080, MAP *:443 127.0.0.1:8443',
-          '--ignore-certificate-errors',
-          '--no-first-run',
-          '--single-process',
-        ],
+      client: {
+        name: 'puppeteer',
+        opts: {
+          ignoreHTTPSErrors: true,
+          args: [
+            '--host-rules=MAP *:80 127.0.0.1:8080, MAP *:443 127.0.0.1:8443',
+            '--ignore-certificate-errors',
+            '--no-first-run',
+            '--single-process',
+          ],
+        },
       },
     });
 
-    config.scrape.pipeline = 'browser-static-content';
+    config.project.pipeline = 'browser-static-content';
     fs.writeFileSync(join(__dirname, '../../tmp/config.json'), JSON.stringify(config));
 
     // chown tmp dir (to be mapped inside container) to 1000:1000 (container user uid/gid)
@@ -264,7 +267,7 @@ describe('Docker', () => {
     console.log('LOGS');
     console.log(logFileContent);
     assert.isTrue(/scraping complete/.test(logFileContent), '"scraping complete" log entry not found');
-    assert.isTrue(/exporting as csv/i.test(logFileContent), '"exporting as csv" log entry not found');
+    assert.isTrue(/exporting using csvexporter/i.test(logFileContent), '"exporting using csvexporter" log entry not found');
 
     const csvFile = join(__dirname, '../../tmp/export.csv');
     if (!fs.existsSync(csvFile)) assert.fail(`${csvFile} not generated`);

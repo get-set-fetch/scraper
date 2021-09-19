@@ -9,7 +9,7 @@ import { IStaticProject } from '../../src/storage/base/Project';
 import Storage from '../../src/storage/base/Storage';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
-import { PluginOpts } from '../../src';
+import { PluginOpts, ZipExporter } from '../../src';
 
 function getConcurrencyInfo(concurrencyOpts: Partial<ConcurrencyOptions>):string {
   const concurrencyInfo = [ 'project', 'proxy', 'domain', 'session' ]
@@ -136,7 +136,8 @@ export default function acceptanceSuite(
       if (test.archiveEntries) {
         // generate archive
         const archivePath = `./test/tmp/${test.title}.zip`;
-        await scraper.export(archivePath, { type: 'zip' });
+        const zipExporter = new ZipExporter({ filepath: archivePath });
+        await zipExporter.export(project);
 
         // test it
         await ScrapingSuite.checkArchiveEntries(archivePath, test.archiveEntries);

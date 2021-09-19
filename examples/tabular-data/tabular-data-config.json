@@ -1,0 +1,48 @@
+{
+    "storage": {
+        "client": "sqlite3",
+        "useNullAsDefault": true,
+        "connection": {
+        "filename": "tabular-data.sqlite"
+        },
+        "debug": false
+    },
+    "client": {
+        "name": "cheerio"
+    },
+    "project": {
+        "name": "LanguageList",
+        "pipeline": "dom-static-content",
+        "pluginOpts": [
+            {
+            "name": "ExtractUrlsPlugin",
+            "maxDepth": 0
+            },
+            {
+            "name": "ExtractHtmlContentPlugin",
+            "selectorPairs": [
+                {
+                "contentSelector": "table.metadata + p + table.wikitable td:nth-child(2) > a:first-child",
+                "label": "language"
+                },
+                {
+                "contentSelector": "table.metadata + p + table.wikitable td:nth-child(3)",
+                "label": "speakers (milions)"
+                }
+            ]
+            }
+        ],
+        "resources": [
+            {
+            "url": "https://en.wikipedia.org/wiki/List_of_languages_by_number_of_native_speakers"
+            }
+        ]
+    },
+    "concurrency": {
+        "session": {
+            "maxRequests": 1,
+            "delay": 3000
+        }
+    }
+}
+  

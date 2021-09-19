@@ -1,63 +1,60 @@
 import fs from 'fs';
-import path, { join, parse } from 'path';
+import path, { parse } from 'path';
 import JSZip from 'jszip';
-import Resource from '../storage/base/Resource';
-import Exporter, { ExportOptions } from './Exporter';
+import Exporter from './Exporter';
+import Resource, { ResourceQuery } from '../storage/base/Resource';
+
 import * as MimeTypes from './MimeTypes.json';
 import { getLogger } from '../logger/Logger';
-
-export type ZipExportOptions = ExportOptions & {
-  type: 'zip',
-  pageLimit?: number;
-}
 
 /** Provides ZIP export capabilities. */
 export default class ZipExporter extends Exporter {
   logger = getLogger('ZipExporter');
-  opts: ZipExportOptions;
 
-  async export() {
-    const { pageLimit } = this.opts;
-    let pageOffset = 0;
+  zip:JSZip;
+  zipIdx: number;
 
-    this.logger.info(`Exporting as ${this.opts.type} under ${this.getPath(this.filepath, pageOffset, pageLimit)} ...`);
-
-    let resources = await this.project.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
-    if (resources.length === 0) {
-      this.logger.warn('No binary content to export.');
-      return;
-    }
-
-    while (resources && resources.length > 0) {
-      // create an archive for each chunk of paged resources
-      const zip = new JSZip();
-      resources.forEach(resource => {
-        const name = `${this.getName(resource)}.${this.getExtension(resource)}`;
-        zip.file(name, resource.data);
-      });
-
-      // eslint-disable-next-line no-await-in-loop
-      const content = await zip.generateAsync({
-        type: 'uint8array',
-        compression: 'STORE',
-      });
-
-      const zipPath = this.getPath(this.filepath, pageOffset, pageLimit);
-      fs.writeFileSync(zipPath, content);
-
-      pageOffset += pageLimit;
-      // eslint-disable-next-line no-await-in-loop
-      resources = await this.project.getPagedResources({ whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ], offset: pageOffset, limit: pageLimit });
-    }
-
-    this.logger.info(`Exporting as ${this.opts.type} under ${this.getPath(this.filepath, pageOffset, pageLimit)} ... done`);
+  getResourceQuery():Partial<ResourceQuery> {
+    return { whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ] };
   }
 
-  getPath(filepath: string, offset: number, limit: number) {
-    const { dir, name, ext } = parse(filepath);
+  async preParse():Promise<void> {
+    this.zipIdx = 0;
+  }
 
-    const idx = offset / limit;
-    const idxSuffix = idx === 0 ? '' : `-${idx}`;
+  async parse(resource: Partial<Resource>, idx: number):Promise<void> {
+    // for each bulk resource read do a separate archive
+    if (idx % this.opts.pageLimit === 0) {
+      // close the prev archive if present
+      if (this.zip) {
+        await this.writeZip();
+        this.zipIdx += 1;
+      }
+
+      // create a new archive
+      this.zip = new JSZip();
+    }
+
+    const name = `${this.getName(resource)}.${this.getExtension(resource)}`;
+    this.zip.file(name, resource.data);
+  }
+
+  async postParse() {
+    await this.writeZip();
+  }
+
+  async writeZip() {
+    const content = await this.zip.generateAsync({
+      type: 'uint8array',
+      compression: 'STORE',
+    });
+    fs.writeFileSync(this.getPath(), content);
+  }
+
+  getPath() {
+    const { dir, name, ext } = parse(this.opts.filepath);
+
+    const idxSuffix = this.zipIdx === 0 ? '' : `-${this.zipIdx}`;
     const zipPath = path.join(dir, `${name}${idxSuffix}${ext}`);
     return zipPath;
   }
@@ -103,12 +100,5 @@ export default class ZipExporter extends Exporter {
 
     // failed to find extension
     return 'unknown';
-  }
-
-  getDefaultOptions():ZipExportOptions {
-    return {
-      type: 'zip',
-      pageLimit: 100,
-    };
   }
 }

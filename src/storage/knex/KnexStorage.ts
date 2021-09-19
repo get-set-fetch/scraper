@@ -3,7 +3,7 @@ import { Knex, knex } from 'knex';
 import Entity from '../base/Entity';
 import { IStaticResource } from '../base/Resource';
 import { IStaticProject } from '../base/Project';
-import Storage, { StorageConfig } from '../base/Storage';
+import Storage, { StorageOptions } from '../base/Storage';
 import KnexResource from './KnexResource';
 import KnexProject from './KnexProject';
 
@@ -19,7 +19,7 @@ export default class KnexStorage extends Storage {
   Project: IStaticProject & typeof KnexProject;
   Resource: IStaticResource & typeof KnexResource;
 
-  constructor(config?:StorageConfig) {
+  constructor(config?:StorageOptions) {
     // if no config present, use in memory sqlite
     super(config || {
       client: 'sqlite3',
