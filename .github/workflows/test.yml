@@ -133,12 +133,12 @@ jobs:
 
     - name: ${{ matrix.storage_label }} unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-      if: ${{ matrix.client == 'puppeteer_chromium' }}
+      if: ${{ matrix.client == 'puppeteer_chromium' && !github.event.act }}
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/storage/${{ matrix.storage }}-unit-suite.ts\"
 
     - name: Coveralls for unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-      if: ${{ matrix.client == 'puppeteer_chromium' }}
+      if: ${{ matrix.client == 'puppeteer_chromium' && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
