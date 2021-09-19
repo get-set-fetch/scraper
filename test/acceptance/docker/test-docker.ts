@@ -65,6 +65,7 @@ describe('Docker', () => {
       `--tag ${DOCKER_IMG_NAME}`,
       `--build-arg STORAGE=${storage}`,
       `--build-arg VERSION=${version}`,
+      `--build-arg BRANCH=${process.env.BRANCH}`,
 
       /*
       parent container is a buildx_buildkit_builder docker container running as root, uid/gid = 0

@@ -21,7 +21,7 @@
   },
   "module": "dist/esm/index.js",
   "scripts": {
-    "act": "act --bind",
+    "act": "act pull_request --bind",
     "link:gsf": "npm link ../test-utils",
     "lint": "eslint src/**/*.ts",
     "test:unit:non-storage:single": "mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --grep \"PluginStore\" --exclude test/unit/storage/**/*",

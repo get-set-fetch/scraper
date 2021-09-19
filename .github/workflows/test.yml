@@ -234,7 +234,7 @@ jobs:
       run: npm ci
 
     - name: Docker tests
-      run: npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
+      run: BRANCH=${{ github.head_ref }} npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
 
   coverage:
     name: coverage

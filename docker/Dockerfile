@@ -9,6 +9,7 @@ ARG STORAGE
 ARG BROWSER_CLIENT
 ARG DOM_CLIENT
 ARG VERSION
+ARG BRANCH=master
 
 # core apk packages
 RUN apk add --no-cache nodejs npm git
@@ -41,7 +42,7 @@ RUN mkdir -p /home/gsfuser/Downloads /home/gsfuser/scraper
 
 # install and build get-set-fetch/scraper from github sources
 RUN if [ "$VERSION" = "source" ] ; then \
-    git clone https://github.com/get-set-fetch/scraper.git /home/gsfuser/scraper \
+    git clone -b "$BRANCH" --single-branch https://github.com/get-set-fetch/scraper.git /home/gsfuser/scraper \
     && cd /home/gsfuser/scraper \
     && npm ci \
     && npm run build; fi
