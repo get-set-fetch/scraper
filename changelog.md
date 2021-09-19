@@ -1,6 +1,6 @@
 ## Changelog
 
-### Unreleased
+### 0.7.0 - 2021-09-19
 BREAKING CHANGES: Scraper and Exporter class signatures have changed.
 
 - Scraper
@@ -8,7 +8,6 @@ BREAKING CHANGES: Scraper and Exporter class signatures have changed.
 - Export
   - Exporter class signature update
   - Custom exporters are now supported
-
 ### 0.6.0 - 2021-08-15
 - Docker
   - added Dockerfile with docker and docker-compose examples
