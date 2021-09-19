@@ -238,12 +238,12 @@ jobs:
 
   coverage:
     name: coverage
-    if: ${{ env.ENABLE_CODE_COVERAGE && !github.event.act }}
     runs-on: ubuntu-18.04
     needs: [cli, acceptance]
     
     steps:
     - name: Coveralls
+      if: ${{ env.ENABLE_CODE_COVERAGE && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
