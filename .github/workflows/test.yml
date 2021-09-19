@@ -141,7 +141,7 @@ jobs:
 
     - name: Coveralls for unit tests
       # run storage unit tests once for each storage type, link unit tests to puppeteer_chromium client
-      if: ${{ env.ENABLE_CODE_COVERAGE && matrix.client == 'puppeteer_chromium' && !github.event.act }}
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && matrix.client == 'puppeteer_chromium' && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -153,7 +153,7 @@ jobs:
         npx nyc --exclude=**/BrowserFetchPlugin.ts --exclude=**/dom-utils.ts mocha --config test/.mocharc.js test/acceptance/${{ matrix.client }}.ts --grep '${{ matrix.storage }} - concurrency: ${{ matrix.concurrency }}'
 
     - name: Coveralls for acceptance tests
-      if: ${{ env.ENABLE_CODE_COVERAGE && !github.event.act }}
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -243,7 +243,7 @@ jobs:
     
     steps:
     - name: Coveralls
-      if: ${{ env.ENABLE_CODE_COVERAGE && !github.event.act }}
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
