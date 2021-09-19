@@ -47,7 +47,7 @@ jobs:
       run: npx nyc mocha --config test/.mocharc.js \"test/unit/**/*.ts\" --exclude test/unit/storage/**/* 
 
     - name: Coveralls
-      if: ${{ env.ENABLE_CODE_COVERAGE && !github.event.act }}
+      if: ${{ env.ENABLE_CODE_COVERAGE == true && !github.event.act }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
