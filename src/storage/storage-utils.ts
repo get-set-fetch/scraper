@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable import/prefer-default-export */
-import { KnexStorage } from '..';
+import { moduleExists } from '../plugins/file-utils';
 import Storage, { StorageOptions } from './base/Storage';
+
+const KnexStorage = moduleExists('knex') ? require('./knex/KnexStorage').default : null;
 
 export function initStorage(config: StorageOptions):Storage {
   let storage:Storage;

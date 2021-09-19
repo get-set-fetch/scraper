@@ -1,6 +1,6 @@
 /* for standalone projects replace '../../src/index' with '@get-set-fetch/scraper' */
 import { destination } from 'pino';
-import { Scraper, setLogger, ScrapeEvent } from '../../src/index';
+import { Scraper, Project, setLogger, ScrapeEvent, CsvExporter } from '../../src/index';
 
 /* scrape configuration */
 import ScrapeConfig from './tabular-data-config.json';
@@ -11,8 +11,9 @@ setLogger({ level: 'info' }, destination('scrape.log'));
 /* create a scraper instance with the above settings */
 const scraper = new Scraper(ScrapeConfig.storage, ScrapeConfig.client);
 
-scraper.on(ScrapeEvent.ProjectScraped, async () => {
-  await scraper.export('languages.csv', { type: 'csv' });
+scraper.on(ScrapeEvent.ProjectScraped, async (project: Project) => {
+  const exporter = new CsvExporter({ filepath: 'languages.csv' });
+  await exporter.export(project);
 });
 
 /* start scraping by specifying project and concurrency settings */

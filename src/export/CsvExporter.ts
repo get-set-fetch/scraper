@@ -1,11 +1,9 @@
 import fs from 'fs';
-import Resource from '../storage/base/Resource';
+import Resource, { ResourceQuery } from '../storage/base/Resource';
 import Exporter, { ExportOptions } from './Exporter';
 import { getLogger } from '../logger/Logger';
 
 export type CsvExportOptions = ExportOptions & {
-  type: 'csv',
-  cols?: string[];
   fieldSeparator?: string;
   lineSeparator?: string;
 }
@@ -16,39 +14,28 @@ export default class CsvExporter extends Exporter {
 
   opts: CsvExportOptions;
 
-  async export() {
-    this.logger.info(`Exporting as ${this.opts.type} under ${this.filepath} ...`);
+  wstream: fs.WriteStream;
 
-    const { lineSeparator, fieldSeparator, pageLimit } = this.opts;
-    let pageOffset = 0;
+  getResourceQuery():Partial<ResourceQuery> {
+    return { whereNotNull: [ 'content' ], cols: [ 'url', 'content' ] };
+  }
 
-    let resources = await this.project.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
-    if (resources.length === 0) {
-      this.logger.warn('No csv content to export.');
-      return;
-    }
-
-    const wstream = fs.createWriteStream(this.filepath);
+  async preParse():Promise<void> {
+    this.wstream = fs.createWriteStream(this.opts.filepath);
 
     // write csv header
-    wstream.write([ 'url', ...this.getContentKeys() ].join(fieldSeparator));
+    this.wstream.write([ 'url', ...this.getContentKeys() ].join(this.opts.fieldSeparator));
+  }
 
-    // write csv body
-    while (resources && resources.length > 0) {
-      resources.forEach(resource => {
-        wstream.write(lineSeparator);
-        const csvRows = this.resourceToCsvRows(resource);
-        wstream.write(csvRows.join(lineSeparator));
-      });
+  async parse(resource: Partial<Resource>):Promise<void> {
+    const { lineSeparator } = this.opts;
+    const csvRows = this.resourceToCsvRows(resource);
+    this.wstream.write(lineSeparator);
+    this.wstream.write(csvRows.join(lineSeparator));
+  }
 
-      pageOffset += pageLimit;
-      // eslint-disable-next-line no-await-in-loop
-      resources = await this.project.getPagedResources({ whereNotNull: [ 'content' ], offset: pageOffset, limit: pageLimit });
-    }
-
-    wstream.close();
-
-    this.logger.info(`Exporting as ${this.opts.type} under ${this.filepath} ... done`);
+  async postParse() {
+    this.wstream.close();
   }
 
   getContentKeys():string[] {
@@ -96,12 +83,10 @@ export default class CsvExporter extends Exporter {
     return contentVal;
   }
 
-  getDefaultOptions():CsvExportOptions {
+  getDefaultOptions():Partial<CsvExportOptions> {
     return {
-      type: 'csv',
       fieldSeparator: ',',
       lineSeparator: '\n',
-      cols: [ 'url', 'content' ],
       pageLimit: 100,
     };
   }

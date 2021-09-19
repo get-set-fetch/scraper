@@ -137,11 +137,14 @@ The entire process is asynchronous. Listen to the emitted [scrape events](https:
 
 #### Export results
 ```js
-const { ScrapeEvent } = require('@get-set-fetch/scraper');
+const { ScrapeEvent, CsvExporter, ZipExporter } = require('@get-set-fetch/scraper');
 
 scraper.on(ScrapeEvent.ProjectScraped, async (project) => {
-  await scraper.export('books.csv', { type: 'csv' });
-  await scraper.export('book-covers.zip', { type: 'zip' });
+  const csvExporter = new CsvExporter({ filepath: 'books.csv' });
+  await csvExporter.export(project);
+
+  const zipExporter = new ZipExporter({ filepath: 'book-covers.zip' });
+  await zipExporter.export(project);
 })
 ```
 Wait for scraping to complete by listening to `ProjectScraped` event.

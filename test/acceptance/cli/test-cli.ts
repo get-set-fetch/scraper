@@ -212,7 +212,7 @@ describe('Command Line Interface', () => {
     ));
 
     assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
-    assert.isTrue(/missing --exportType/.test(stderr), '"missing --exportType" log entry not found');
+    assert.isTrue(/missing or invalid --exportType/.test(stderr), '"missing or invalid --exportType" log entry not found');
   });
 
   it('new project --save --discover --retry 1 --loglevel info | SIGTERM', async () => {

@@ -11,9 +11,6 @@ import PluginStore, { StoreEntry } from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
 import Storage, { StorageOptions } from '../storage/base/Storage';
 import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
-import Exporter, { ExportOptions } from '../export/Exporter';
-import CsvExporter from '../export/CsvExporter';
-import ZipExporter from '../export/ZipExporter';
 import { IDomClientConstructor } from '../domclient/DomClient';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
 import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMetrics';
@@ -138,10 +135,11 @@ export default class Scraper extends EventEmitter {
   isJSONConfig(config):boolean {
     /*
     config objects:
-    - are not functions (unlike BrowserClient/IDomClientConstructor classes)
+    - are not custom class definitions
+    - are not ciustom class instances
     - don't have function properties
     */
-    return typeof config !== 'function'
+    return config.constructor.name === 'Object'
       && Object.keys(config).find(key => typeof config[key] === 'function') === undefined;
   }
 
@@ -627,56 +625,6 @@ export default class Scraper extends EventEmitter {
     }
 
     return result;
-  }
-
-  /**
-   *
-   * @param filepath - location to store the content, relative to the current working directory. Missing directories will not be created.
-   * @param opts - export options pertinent to the selected export type. Type is required.
-   * @param project - use the provided project for export, if not available use the project currently linked to scraper
-   */
-  async export(filepath: string, opts: ExportOptions, exportProject?:Project):Promise<void> {
-    let exporter: Exporter;
-
-    try {
-      if (!(opts && opts.type)) {
-        throw new Error('specify an export type');
-      }
-
-      // scraper is not linked to a project, an external project to export was not provided
-      if (!exportProject && !this.project) {
-        throw new Error('no project linked to the current scraper instance, no external project provided');
-      }
-
-      // use a separate db connection, scrape and export have different db lifecycles and may run in parallel
-      const storage:Storage = initStorage(this.storage.config);
-      await storage.connect();
-
-      const project:Project = await storage.Project.get(exportProject ? exportProject.id : this.project.id);
-      if (!project) {
-        throw new Error(`could not find project ${exportProject ? exportProject.name : this.project.name}`);
-      }
-
-      // need to init the plugins as one of the plugins may contain info related to the exported columns
-      project.plugins = await project.initPlugins(!!this.browserClient);
-
-      switch (opts.type) {
-        case 'csv':
-          exporter = new CsvExporter(project, filepath, opts);
-          break;
-        case 'zip':
-          exporter = new ZipExporter(project, filepath, opts);
-          break;
-        default:
-          throw new Error(`unsupported export type ${opts.type}`);
-      }
-      await exporter.export();
-
-      await storage.close();
-    }
-    catch (err) {
-      this.logger.error(err, `error exporting to ${filepath} using options ${JSON.stringify(opts)}`);
-    }
   }
 
   async getResources():Promise<Resource[]> {

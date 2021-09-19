@@ -5,9 +5,10 @@
 import fs from 'fs';
 import { join, dirname, extname, parse, isAbsolute } from 'path';
 import pino from 'pino';
+import { ExportOptions } from '../export/Exporter';
 
 import { Scraper, ScrapeEvent, ProjectOptions,
-  setLogger, StorageOptions, Project } from '../index';
+  setLogger, StorageOptions, Project, Exporter, CsvExporter, ZipExporter } from '../index';
 import { getPackageDir } from '../plugins/file-utils';
 import { ConcurrencyOptions } from '../scraper/ConcurrencyManager';
 import { RuntimeOptions } from '../scraper/RuntimeMetrics';
@@ -211,20 +212,11 @@ export async function invokeScraper(argObj:ArgObjType) {
     if (!fs.existsSync(dirname(exportPath))) throw new Error(`export path ${dirname(exportPath)} does not exist`);
     console.log(`scraped data will be exported to ${exportPath}`);
 
-    let { exportType } = argObj;
-    // an export type was not explicitely defined, try to determine it based on export file extension
-    if (!exportType) {
-      const extName = extname(exportPath);
-      switch (extName) {
-        case '.csv':
-          exportType = 'csv';
-          break;
-        case '.zip':
-          exportType = 'zip';
-          break;
-        default:
-          throw new Error('missing --exportType');
-      }
+    const exportType = argObj.exportType || extname(exportPath).slice(1);
+
+    // cli only supports builtin exporters
+    if (![ 'csv', 'zip' ].includes(exportType)) {
+      throw new Error('missing or invalid --exportType');
     }
 
     scraper.addListener(ScrapeEvent.ProjectScraped, async (project:Project) => {
@@ -235,7 +227,22 @@ export async function invokeScraper(argObj:ArgObjType) {
         updatedExportPath = join(dir, `${name}-${project.name}${ext}`);
       }
 
-      await scraper.export(updatedExportPath, { type: exportType }, project);
+      const exportOpts:ExportOptions = { filepath: updatedExportPath };
+
+      let exporter:Exporter;
+      switch (exportType) {
+        case 'csv':
+          exporter = new CsvExporter(exportOpts);
+          break;
+        case 'zip':
+          exporter = new ZipExporter(exportOpts);
+          break;
+        default:
+      }
+
+      if (exporter) {
+        await exporter.export(project);
+      }
     });
   }
 
@@ -286,7 +293,7 @@ function cli(args) {
     invoke(args);
   }
   catch (err) {
-    console.error(err.toString());
+    console.error(err.message);
   }
 }
 

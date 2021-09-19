@@ -2,7 +2,7 @@
   "client": "sqlite3",
   "useNullAsDefault": true,
   "connection": {
-    "filename": "acc.sqlite"
+    "filename": "test/tmp/acc.sqlite"
   },
   "debug": false
 }

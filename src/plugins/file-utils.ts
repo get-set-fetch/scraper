@@ -14,3 +14,12 @@ export function getPackageDir(startPath: string):string {
 
   return path.join(startDirPath, ...parentPath);
 }
+
+export function moduleExists(name) {
+  try {
+    return require.resolve(name);
+  }
+  catch (e) {
+    return false;
+  }
+}

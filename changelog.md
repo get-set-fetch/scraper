@@ -1,10 +1,13 @@
 ## Changelog
 
 ### Unreleased
-BREAKING CHANGES: Scraper class signature has changed
+BREAKING CHANGES: Scraper and Exporter class signatures have changed.
 
 - Scraper
-  - class constructor and scrape() function signature update
+  - Scraper class signature update
+- Export
+  - Exporter class signature update
+  - Custom exporters are now supported
 
 ### 0.6.0 - 2021-08-15
 - Docker

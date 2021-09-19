@@ -7,6 +7,7 @@ import { join } from 'path';
 import ZipExporter from '../../../src/export/ZipExporter';
 import KnexProject from '../../../src/storage/knex/KnexProject';
 import Exporter from '../../../src/export/Exporter';
+import * as StorageUtils from '../../../src/storage/storage-utils';
 
 describe('ZipExporter', () => {
   let sandbox:SinonSandbox;
@@ -17,9 +18,19 @@ describe('ZipExporter', () => {
   beforeEach(() => {
     sandbox = createSandbox();
     project = sandbox.createStubInstance(KnexProject);
+    project.Constructor.storage = { };
+
+    sandbox.stub(StorageUtils, 'initStorage').returns({
+      connect: sandbox.stub(),
+      close: sandbox.stub(),
+      Project: {
+        get: sandbox.stub().returns(project),
+      },
+    } as any);
+
     writeStub = sandbox.stub(fs, 'writeFileSync');
 
-    exporter = new ZipExporter(project, 'archiveA.zip');
+    exporter = new ZipExporter({ filepath: 'archiveA.zip' });
   });
 
   afterEach(() => {
@@ -36,7 +47,7 @@ describe('ZipExporter', () => {
       },
     ]);
     project.getPagedResources.onCall(1).returns([]);
-    await exporter.export();
+    await exporter.export(project);
 
     const [ archiveName, archiveContent ] = writeStub.getCall(0).args;
     assert.strictEqual(archiveName, join(process.cwd(), 'archiveA.zip'));
@@ -56,7 +67,7 @@ describe('ZipExporter', () => {
       },
     ]);
     project.getPagedResources.onCall(1).returns([]);
-    await exporter.export();
+    await exporter.export(project);
 
     const [ archiveName, archiveContent ] = writeStub.getCall(0).args;
     assert.strictEqual(archiveName, join(process.cwd(), 'archiveA.zip'));
@@ -83,7 +94,7 @@ describe('ZipExporter', () => {
       },
     ]);
     project.getPagedResources.onCall(2).returns([]);
-    await exporter.export();
+    await exporter.export(project);
 
     let [ archiveName, archiveContent ] = writeStub.getCall(0).args;
     let archive = await JSZip.loadAsync(archiveContent);
