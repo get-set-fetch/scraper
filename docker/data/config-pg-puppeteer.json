@@ -22,7 +22,7 @@
       ]
     }
   },
-  "scrape": {
+  "project": {
     "name": "myProj",
     "pipeline": "browser-static-content",
     "pluginOpts": [
