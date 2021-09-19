@@ -233,16 +233,13 @@ jobs:
       if: ${{ !github.event.act }}
       run: npm ci
 
-    - name: Extract branch name on push request
+    - name: Docker tests using branch name from push requests
       if: github.event_name != 'pull_request'
-      run: echo "::set-env name=BRANCH::${GITHUB_REF#refs/heads/}"
+      run: BRANCH=${GITHUB_REF#refs/heads/} npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
 
-    - name: Extract branch name on pull request
+    - name: Docker tests using branch name from pull requests
       if: github.event_name == 'pull_request'
-      run: echo "::set-env name=BRANCH::${{ github.head_ref }}"
-     
-    - name: Docker tests
-      run: BRANCH=$BRANCH npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
+      run: BRANCH=${{ github.head_ref }} npx mocha --config test/.mocharc.js \"test/acceptance/docker/test-docker.ts\"
 
   coverage:
     name: coverage
