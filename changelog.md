@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.7.1 - 2021-09-27
+- All default plugins are now exported so that they can be easily extended.
+
 ### 0.7.0 - 2021-09-19
 BREAKING CHANGES: Scraper and Exporter class signatures have changed.
 
