@@ -26,6 +26,15 @@ export { initStorage } from './storage/storage-utils';
 export { default as Project } from './storage/base/Project';
 export { default as Resource, ResourceQuery } from './storage/base/Resource';
 export { default as Plugin, PluginOpts } from './plugins/Plugin';
+
+export { default as BrowserFetchPlugin } from './plugins/default/BrowserFetchPlugin';
+export { default as ExtractHtmlContentPlugin } from './plugins/default/ExtractHtmlContentPlugin';
+export { default as ExtractUrlsPlugin } from './plugins/default/ExtractUrlsPlugin';
+export { default as InsertResourcesPlugin } from './plugins/default/InsertResourcesPlugin';
+export { default as NodeFetchPlugin } from './plugins/default/NodeFetchPlugin';
+export { default as ScrollPlugin } from './plugins/default/ScrollPlugin';
+export { default as UpsertResourcePlugin } from './plugins/default/UpsertResourcePlugin';
+
 export { default as PluginStore, StoreEntry } from './pluginstore/PluginStore';
 export { default as Scraper, ScrapeConfig, ProjectOptions, ScrapeEvent } from './scraper/Scraper';
 
