@@ -6,10 +6,7 @@ import { Scraper, setLogger, ScrapeEvent, Project } from '../../src/index';
 import ScrapeConfig from './scrape-config.json';
 import SitemapExporter from './SitemapExporter';
 
-/*
-write all INFO and above messages to 'gsf.logs'
-for more verbose logging when troubleshooting switch to DEBUG
-*/
+/* write all INFO and above messages to 'gsf.logs' */
 setLogger({ level: 'info' }, destination('scrape.log'));
 
 /* create a scraper instance with the above settings */

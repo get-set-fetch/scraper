@@ -8,7 +8,7 @@ export default class SitemapExporter extends Exporter {
   wstream: fs.WriteStream;
 
   getResourceQuery() {
-    return { cols: [ 'url' ] };
+    return { cols: [ 'url' ], where: { contentType: 'text/html' } };
   }
 
   async preParse() {

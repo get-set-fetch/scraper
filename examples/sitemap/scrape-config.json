@@ -1,43 +1,44 @@
 {
-    "storage": {
-        "client": "sqlite3",
-        "useNullAsDefault": true,
-        "connection": {
-        "filename": "gsf.sqlite"
-        },
-        "debug": false
-    },
-    "client": {
-        "name": "cheerio",
-        "opts": {
-            "headless": true
-        }
-    },
-    "project": {
-        "name": "sitemap",
-        "resources": [
-            {
-                "url": "https://www.getsetfetch.org/index.html"
-            }
-        ],
-        "pipeline": "dom-static-content",
-        "pluginOpts": [
-        {
-            "name": "SkipExtractHtmlContentPlugin",
-            "path": "SkipExtractHtmlContentPlugin.ts",
-            "replace": "ExtractHtmlContentPlugin"
-        },
-        {
-            "name": "InsertResourcesPlugin",
-            "maxResources": 100
-        }
-        ]
-    },
-    "concurrency": {
-        "session": {
-            "maxRequests": 1,
-            "delay": 3000
-        }
-    }
+	"storage": {
+		"client": "sqlite3",
+		"useNullAsDefault": true,
+		"connection": {
+			"filename": "gsf.sqlite"
+		},
+		"debug": false
+	},
+	"client": {
+		"name": "cheerio"
+	},
+	"project": {
+		"name": "sitemap",
+		"resources": [
+			{
+				"url": "https://www.getsetfetch.org/index.html"
+			}
+		],
+		"pipeline": "dom-static-content",
+		"pluginOpts": [
+			{
+				"name": "ExtractSameHostUrlsPlugin",
+				"path": "ExtractSameHostUrlsPlugin.ts",
+				"replace": "ExtractUrlsPlugin"
+			},
+			{
+				"name": "SkipExtractHtmlContentPlugin",
+				"path": "SkipExtractHtmlContentPlugin.ts",
+				"replace": "ExtractHtmlContentPlugin"
+			},
+			{
+				"name": "InsertResourcesPlugin",
+				"maxResources": 100
+			}
+		]
+	},
+	"concurrency": {
+		"session": {
+			"maxRequests": 1,
+			"delay": 3000
+		}
+	}
 }
-  
