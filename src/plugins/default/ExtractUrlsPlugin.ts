@@ -103,7 +103,7 @@ export default class ExtractUrlsPlugin extends Plugin {
       const fullUrl = new URL(resource.url, currentUrl);
       fullUrl.hash = '';
 
-      if (this.isValidResourceUrl(fullUrl)) {
+      if (this.isValidUrl(fullUrl)) {
         // eslint-disable-next-line no-param-reassign
         resource.url = fullUrl.toString();
       }
@@ -153,7 +153,7 @@ export default class ExtractUrlsPlugin extends Plugin {
     return resources.filter(resource => resource !== null);
   }
 
-  isValidResourceUrl(resourceUrl) {
+  isValidUrl(resourceUrl) {
     // check valid protocol
     if (resourceUrl.protocol.match(/^(http:|https:)$/) === null) {
       return false;

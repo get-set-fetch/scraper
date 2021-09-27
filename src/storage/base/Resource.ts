@@ -94,10 +94,10 @@ export default abstract class Resource extends Entity {
 export type ResourceQuery = {
   offset: number;
   limit: number;
-  where: {
+  where: Partial<{
     projectId: number;
     [prop: string]: string|number;
-  },
+  }>,
   whereNotNull: string[],
   cols: string[];
 }
