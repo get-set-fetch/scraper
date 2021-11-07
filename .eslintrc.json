@@ -14,7 +14,11 @@
       "modules": true
     },
     "useJSXTextNode": true,
-    "project": ["./tsconfig.json", "./test/tsconfig.test.json", "./examples/tsconfig.examples.json"]
+    "project": [
+      "./tsconfig.json", 
+      "./test/tsconfig.test.json", 
+      "./examples/tsconfig.examples.json"
+    ]
   },
   "settings": {
     "import/resolver": {
@@ -33,6 +37,7 @@
     "mocha": true
   },
   "rules": {
+    "no-use-before-define": ["off"],
     "import/extensions": [
       "error",
       "ignorePackages",
