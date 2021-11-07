@@ -294,7 +294,7 @@ export default class KnexQueue extends Queue {
 
     if (estimate && this.Constructor.storage.client === 'pg') {
       selectCount = (await this.Constructor.storage.knex.raw(
-        'SELECT count_estimate(\'SELECT 1 FROM ?? WHERE  "status" = NULL) as "count"',
+        'SELECT count_estimate(\'SELECT 1 FROM ?? WHERE  "status" = NULL\') as "count"',
         this.Constructor.tableName,
       )).rows;
     }
@@ -319,7 +319,7 @@ export default class KnexQueue extends Queue {
 
     if (estimate && this.Constructor.storage.client === 'pg') {
       selectCount = (await this.Constructor.storage.knex.raw(
-        'SELECT count_estimate(\'SELECT 1 FROM ??) as "count"',
+        'SELECT count_estimate(\'SELECT 1 FROM ??\') as "count"',
         this.Constructor.tableName,
       )).rows;
     }
