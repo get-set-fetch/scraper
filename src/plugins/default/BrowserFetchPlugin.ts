@@ -50,12 +50,12 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
   logger = getLogger('BrowserFetchPlugin');
   opts: SchemaType<typeof BrowserFetchPlugin.schema>;
 
-  constructor(opts:SchemaType<typeof BrowserFetchPlugin.schema> = {}) {
+  constructor(opts: SchemaType<typeof BrowserFetchPlugin.schema> = {}) {
     super(opts);
   }
 
-  async apply(project: Project, resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
-    let result:Partial<Resource>;
+  async apply(project: Project, resource: Resource, client: BrowserClient): Promise<Partial<Resource>> {
+    let result: Partial<Resource>;
 
     try {
       // url is of html mime type, loaded it in a browser tab
@@ -79,7 +79,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
   }
 
   // fetch resource via builtin fetch
-  async fetch(resource: Resource, client: BrowserClient, opts:RequestInit = {}):Promise<Partial<Resource>> {
+  async fetch(resource: Resource, client: BrowserClient, opts: RequestInit = {}): Promise<Partial<Resource>> {
     /*
     trying to load a resource from a different domain, CORS is in effect
     open the external url in a new browser tab
@@ -93,8 +93,8 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     }
 
     const { binaryString, headers, status, redirected, url }:
-    {binaryString: string, headers: {[key: string]: string}, status:number, redirected: boolean, url: string} = await client.evaluate(
-      ({ url, opts }:{url: string, opts:RequestInit}) => new Promise(async (resolve, reject) => {
+    { binaryString: string, headers: { [key: string]: string }, status: number, redirected: boolean, url: string } = await client.evaluate(
+      ({ url, opts }: { url: string, opts: RequestInit }) => new Promise(async (resolve, reject) => {
         try {
           const response = await fetch(url, { method: 'GET', credentials: 'include', ...opts });
           const { status, headers, redirected, url: finalUrl } = response;
@@ -140,7 +140,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
       throw new FetchError(status);
     }
 
-    const result:Partial<Resource> = {
+    const result: Partial<Resource> = {
       status,
       contentType: headers['content-type'],
     };
@@ -152,7 +152,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     return result;
   }
 
-  async openInTab(resource: Resource, client:BrowserClient):Promise<Partial<Resource>> {
+  async openInTab(resource: Resource, client: BrowserClient): Promise<Partial<Resource>> {
     const response = await client.goto(resource.url, this.opts.gotoOptions);
     const redirectResponse = await client.getRedirectResponse(response.request());
 
@@ -167,16 +167,16 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     }
 
     // what follows is status 2xx handling
-    const contentType:string = await client.evaluate(() => document.contentType);
+    const contentType: string = await client.evaluate(() => document.contentType);
 
     if (/html/.test(contentType) && this.opts.stabilityCheck > 0) {
-      const stabilityStatus:DomStabilityStatus = await client.evaluate(waitForDomStability, { stabilityCheck: this.opts.stabilityCheck, stabilityTimeout: this.opts.stabilityTimeout });
+      const stabilityStatus: DomStabilityStatus = await client.evaluate(waitForDomStability, { stabilityCheck: this.opts.stabilityCheck, stabilityTimeout: this.opts.stabilityTimeout });
       if (stabilityStatus === DomStabilityStatus.Unstable) {
         throw new Error(`DOM not stable after stabilityTimeout of ${this.opts.stabilityTimeout}`);
       }
     }
 
-    const result:Partial<Resource> = {
+    const result: Partial<Resource> = {
       status: response.status(),
       contentType,
     };
@@ -199,7 +199,7 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     return result;
   }
 
-  isCorsActive(originUrl: string, toBeFetchedUrl: string):boolean {
+  isCorsActive(originUrl: string, toBeFetchedUrl: string): boolean {
     return new URL(originUrl).hostname !== new URL(toBeFetchedUrl).hostname;
   }
 
@@ -210,10 +210,10 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     return extensionMatch ? extensionMatch[1] : null;
   }
 
-  async isHtml(resource: Resource, client:BrowserClient):Promise<boolean> {
+  async isHtml(resource: Resource, client: BrowserClient): Promise<boolean> {
     const ext = this.getExtension(resource.url);
 
-    let isHtml:boolean;
+    let isHtml: boolean;
 
     // try to determine if resource is scrapable (html content) based on extension type
     if (ext) {

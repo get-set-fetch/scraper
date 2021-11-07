@@ -16,18 +16,18 @@ export default class CsvExporter extends Exporter {
 
   wstream: fs.WriteStream;
 
-  getResourceQuery():Partial<ResourceQuery> {
+  getResourceQuery(): Partial<ResourceQuery> {
     return { whereNotNull: [ 'content' ], cols: [ 'url', 'content' ] };
   }
 
-  async preParse():Promise<void> {
+  async preParse(): Promise<void> {
     this.wstream = fs.createWriteStream(this.opts.filepath);
 
     // write csv header
     this.wstream.write([ 'url', ...this.getContentKeys() ].join(this.opts.fieldSeparator));
   }
 
-  async parse(resource: Partial<Resource>):Promise<void> {
+  async parse(resource: Partial<Resource>): Promise<void> {
     const { lineSeparator } = this.opts;
     const csvRows = this.resourceToCsvRows(resource);
     this.wstream.write(lineSeparator);
@@ -38,14 +38,14 @@ export default class CsvExporter extends Exporter {
     this.wstream.close();
   }
 
-  getContentKeys():string[] {
+  getContentKeys(): string[] {
     return this.project.plugins
       .map(plugin => plugin.getContentKeys())
       .find(contentKeys => contentKeys)
-    || [];
+      || [];
   }
 
-  resourceToCsvRows(resource: Partial<Resource>):string[][] {
+  resourceToCsvRows(resource: Partial<Resource>): string[][] {
     const { url, content } = resource;
 
     const csvRows: string[][] = [];
@@ -83,7 +83,7 @@ export default class CsvExporter extends Exporter {
     return contentVal;
   }
 
-  getDefaultOptions():Partial<CsvExportOptions> {
+  getDefaultOptions(): Partial<CsvExportOptions> {
     return {
       fieldSeparator: ',',
       lineSeparator: '\n',

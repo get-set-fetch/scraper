@@ -5,10 +5,10 @@ import Resource from '../../storage/base/Resource';
 import Plugin from '../Plugin';
 
 export class FetchError extends Error {
-  status:number;
+  status: number;
   redirectUrl: string;
 
-  constructor(status: number, redirectUrl?:string) {
+  constructor(status: number, redirectUrl?: string) {
     super();
     this.status = status;
     this.redirectUrl = redirectUrl;
@@ -20,7 +20,7 @@ export default abstract class BaseFetchPlugin extends Plugin {
    * check against 2xx codes and an optional list of allowed status
    * @param status response status code
    */
-  isValidStatus(status:number, allowedStatus: number[] = []) {
+  isValidStatus(status: number, allowedStatus: number[] = []) {
     return Math.floor(status / 100) === 2 || allowedStatus.includes(status);
   }
 
@@ -28,7 +28,7 @@ export default abstract class BaseFetchPlugin extends Plugin {
    *  check against 3xx codes
    * @param status response status code
    */
-  isRedirectStatus(status:number) {
+  isRedirectStatus(status: number) {
     return Math.floor(status / 100) === 3;
   }
 
@@ -43,8 +43,8 @@ export default abstract class BaseFetchPlugin extends Plugin {
     return protocol === 'http:' || protocol === 'https:';
   }
 
-  async apply(project: Project, resource: Resource, client: BrowserClient):Promise<Partial<Resource>> {
-    let result:Partial<Resource>;
+  async apply(project: Project, resource: Resource, client: BrowserClient): Promise<Partial<Resource>> {
+    let result: Partial<Resource>;
 
     try {
       result = await this.fetch(resource, client);
@@ -56,7 +56,7 @@ export default abstract class BaseFetchPlugin extends Plugin {
     return result;
   }
 
-  fetchErrResult(err:Error) {
+  fetchErrResult(err: Error) {
     if (err instanceof FetchError) {
       const { status, redirectUrl } = err;
       /*
@@ -89,7 +89,7 @@ export default abstract class BaseFetchPlugin extends Plugin {
    * Extract just the content type, not the full header value
    * @param rawContentType : like 'text/html; charset=UTF-8'
    */
-  getContentType(rawContentType: string):string {
+  getContentType(rawContentType: string): string {
     if (rawContentType) {
       const matchArr = rawContentType.match(/^[^;]+/);
       return matchArr ? matchArr[0] : null;
@@ -97,5 +97,5 @@ export default abstract class BaseFetchPlugin extends Plugin {
     return null;
   }
 
-  abstract fetch(resource: Resource, client?: BrowserClient, opts?:RequestInit);
+  abstract fetch(resource: Resource, client?: BrowserClient, opts?: RequestInit);
 }

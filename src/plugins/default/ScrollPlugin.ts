@@ -52,7 +52,7 @@ export default class ScrollPlugin extends Plugin {
   opts: SchemaType<typeof ScrollPlugin.schema>;
   actionNo: number;
 
-  constructor(opts:SchemaType<typeof ScrollPlugin.schema> = {}) {
+  constructor(opts: SchemaType<typeof ScrollPlugin.schema> = {}) {
     super(opts);
     this.actionNo = 0;
   }
@@ -74,7 +74,7 @@ export default class ScrollPlugin extends Plugin {
     return true;
   }
 
-  async apply() {
+  async apply():Promise<Partial<Resource>> {
     await new Promise(resolve => setTimeout(resolve, this.opts.delay));
 
     // start listening to DOM changes
@@ -84,7 +84,7 @@ export default class ScrollPlugin extends Plugin {
     window.scrollTo(0, document.body.scrollHeight);
     this.actionNo += 1;
 
-    const stabilityStatus:DomStabilityStatus = await stabilityStatusPromise;
+    const stabilityStatus: DomStabilityStatus = await stabilityStatusPromise;
     switch (stabilityStatus) {
       // dom changed and now stable
       case DomStabilityStatus.Stable:

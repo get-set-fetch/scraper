@@ -11,18 +11,18 @@ import { getLogger } from '../logger/Logger';
 export default class ZipExporter extends Exporter {
   logger = getLogger('ZipExporter');
 
-  zip:JSZip;
+  zip: JSZip;
   zipIdx: number;
 
-  getResourceQuery():Partial<ResourceQuery> {
+  getResourceQuery(): Partial<ResourceQuery> {
     return { whereNotNull: [ 'data' ], cols: [ 'url', 'data', 'parent', 'contentType' ] };
   }
 
-  async preParse():Promise<void> {
+  async preParse(): Promise<void> {
     this.zipIdx = 0;
   }
 
-  async parse(resource: Partial<Resource>, idx: number):Promise<void> {
+  async parse(resource: Partial<Resource>, idx: number): Promise<void> {
     // for each bulk resource read do a separate archive
     if (idx % this.opts.pageLimit === 0) {
       // close the prev archive if present

@@ -49,7 +49,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
 
   document: IDomNode;
 
-  constructor(opts:SchemaType<typeof ExtractHtmlContentPlugin.schema> = {}) {
+  constructor(opts: SchemaType<typeof ExtractHtmlContentPlugin.schema> = {}) {
     super(opts);
 
     this.content = new Set<string>();
@@ -72,7 +72,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     return { content };
   }
 
-  extractContent():string[][] {
+  extractContent(): string[][] {
     let content: string[][];
 
     // only makes sense for more than one selector and only if selectorBase returns valid elements
@@ -92,7 +92,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
       const suffixSelectors = this.opts.selectorPairs.map(selectorPair => selectorPair.contentSelector.replace(selectorBase, '').trim());
       content = this.document.querySelectorAll(selectorBase).reduce(
         (rows: string[][], baseElm: IDomNode) => {
-          const contentBySelector:string[][] = Array(suffixSelectors.length).fill(0).map(() => []);
+          const contentBySelector: string[][] = Array(suffixSelectors.length).fill(0).map(() => []);
           for (let i = 0; i < suffixSelectors.length; i += 1) {
             const suffixSelector = suffixSelectors[i];
             const { contentProperty } = this.opts.selectorPairs[i];
@@ -135,7 +135,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
     return content;
   }
 
-  getSelectorBase(selectorPairs: SchemaType<typeof ExtractHtmlContentPlugin.schema>['selectorPairs']):string {
+  getSelectorBase(selectorPairs: SchemaType<typeof ExtractHtmlContentPlugin.schema>['selectorPairs']): string {
     const selectors = selectorPairs.map(selectorPair => selectorPair.contentSelector);
 
     const cssFragments = selectors[0].split(' ');
@@ -167,7 +167,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
   }
 
   // transform contentBySelector(each row contains one querySelector result) into content (each row contains one element from each querySelector result)
-  transformToContentRows(contentBySelector:string[][]):string[][] {
+  transformToContentRows(contentBySelector: string[][]): string[][] {
     // make all selector results of equal length
     const maxLength = Math.max(...contentBySelector.map(result => result.length));
 
@@ -181,7 +181,7 @@ export default class ExtractHtmlContentPlugin extends Plugin {
       }
     }
 
-    const content:string[][] = Array(maxLength).fill(0).map((val, idx) => {
+    const content: string[][] = Array(maxLength).fill(0).map((val, idx) => {
       const rowContent: string[] = [];
       for (let i = 0; i < contentBySelector.length; i += 1) {
         rowContent.push(contentBySelector[i][idx]);

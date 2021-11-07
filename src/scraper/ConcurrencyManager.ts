@@ -9,7 +9,7 @@ export const enum ConcurrencyLevel {
 }
 
 export class ConcurrencyError extends Error {
-  level:ConcurrencyLevel;
+  level: ConcurrencyLevel;
 
   constructor(level: ConcurrencyLevel) {
     super();
@@ -157,7 +157,7 @@ export default class ConcurrencyManager {
    * return null if there are no more resources to be scraped
    * return ConcurrencyError when concurrency conditions are not met
    */
-  async getResourceToScrape(project:Project):Promise<Resource> {
+  async getResourceToScrape(project: Project): Promise<Resource> {
     // project conditions don't allow it
     if (!this.conditionsMet(this.status.project, this.opts.project)) throw new ConcurrencyError(ConcurrencyLevel.Project);
 
@@ -232,15 +232,15 @@ export default class ConcurrencyManager {
     return resource;
   }
 
-  sessionId(proxy: Proxy, hostname: string):string {
+  sessionId(proxy: Proxy, hostname: string): string {
     return `${this.proxyId(proxy)}-${hostname}`;
   }
 
-  proxyId(proxy):string {
+  proxyId(proxy): string {
     return proxy ? `${proxy.host}-${proxy.port}` : 'none';
   }
 
-  getNextProxy():Proxy {
+  getNextProxy(): Proxy {
     if (this.proxyIdx === undefined || this.proxyIdx === this.opts.proxyPool.length - 1) {
       this.proxyIdx = 0;
     }
@@ -251,25 +251,24 @@ export default class ConcurrencyManager {
     return this.opts.proxyPool[this.proxyIdx];
   }
 
-  getNextAvailableProxy():Proxy {
-    let proxy:Proxy;
-    let checkCount:number = 0;
+  getNextAvailableProxy(): Proxy {
+    let proxy: Proxy;
+    let checkCount: number = 0;
 
     do {
       const candidateProxy = this.getNextProxy();
       proxy = this.conditionsMet(this.status.proxy[this.proxyId(candidateProxy)], this.opts.proxy) ? candidateProxy : undefined;
       checkCount += 1;
     }
-    // loop ONCE through registed proxies and try to find an available one
-    while (proxy === undefined && checkCount < this.opts.proxyPool.length
-    );
+    // loop ONCE through registered proxies and try to find an available one
+    while (proxy === undefined && checkCount < this.opts.proxyPool.length);
 
     return proxy;
   }
 
-  getNextAvailableSessionProxy(hostname: string):Proxy {
-    let proxy:Proxy;
-    let checkCount:number = 0;
+  getNextAvailableSessionProxy(hostname: string): Proxy {
+    let proxy: Proxy;
+    let checkCount: number = 0;
 
     do {
       const candidateProxy = this.getNextProxy();
@@ -279,9 +278,8 @@ export default class ConcurrencyManager {
 
       checkCount += 1;
     }
-    // loop ONCE through registerd proxies and try to find an available one
-    while (proxy === undefined && checkCount < this.opts.proxyPool.length
-    );
+    // loop ONCE through registered proxies and try to find an available one
+    while (proxy === undefined && checkCount < this.opts.proxyPool.length);
 
     return proxy;
   }

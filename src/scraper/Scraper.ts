@@ -61,7 +61,7 @@ export type ProjectOptions = {
    */
   name: string
 
-  resources?: {url: string, depth?: number}[];
+  resources?: { url: string, depth?: number }[];
   resourcePath?: string;
 
   pipeline: string,
@@ -88,7 +88,7 @@ export default class Scraper extends EventEmitter {
 
   storage: Storage;
 
-  browserClient:BrowserClient;
+  browserClient: BrowserClient;
   domClientConstruct: IDomClientConstructor;
 
   project: Project;
@@ -132,7 +132,7 @@ export default class Scraper extends EventEmitter {
   /**
    * Check if input is a JSON config object
    */
-  isJSONConfig(config):boolean {
+  isJSONConfig(config): boolean {
     /*
     config objects:
     - are not custom class definitions
@@ -178,7 +178,7 @@ export default class Scraper extends EventEmitter {
    * Pre-scrape preparations regarding PluginStore, storage and browser client.
    * Making sure default plugins are registered, a connection to a database is opened, a browser (if apllicable) is launched.
    */
-  async preScrape(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>):Promise<void> {
+  async preScrape(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>): Promise<void> {
     if (PluginStore.store.size === 0) {
       await PluginStore.init();
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
@@ -225,7 +225,7 @@ export default class Scraper extends EventEmitter {
    * @param projectOpts - project instance or configuration
    * @param cliOpts - cli related flags like overwrite
    */
-  async initProject(projectOpts: Project|ProjectOptions, cliOpts: Partial<CliOptions> = {}):Promise<Project> {
+  async initProject(projectOpts: Project | ProjectOptions, cliOpts: Partial<CliOptions> = {}): Promise<Project> {
     if (projectOpts instanceof Project) {
       return <Project>projectOpts;
     }
@@ -313,7 +313,7 @@ export default class Scraper extends EventEmitter {
     concurrencyOpts?: Partial<ConcurrencyOptions>,
     runtimeOpts?: Partial<RuntimeOptions>,
     cliOpts?: Partial<CliOptions>,
-  ):Promise<void> {
+  ): Promise<void> {
     try {
       await this.preScrape(concurrencyOpts, runtimeOpts);
 
@@ -353,7 +353,7 @@ export default class Scraper extends EventEmitter {
   /**
    * Keep discovering new projects to scrape. Once a project scraping completes, start scraping a new one.
    */
-  async discover(concurrencyOpts: Partial<ConcurrencyOptions>, runtimeOpts: Partial<RuntimeOptions>, cliOpts:Partial<CliOptions>) {
+  async discover(concurrencyOpts: Partial<ConcurrencyOptions>, runtimeOpts: Partial<RuntimeOptions>, cliOpts: Partial<CliOptions>) {
     this.retryTimeout = null;
 
     const projectScrapedHandler = () => {
@@ -379,7 +379,7 @@ export default class Scraper extends EventEmitter {
     this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
   }
 
-  async save(projectOpts: ProjectOptions|Project, cliOpts:Partial<CliOptions>) {
+  async save(projectOpts: ProjectOptions | Project, cliOpts: Partial<CliOptions>) {
     try {
       if (!this.storage.connected) {
         await this.storage.connect();
@@ -572,7 +572,7 @@ export default class Scraper extends EventEmitter {
   use a block declaration in order not to polute the global namespace
   avoiding conflicts, thus redeclaration errors
   */
-  async executePluginInDom(resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
+  async executePluginInDom(resource: Resource, plugin: Plugin): Promise<void | Partial<Resource>> {
     // scraper doesn't rely on a browser client but a nodejs dom client, can't inject js in clients like cheerio
     if (!this.browserClient) {
       throw new Error('browserClient unavailable');
@@ -583,7 +583,7 @@ export default class Scraper extends EventEmitter {
 
     const pluginClsName = plugin.constructor.name;
     const pluginInstanceName = `inst${pluginClsName}`;
-    const pluginStoreEntry:StoreEntry = PluginStore.get(pluginClsName);
+    const pluginStoreEntry: StoreEntry = PluginStore.get(pluginClsName);
     if (!pluginStoreEntry) {
       throw new Error(`Plugin ${pluginClsName} not registered`);
     }

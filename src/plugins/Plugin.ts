@@ -29,7 +29,7 @@ export default abstract class Plugin {
 
   opts: Partial<PluginOpts>;
 
-  constructor(opts:Partial<PluginOpts> = {}) {
+  constructor(opts: Partial<PluginOpts> = {}) {
     const { schema } = <typeof Plugin> this.constructor;
     this.opts = SchemaHelper.instantiate(schema, opts);
   }
@@ -38,7 +38,7 @@ export default abstract class Plugin {
    * Relevant for a pipeline plugin responsible for actual content scraping.
    * @returns keys the scraped data will be exported under
    */
-  getContentKeys():string[] {
+  getContentKeys(): string[] {
     return undefined;
   }
 
@@ -56,7 +56,7 @@ export default abstract class Plugin {
    * @param resource - current scrape resource
    * @param client - current browser client
    */
-  abstract apply(project: Project, resource: Resource, client: BrowserClient|IDomClientConstructor): Promise<void | Partial<Resource>> | void | Partial<Resource>;
+  abstract apply(project: Project, resource: Resource, client: BrowserClient | IDomClientConstructor): Promise<void | Partial<Resource>> | void | Partial<Resource>;
 }
 
 export interface IPlugin {

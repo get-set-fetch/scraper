@@ -27,7 +27,7 @@ export default class UpsertResourcePlugin extends Plugin {
   logger = getLogger('UpsertResourcePlugin');
   opts: SchemaType<typeof UpsertResourcePlugin.schema>;
 
-  constructor(opts:SchemaType<typeof UpsertResourcePlugin.schema> = {}) {
+  constructor(opts: SchemaType<typeof UpsertResourcePlugin.schema> = {}) {
     super(opts);
   }
 

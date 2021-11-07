@@ -35,11 +35,11 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
   logger = getLogger('NodeFetchPlugin');
   opts: SchemaType<typeof NodeFetchPlugin.schema>;
 
-  constructor(opts:SchemaType<typeof NodeFetchPlugin.schema> = {}) {
+  constructor(opts: SchemaType<typeof NodeFetchPlugin.schema> = {}) {
     super(opts);
   }
 
-  getRequestFnc(protocol: string):(options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest {
+  getRequestFnc(protocol: string): (options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest {
     switch (protocol) {
       case 'https:':
         return https.request;
@@ -50,11 +50,11 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
     }
   }
 
-  async fetch(resource: Resource):Promise<Partial<Resource>> {
+  async fetch(resource: Resource): Promise<Partial<Resource>> {
     return new Promise((resolve, reject) => {
       const { hostname, protocol, pathname } = new URL(resource.url);
 
-      let requestFnc:(options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest;
+      let requestFnc: (options: RequestOptions, callback?: (res: http.IncomingMessage) => void) => http.ClientRequest;
       try {
         requestFnc = this.getRequestFnc(protocol);
       }
@@ -62,7 +62,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         reject(err);
       }
 
-      const reqHeaders:OutgoingHttpHeaders = {
+      const reqHeaders: OutgoingHttpHeaders = {
         Host: hostname,
         'Accept-Encoding': 'br,gzip,deflate',
         ...(<object> this.opts.headers),
@@ -80,7 +80,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
       };
       this.logger.debug(opts, 'Request Options');
 
-      const req = requestFnc(opts, (res:IncomingMessage) => {
+      const req = requestFnc(opts, (res: IncomingMessage) => {
         const { statusCode, headers } = res;
 
         this.logger.debug(`status code for ${resource.url} : ${statusCode}`);

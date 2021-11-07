@@ -23,7 +23,7 @@ export default abstract class Exporter {
     this.opts.filepath = isAbsolute(opts.filepath) ? opts.filepath : join(process.cwd(), opts.filepath);
   }
 
-  getPagedResources(offset: number, limit: number):Promise<Partial<Resource>[]> {
+  getPagedResources(offset: number, limit: number): Promise<Partial<Resource>[]> {
     return this.project.getPagedResources({ ...this.getResourceQuery(), offset, limit });
   }
 
@@ -42,7 +42,7 @@ export default abstract class Exporter {
       // need to init the plugins as one of the plugins may contain info related to the exported columns
       this.project.plugins = await this.project.initPlugins(true);
 
-      let resources:Partial<Resource>[];
+      let resources: Partial<Resource>[];
       const { pageLimit: limit } = this.opts;
       let offset = 0;
 
@@ -77,15 +77,15 @@ export default abstract class Exporter {
     }
   }
 
-  getDefaultOptions():Partial<ExportOptions> {
+  getDefaultOptions(): Partial<ExportOptions> {
     return {
       pageLimit: 100,
     };
   }
 
-  abstract getResourceQuery():Partial<ResourceQuery>;
+  abstract getResourceQuery(): Partial<ResourceQuery>;
 
-  abstract preParse():Promise<void>;
-  abstract parse(resource: Partial<Resource>, resourceIdx: number):Promise<void>;
-  abstract postParse():Promise<void>;
+  abstract preParse(): Promise<void>;
+  abstract parse(resource: Partial<Resource>, resourceIdx: number): Promise<void>;
+  abstract postParse(): Promise<void>;
 }
