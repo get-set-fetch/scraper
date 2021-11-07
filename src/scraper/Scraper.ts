@@ -374,6 +374,8 @@ export default class Scraper extends EventEmitter {
       this.off(ScrapeEvent.DiscoverComplete, discoveryCompleteHandler);
 
       if (cliOpts.retry) {
+        process.on('SIGTERM', this.gracefullStopHandler);
+        process.on('SIGINT', this.gracefullStopHandler);
         this.retryTimeout = setTimeout(this.discover, cliOpts.retry * 1000, concurrencyOpts, runtimeOpts, cliOpts);
       }
     };
