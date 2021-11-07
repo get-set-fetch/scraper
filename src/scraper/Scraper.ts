@@ -123,10 +123,11 @@ export default class Scraper extends EventEmitter {
 
     this.discover = this.discover.bind(this);
     this.stop = this.stop.bind(this);
+    this.gracefullStopHandler = this.gracefullStopHandler.bind(this);
 
     // gracefully stop scraping
-    this.gracefullStop('SIGTERM');
-    this.gracefullStop('SIGINT');
+    process.on('SIGTERM', this.gracefullStopHandler);
+    process.on('SIGINT', this.gracefullStopHandler);
   }
 
   /**
@@ -154,24 +155,22 @@ export default class Scraper extends EventEmitter {
   /**
    * wait for in-progress scraping to complete before exiting
    */
-  gracefullStop(signal: NodeJS.Signals) {
-    process.on(signal, () => {
-      this.logger.info(`${signal} signal received`);
+  gracefullStopHandler(signal: NodeJS.Signals) {
+    this.logger.info(`${signal} signal received`);
 
-      // in-between discovery retries, no scraping going on, can exit directly
-      if (this.retryTimeout) {
-        clearTimeout(this.retryTimeout);
-        this.logger.info('no in-progress scraping detected, exit directly');
-        process.exit(0);
-      }
-      // ongoing scraping, don't scrape new resources, wait for the currently in progress ones to complete
-      else {
-        this.on(ScrapeEvent.ProjectScraped, () => process.exit(0));
-        this.on(ScrapeEvent.DiscoverComplete, () => process.exit(0));
-        this.logger.info('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
-        this.stop();
-      }
-    });
+    // in-between discovery retries, no scraping going on, can exit directly
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.logger.info('no in-progress scraping detected, exit directly');
+      process.exit(0);
+    }
+    // ongoing scraping, don't scrape new resources, wait for the currently in progress ones to complete
+    else {
+      this.on(ScrapeEvent.ProjectScraped, () => process.exit(0));
+      this.on(ScrapeEvent.DiscoverComplete, () => process.exit(0));
+      this.logger.info('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
+      this.stop();
+    }
   }
 
   initConcurrencyManager(concurrencyOpts?: Partial<ConcurrencyOptions>): ConcurrencyManager {
@@ -282,6 +281,10 @@ export default class Scraper extends EventEmitter {
    */
   async postScrape() {
     try {
+      // remove process listners
+      process.off('SIGTERM', this.gracefullStopHandler);
+      process.off('SIGINT', this.gracefullStopHandler);
+
       // scraping stopped, if resumed new concurrency, metrics instances will be created
       if (this.concurrency) {
         clearInterval(this.checkTimeout);
