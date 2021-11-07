@@ -7,7 +7,7 @@ on:
     branches: [ main, next ]
 
 env:
-  ENABLE_CODE_COVERAGE: false
+  ENABLE_CODE_COVERAGE: true
 
 jobs:
   unit:
