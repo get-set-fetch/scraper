@@ -60,10 +60,27 @@ export default class KnexQueue extends Queue {
   }
 
   static async drop() {
-    await Promise.all([
-      this.storage.knex.schema.table(this.tableName, t => t.dropUnique([ 'url' ], `ix_${this.projectId}_url`)),
-      this.storage.knex.schema.dropTable(this.tableName),
-    ]);
+    const hasTable = await this.storage.knex.schema.hasTable(this.tableName);
+    if (hasTable) {
+      // drop index
+      await new Promise<void>(async (resolve, reject) => {
+        try {
+          await this.storage.knex.schema.table(
+            this.tableName,
+            async t => {
+              await t.dropUnique([ 'url' ], `ix_${this.projectId}_url`);
+              resolve();
+            },
+          );
+        }
+        catch (err) {
+          reject(err);
+        }
+      });
+
+      // drop table
+      await this.storage.knex.schema.dropTable(this.tableName);
+    }
   }
 
   logger = getLogger('KnexQueue');
