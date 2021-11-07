@@ -2,14 +2,18 @@ import { assert } from 'chai';
 import Project, { IStaticProject } from '../../../src/storage/base/Project';
 import Resource from '../../../src/storage/base/Resource';
 import Storage from '../../../src/storage/base/Storage';
+import ModelStorage from '../../../src/storage/ModelStorage';
 
 export default function crudProject(storage: Storage) {
   describe(`CRUD Project using ${storage.config.client}`, () => {
     let Project: IStaticProject;
     let expectedProject: Project;
+    let modelStorage: ModelStorage;
 
     before(async () => {
-      ({ Project } = await storage.connect());
+      modelStorage = new ModelStorage(storage);
+      await modelStorage.connect();
+      ({ Project } = await modelStorage.getModels());
     });
 
     beforeEach(async () => {
@@ -22,89 +26,93 @@ export default function crudProject(storage: Storage) {
     });
 
     after(async () => {
-      await storage.close();
+      await modelStorage.close();
     });
 
     it(`${storage.config.client} project get`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      assert.deepEqual({ ...projectById, logger: undefined }, { ...expectedProject, logger: undefined });
+      assert.isDefined(projectById.queue);
+      assert.isDefined(projectById.logger);
+      assert.deepEqual(projectById.toJSON(), expectedProject.toJSON());
 
       const projectByName = await Project.get(expectedProject.name);
-      assert.deepEqual({ ...projectByName, logger: undefined }, { ...expectedProject, logger: undefined });
+      assert.isDefined(projectByName.queue);
+      assert.isDefined(projectByName.logger);
+      assert.deepEqual(projectByName.toJSON(), expectedProject.toJSON());
     });
 
-    it(`${storage.config.client} project getResourceToScrape`, async () => {
+    it(`${storage.config.client} project getResourcesToScrape`, async () => {
       const projectByName = await Project.get(expectedProject.name);
 
       const resourcesToBeInserted = [];
       for (let i = 0; i < 50; i += 1) {
         resourcesToBeInserted.push({ url: `http://sitea.com/a${i}.html` });
       }
-      await projectByName.batchInsertResources(resourcesToBeInserted);
+      await projectByName.queue.batchInsertResources(resourcesToBeInserted);
 
-      let unscrapedResourceNo = await projectByName.countUnscrapedResources();
+      let unscrapedResourceNo = await projectByName.queue.countUnscrapedResources();
       assert.strictEqual(unscrapedResourceNo, 50);
 
       const toScrapePromises = [];
       for (let i = 0; i < 40; i += 1) {
-        toScrapePromises.push(projectByName.getResourceToScrape());
+        toScrapePromises.push(projectByName.queue.getResourcesToScrape(1));
       }
-      const resourcesToScrape = await Promise.all(toScrapePromises);
+      const resourcesToScrape:Resource[][] = await Promise.all(toScrapePromises);
 
-      const [ resourceToScrape ] = resourcesToScrape;
-      assert.strictEqual(resourceToScrape.projectId, projectByName.id);
-      assert.isTrue(resourceToScrape.scrapeInProgress);
+      const [ [ resourceToScrape ] ] = resourcesToScrape;
+      assert.isUndefined(resourceToScrape.status);
+      assert.isNumber(resourceToScrape.queueEntryId);
 
-      const resourceNo = await projectByName.countResources();
+      const resourceNo = await projectByName.queue.countResources();
       assert.strictEqual(resourceNo, 50);
 
-      unscrapedResourceNo = await projectByName.countUnscrapedResources();
+      unscrapedResourceNo = await projectByName.queue.countUnscrapedResources();
       assert.strictEqual(unscrapedResourceNo, 10);
     });
 
     it(`${storage.config.client} project batchInsertResources`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResources([
+      await projectById.queue.batchInsertResources([
         { url: 'http://siteA.com/other1.html' },
         { url: 'http://siteA.com/other2.html' },
         { url: 'http://siteA.com/other3.html', depth: 2 },
         { url: 'invalid-url', depth: 2 },
       ], 2);
 
-      const resources = await projectById.getResources();
+      const resources = await projectById.queue.getAll();
       assert.sameDeepMembers(
-        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        resources.map(({ url, depth }) => ({ url, depth })),
         [
-          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other3.html', depth: 2, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other1.html', depth: 0 },
+          { url: 'http://sitea.com/other2.html', depth: 0 },
+          { url: 'http://sitea.com/other3.html', depth: 2 },
         ],
       );
     });
 
     it(`${storage.config.client} project batchInsertResourcesFromFile`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources/unnormalized-resources.csv', 2);
+      await projectById.queue.batchInsertResourcesFromFile('test/acceptance/cli/resources/unnormalized-resources.csv', 2);
 
-      const resources = await projectById.getResources();
+      const resources = await projectById.queue.getAll();
       assert.sameDeepMembers(
-        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        resources.map(({ url, depth }) => ({ url, depth })),
         [
-          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
-          { url: 'http://sitea.com/other2.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other1.html', depth: 0 },
+          { url: 'http://sitea.com/other2.html', depth: 0 },
         ],
       );
     });
 
     it(`${storage.config.client} project batchInsertResourcesFromFile single entry`, async () => {
       const projectById = await Project.get(expectedProject.id);
-      await projectById.batchInsertResourcesFromFile('test/acceptance/cli/resources/resources-single-entry.csv', 2);
+      await projectById.queue.batchInsertResourcesFromFile('test/acceptance/cli/resources/resources-single-entry.csv', 2);
 
-      const resources = await projectById.getResources();
+      const resources = await projectById.queue.getAll();
       assert.sameDeepMembers(
-        resources.map(({ url, depth, projectId }) => ({ url, depth, projectId })),
+        resources.map(({ url, depth }) => ({ url, depth })),
         [
-          { url: 'http://sitea.com/other1.html', depth: 0, projectId: expectedProject.id },
+          { url: 'http://sitea.com/other1.html', depth: 0 },
         ],
       );
     });
@@ -121,7 +129,15 @@ export default function crudProject(storage: Storage) {
       await expectedProject.update();
 
       const actualProject = await Project.get(expectedProject.id);
-      assert.deepEqual({ ...actualProject, logger: undefined }, { ...expectedProject, logger: undefined });
+
+      const extractProjInfo = proj => [ 'id', 'name', 'pluginOpts' ].reduce(
+        (acc, propKey) => {
+          acc[propKey] = proj[propKey];
+          return acc;
+        },
+        {},
+      );
+      assert.deepEqual(extractProjInfo(actualProject), extractProjInfo(expectedProject));
     });
 
     it(`${storage.config.client} project del`, async () => {
@@ -140,14 +156,32 @@ export default function crudProject(storage: Storage) {
 
     it(`${storage.config.client} project saveResources`, async () => {
       const projectById = await Project.get(expectedProject.id);
-
       const resources:Partial<Resource>[] = [];
       for (let i = 0; i < 50; i += 1) {
         resources.push({ url: `url${i}` });
       }
-      await projectById.saveResources(resources);
-      const savedResources = await projectById.getResources();
+      await projectById.queue.add(resources);
+      const savedResources = await projectById.queue.getAll();
 
+      assert.strictEqual(savedResources.length, 50);
+    });
+
+    it(`${storage.config.client} project saveResources with ignored conflict`, async () => {
+      const projectById = await Project.get(expectedProject.id);
+      const resources:Partial<Resource>[] = [];
+
+      for (let i = 0; i < 20; i += 1) {
+        resources.push({ url: `url${i}` });
+      }
+      await projectById.queue.add(resources);
+      let savedResources = await projectById.queue.getAll();
+      assert.strictEqual(savedResources.length, 20);
+
+      for (let i = 0; i < 50; i += 1) {
+        resources.push({ url: `url${i}` });
+      }
+      await projectById.queue.add(resources);
+      savedResources = await projectById.queue.getAll();
       assert.strictEqual(savedResources.length, 50);
     });
 
@@ -156,11 +190,11 @@ export default function crudProject(storage: Storage) {
 
       const resources:Partial<Resource>[] = [];
       for (let i = 0; i < 50; i += 1) {
-        resources.push({ projectId: expectedProject.id, url: `url${i}` });
+        resources.push({ url: `url${i}` });
       }
-      await projectById.saveResources(resources);
+      await projectById.queue.add(resources);
 
-      const resourceNo = await projectById.countResources();
+      const resourceNo = await projectById.queue.countResources();
       assert.strictEqual(resourceNo, 50);
     });
 
@@ -169,11 +203,11 @@ export default function crudProject(storage: Storage) {
 
       const resources:Partial<Resource>[] = [];
       for (let i = 0; i < 50; i += 1) {
-        resources.push({ projectId: expectedProject.id, url: `url${i}` });
+        resources.push({ url: `url${i}` });
       }
-      await projectById.saveResources(resources);
+      await projectById.queue.add(resources);
 
-      const resourceNo = await projectById.countResources(true);
+      const resourceNo = await projectById.queue.countResources(true);
       assert.isNotNull(resourceNo);
     });
 
@@ -182,11 +216,11 @@ export default function crudProject(storage: Storage) {
 
       const resources:Partial<Resource>[] = [];
       for (let i = 0; i < 50; i += 1) {
-        resources.push({ projectId: expectedProject.id, url: `url${i}` });
+        resources.push({ url: `url${i}` });
       }
-      await projectById.saveResources(resources);
+      await projectById.queue.add(resources);
 
-      const resourceNo = await projectById.countUnscrapedResources();
+      const resourceNo = await projectById.queue.countUnscrapedResources();
       assert.strictEqual(resourceNo, 50);
     });
 
@@ -195,11 +229,11 @@ export default function crudProject(storage: Storage) {
 
       const resources:Partial<Resource>[] = [];
       for (let i = 0; i < 50; i += 1) {
-        resources.push({ projectId: expectedProject.id, url: `url${i}` });
+        resources.push({ url: `url${i}` });
       }
-      await projectById.saveResources(resources);
+      await projectById.queue.add(resources);
 
-      const resourceNo = await projectById.countUnscrapedResources(true);
+      const resourceNo = await projectById.queue.countUnscrapedResources(true);
       assert.isNotNull(resourceNo);
     });
   });

@@ -1,15 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { assert } from 'chai';
-import { SinonSandbox, createSandbox } from 'sinon';
+import { SinonSandbox, createSandbox, SinonStubbedInstance } from 'sinon';
 import Resource, { Proxy } from '../../../src/storage/base/Resource';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyLevel } from '../../../src/scraper/ConcurrencyManager';
+import Queue from '../../../src/storage/base/Queue';
 
 describe('ConcurrencyManager', () => {
   let sandbox:SinonSandbox;
   let concurrency:ConcurrencyManager;
+  let queue:SinonStubbedInstance<Queue>;
+  const queueEntryId = 10;
 
   beforeEach(() => {
     sandbox = createSandbox();
+    queue = sandbox.stub<Queue>(<any>{ getResourcesToScrape: () => null, updateStatus: () => null });
+    queue.getResourcesToScrape.returns(Promise.resolve([]));
   });
 
   afterEach(() => {
@@ -491,22 +496,21 @@ describe('ConcurrencyManager', () => {
     concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
     concurrency.status.project.requests = 0;
 
-    const projectGetResourceToScrapeStub = sandbox.stub().returns(null);
-
-    const resource = await concurrency.getResourceToScrape(<any>{ getResourceToScrape: projectGetResourceToScrapeStub });
-    assert.isTrue(projectGetResourceToScrapeStub.calledOnce);
+    const resource = await concurrency.getResourceToScrape(<any>{ queue });
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
     assert.isNull(resource);
   });
 
-  it('getResourceToScrape, no available to-be-scraped resources', async () => {
+  it('getResourceToScrape, no available to-be-scraped resources atm, may be more in the future', async () => {
     concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
     concurrency.status.project.requests = 1;
+    concurrency.status.project.lastStartTime = Date.now() - 0.5 * 1000;
 
-    const projectGetResourceToScrapeStub = sandbox.stub().returns(null);
+    queue.getResourcesToScrape.returns(Promise.resolve([]));
 
     let err;
     try {
-      await concurrency.getResourceToScrape(<any>{ getResourceToScrape: projectGetResourceToScrapeStub });
+      await concurrency.getResourceToScrape(<any>{ queue });
     }
     catch (e) {
       err = e;
@@ -514,7 +518,19 @@ describe('ConcurrencyManager', () => {
     assert.isTrue(err instanceof ConcurrencyError);
     assert.strictEqual(err.level, ConcurrencyLevel.Project);
 
-    assert.isTrue(projectGetResourceToScrapeStub.calledOnce);
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
+  });
+
+  it('getResourceToScrape, no available to-be-scraped resources', async () => {
+    concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
+    concurrency.status.project.requests = 0;
+    concurrency.status.project.lastStartTime = Date.now() - 2 * 1000;
+
+    queue.getResourcesToScrape.returns(Promise.resolve([]));
+
+    const resource = await concurrency.getResourceToScrape(<any>{ queue });
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
+    assert.isNull(resource);
   });
 
   it('getResourceToScrape, ConcurrencyError at Domain level', async () => {
@@ -524,18 +540,11 @@ describe('ConcurrencyManager', () => {
       lastStartTime: 0,
     };
 
-    const resourceUpdateStub = sandbox.stub();
-    const resourceStub = {
-      url: 'http://siteA.com/resource.html',
-      update: resourceUpdateStub,
-      scrapeInProgress: true,
-    };
-
-    const projectGetResourceToScrapeStub = sandbox.stub().returns(resourceStub);
-
+    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
+    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ resourceToScrape ]));
     let err;
     try {
-      await concurrency.getResourceToScrape(<any>{ getResourceToScrape: projectGetResourceToScrapeStub });
+      await concurrency.getResourceToScrape(<any>{ queue });
     }
     catch (e) {
       err = e;
@@ -544,13 +553,11 @@ describe('ConcurrencyManager', () => {
     assert.strictEqual(err.level, ConcurrencyLevel.Domain);
 
     /*
-    concurrency conditions at domain level prevent the newly found resource via project.getResourceToScrape to be scraped
-    set the scrapeInProgress flag back to false and update the resource at db level
-    resource will be eligible for scraping in the future
+    concurrency conditions at domain level prevent the newly found resource via queue.getResourceToScrape to be scraped
+    found resource becomes the next resource to be scraped once concurrency conditions are met
     */
-    assert.isTrue(projectGetResourceToScrapeStub.calledOnce);
-    assert.isFalse(resourceStub.scrapeInProgress);
-    assert.isTrue(resourceUpdateStub.calledOnce);
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
+    assert.sameDeepMembers(concurrency.resourceBuffer, [ resourceToScrape ]);
   });
 
   it('getResourceToScrape, ConcurrencyError at Session level', async () => {
@@ -560,18 +567,12 @@ describe('ConcurrencyManager', () => {
       lastStartTime: 0,
     };
 
-    const resourceUpdateStub = sandbox.stub();
-    const resourceStub = {
-      url: 'http://siteA.com/resource.html',
-      update: resourceUpdateStub,
-      scrapeInProgress: true,
-    };
-
-    const projectGetResourceToScrapeStub = sandbox.stub().returns(resourceStub);
+    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
+    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ resourceToScrape ]));
 
     let err;
     try {
-      await concurrency.getResourceToScrape(<any>{ getResourceToScrape: projectGetResourceToScrapeStub });
+      await concurrency.getResourceToScrape(<any>{ queue });
     }
     catch (e) {
       err = e;
@@ -580,13 +581,11 @@ describe('ConcurrencyManager', () => {
     assert.strictEqual(err.level, ConcurrencyLevel.Session);
 
     /*
-    concurrency conditions at session level prevent the newly found resource via project.getResourceToScrape to be scraped
-    set the scrapeInProgress flag back to false and update the resource at db level
-    resource will be eligible for scraping in the future
+    concurrency conditions at session level prevent the newly found resource via queue.getResourceToScrape to be scraped
+    found resource becomes the next resource to be scraped once concurrency conditions are met
     */
-    assert.isTrue(projectGetResourceToScrapeStub.calledOnce);
-    assert.isFalse(resourceStub.scrapeInProgress);
-    assert.isTrue(resourceUpdateStub.calledOnce);
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
+    assert.sameDeepMembers(concurrency.resourceBuffer, [ resourceToScrape ]);
   });
 
   it('getResourceToScrape, resource found using no proxy', async () => {
@@ -594,20 +593,13 @@ describe('ConcurrencyManager', () => {
 
     concurrency = new ConcurrencyManager();
 
-    const resourceUpdateStub = sandbox.stub();
-    const resourceStub = {
-      url: 'http://siteA.com/resource.html',
-      update: resourceUpdateStub,
-      scrapeInProgress: true,
-    };
-    const projectGetResourceToScrapeStub = sandbox.stub().returns(resourceStub);
+    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ { queueEntryId, url: 'http://siteA.com/resource.html' } as any ]));
 
-    const resource = await concurrency.getResourceToScrape(<any>{ getResourceToScrape: projectGetResourceToScrapeStub });
+    const resource = await concurrency.getResourceToScrape(<any>{ queue });
     assert.isNull(resource.proxy);
-    assert.isTrue(resourceStub.scrapeInProgress);
-
-    assert.isTrue(projectGetResourceToScrapeStub.calledOnce);
-    assert.isTrue(resourceUpdateStub.notCalled);
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
+    assert.isTrue(queue.updateStatus.notCalled);
+    assert.include(resource, { queueEntryId, url: 'http://siteA.com/resource.html' });
 
     assert.deepEqual(
       concurrency.status,
@@ -644,20 +636,13 @@ describe('ConcurrencyManager', () => {
     const proxy: Proxy = { host: 'proxyA', port: 80 };
     concurrency = new ConcurrencyManager({ proxyPool: [ proxy ] });
 
-    const resourceUpdateStub = sandbox.stub();
-    const resourceStub = {
-      url: 'http://siteA.com/resource.html',
-      update: resourceUpdateStub,
-      scrapeInProgress: true,
-    };
-    const projectGetResourceToScrapeStub = sandbox.stub().returns(resourceStub);
+    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ { queueEntryId, url: 'http://siteA.com/resource.html' } as any ]));
 
-    const resource = await concurrency.getResourceToScrape(<any>{ getResourceToScrape: projectGetResourceToScrapeStub });
+    const resource = await concurrency.getResourceToScrape(<any>{ queue });
     assert.deepEqual(resource.proxy, proxy);
-    assert.isTrue(resourceStub.scrapeInProgress);
-
-    assert.isTrue(projectGetResourceToScrapeStub.calledOnce);
-    assert.isTrue(resourceUpdateStub.notCalled);
+    assert.isTrue(queue.getResourcesToScrape.calledOnce);
+    assert.isTrue(queue.updateStatus.notCalled);
+    assert.include(resource, { queueEntryId, url: 'http://siteA.com/resource.html' });
 
     assert.deepEqual(
       concurrency.status,

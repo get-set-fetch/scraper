@@ -190,8 +190,8 @@ export async function invokeScraper(argObj:ArgObjType) {
   // report progress to console every `report` seconds
   if (report) {
     const reportProgressFnc = async (project:Project) => {
-      const resourceNo = await project.countResources();
-      const unscrapedResourceNo = await project.countUnscrapedResources();
+      const resourceNo = await project.queue.countResources();
+      const unscrapedResourceNo = await project.queue.countUnscrapedResources();
       const prct = completionPercentage(resourceNo, unscrapedResourceNo);
       console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${prct}%`);
     };

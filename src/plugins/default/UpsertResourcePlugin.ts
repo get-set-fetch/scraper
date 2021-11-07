@@ -36,8 +36,27 @@ export default class UpsertResourcePlugin extends Plugin {
   }
 
   async apply(project: Project, resource: Resource) {
-    // scrape complete, save the scraped resource
-    await this.saveResource(resource);
+    // guard against incomplete resources not capable of updating the scrape queue
+    if (!resource.status || !resource.queueEntryId) {
+      throw new Error('incomplere resource');
+    }
+
+    /*
+    scrape complete, update queue entry, save scraped resource
+    a resource generated from dynamic actions doesn't update the corresponding queue entry, it has already been updated by the `parent` static resource
+
+    at some point, treat differently:
+    - scraped in error resources: don't add them to the resource table as they don't contain succesfull scraped content
+    */
+    if (!resource.actions) {
+      await Promise.all([
+        this.saveResource(resource),
+        project.queue.updateStatus(resource.queueEntryId, resource.status),
+      ]);
+    }
+    else {
+      await this.saveResource(resource);
+    }
 
     /*
     after a resource is updated, remove its dynamic actions
@@ -48,7 +67,6 @@ export default class UpsertResourcePlugin extends Plugin {
 
   async saveResource(resource: Resource) {
     // scrape complete, remove inProgress flag, set scrape date
-    resource.scrapeInProgress = false;
     resource.scrapedAt = new Date(Date.now());
 
     // only save html response under resource.data (Uint8Array) if the corresponding flag is set
@@ -56,17 +74,6 @@ export default class UpsertResourcePlugin extends Plugin {
       resource.data = null;
     }
 
-    // static resources have already been inserted in db via plugins like InsertResourcesPlugin in a previous scrape step, just do update
-    if (resource.id) {
-      await resource.update();
-    }
-
-    /*
-    do save when:
-      dynamic resources are found and scraped on the fly starting from an already scraped static resource
-    */
-    else {
-      await resource.save();
-    }
+    await resource.save();
   }
 }

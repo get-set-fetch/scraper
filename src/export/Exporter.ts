@@ -1,10 +1,9 @@
 /* eslint-disable no-await-in-loop */
 import { isAbsolute, join } from 'path';
-import { initStorage } from '../storage/storage-utils';
 import { LogWrapper } from '../logger/Logger';
 import Project from '../storage/base/Project';
-import Storage from '../storage/base/Storage';
 import Resource, { ResourceQuery } from '../storage/base/Resource';
+import ModelStorage from '../storage/ModelStorage';
 
 export type ExportOptions = {
   pageLimit?: number;
@@ -28,13 +27,16 @@ export default abstract class Exporter {
   }
 
   async export(project: Project) {
+    let modelStorage: ModelStorage;
+
     try {
       // use a separate db connection, scrape and export have different db lifecycles and may run in parallel
-      const storage:Storage = initStorage(project.Constructor.storage.config);
-      await storage.connect();
+      modelStorage = new ModelStorage(project.Constructor.storage.config);
+      await modelStorage.connect();
+      const { Project: ExtProject } = await modelStorage.getModels();
 
       // retrieve the project from the currently active db connection
-      this.project = await storage.Project.get(project.id);
+      this.project = await ExtProject.get(project.id);
       if (!this.project) {
         throw new Error(`could not find project ${project.name}`);
       }
@@ -69,11 +71,14 @@ export default abstract class Exporter {
         await this.postParse();
         this.logger.info(`Exporting using ${this.constructor.name} under ${this.opts.filepath} ... done`);
       }
-
-      await storage.close();
     }
     catch (err) {
       this.logger.error(err, `error exporting using options ${JSON.stringify(this.opts)}`);
+    }
+    finally {
+      if (modelStorage) {
+        await modelStorage.close();
+      }
     }
   }
 

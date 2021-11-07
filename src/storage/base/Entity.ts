@@ -1,10 +1,7 @@
-import Storage from './Storage';
-
-/** Base class for all database entities. */
+/** Base class for all entities. */
 export default abstract class Entity {
   abstract save():Promise<number>;
-  abstract update():Promise<void>;
-  abstract del():Promise<number>;
+  abstract del():Promise<void>;
   abstract toJSON();
 
   abstract get dbCols(): string[];
@@ -18,8 +15,6 @@ export default abstract class Entity {
 
 export interface IStaticEntity {
   new(): Entity;
-
-  init(storage: Storage):Promise<void>;
   get(id: number):Promise<Entity>;
   delAll():Promise<void>;
 }

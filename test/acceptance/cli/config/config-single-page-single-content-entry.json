@@ -4,7 +4,8 @@
     "useNullAsDefault": true,
     "connection": {
       "filename": "../../../tmp/db.sqlite"
-    }
+    },
+    "debug": false
   },
   "client": {
     "name": "cheerio"

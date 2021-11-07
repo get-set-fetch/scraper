@@ -1,14 +1,14 @@
-import Entity, { IStaticEntity } from './Entity';
 import Plugin, { PluginOpts } from '../../plugins/Plugin';
-import Resource, { ResourceQuery } from './Resource';
-import Storage from './Storage';
-import PluginStore, { StoreEntry } from '../../pluginstore/PluginStore';
 import { LogWrapper } from '../../logger/Logger';
+import { ModelCombination } from '../storage-utils';
+import Storage from './Storage';
+import Queue from './Queue';
+import Resource, { ResourceQuery } from './Resource';
+import Entity, { IStaticEntity } from './Entity';
+import PluginStore, { StoreEntry } from '../../pluginstore/PluginStore';
 
-/** Groups resources sharing the same project configuration and discovered from the same initial URL(s). */
 export default abstract class Project extends Entity {
-  static storage:Storage;
-
+  queue: Queue;
   logger: LogWrapper;
 
   id: number;
@@ -23,8 +23,8 @@ export default abstract class Project extends Entity {
   // populated based on countResources, usefull info to have when serializing to plugin exection in DOM
   resourceCount:number;
 
-  get Constructor():typeof Project {
-    return (<typeof Project> this.constructor);
+  get Constructor():typeof Project & IStaticProject {
+    return (<typeof Project & IStaticProject> this.constructor);
   }
 
   constructor(kwArgs: Partial<Project> = {}) {
@@ -65,38 +65,22 @@ export default abstract class Project extends Entity {
     return plugins;
   }
 
-  /**
-   * Number of total resources linked to current project.
-   * @param estimate - whether to make an estimation or an exact count
-   * @returns
-   */
-  abstract countResources(estimate?:boolean):Promise<number>;
-
-  /**
-   * Number of unscraped resources linked to current project.
-   * @param estimate - whether to make an estimation or an exact count
-   * @returns
-   */
-  abstract countUnscrapedResources(estimate?:boolean):Promise<number>;
-
-  abstract getResourceToScrape():Promise<Resource>;
-
   abstract getResource(url: string):Promise<Resource>;
-
   abstract getResources():Promise<Resource[]>;
-
   abstract getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
-
-  abstract saveResources(resources: Partial<Resource>[]):Promise<void>;
-
-  abstract batchInsertResources(resources: {url: string, depth?: number}[], chunkSize?:number):Promise<void>;
-
-  abstract batchInsertResourcesFromFile(resourcePath: string, chunkSize?:number):Promise<void>;
-
   abstract createResource(resource: Partial<Resource>):Resource;
+
+  abstract initQueue():Promise<void>;
+  abstract initResource():Promise<void>;
+
+  abstract update():Promise<void>;
 
   get dbCols() {
     return [ 'id', 'name', 'pluginOpts' ];
+  }
+
+  toJSON() {
+    return (<IStaticProject> this.constructor).storage.toJSON(this);
   }
 
   /**
@@ -113,8 +97,12 @@ export default abstract class Project extends Entity {
 }
 
 export interface IStaticProject extends IStaticEntity {
+  storage: Storage;
+  models: ModelCombination;
+
   new(kwArgs: Partial<Project>): Project;
+  init():Promise<void>;
   get(nameOrId: string | number):Promise<Project>;
   getAll():Promise<any[]>;
-  getProjectToScrape():Promise<Project>
+  getProjectToScrape():Promise<Project>;
 }

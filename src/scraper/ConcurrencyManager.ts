@@ -80,10 +80,10 @@ export type Status = {
 export default class ConcurrencyManager {
   /**
    * by default:
-   * - scrape each hostname sequentially with a 3s delay
-   * - use each proxy sequentially with a 1s delay
+   * - scrape each hostname sequentially with a 1s delay
+   * - use each proxy sequentially with a 0.5s delay
    */
-  static DEFAULT_OPTS:Partial<ConcurrencyOptions> = {
+  static DEFAULT_OPTS: Partial<ConcurrencyOptions> = {
     domain: {
       maxRequests: 1,
       delay: 1000,
@@ -108,7 +108,20 @@ export default class ConcurrencyManager {
    * If set no new resources are selected to be scraped.
    * Once all in-progress scraping completes, a "project-stopped" event is dispathed.
    */
-  stop:boolean;
+  stop: boolean;
+
+  /**
+   * Serves two purposes
+   * - to-be-scraped resources are retrieved in bulk with queue entry status set to 1 (scrape in progress)
+   * - non-eligible buffered resources (due to concurrency conditions) don't have the in-progress status reverted,
+   *  they remain in buffer surely to become eligible in the future
+   */
+  resourceBuffer: Resource[];
+
+  /**
+   * Prevents parallel project.queue.getResourcesToScrape calls
+   */
+  refillBufferInProgress: boolean;
 
   constructor(opts: Partial<ConcurrencyOptions> = {}) {
     this.opts = {
@@ -135,6 +148,8 @@ export default class ConcurrencyManager {
       session: {},
     };
 
+    this.resourceBuffer = [];
+
     this.resourceScraped = this.resourceScraped.bind(this);
     this.resourceError = this.resourceError.bind(this);
   }
@@ -149,6 +164,34 @@ export default class ConcurrencyManager {
         .filter(key => this.opts[key] && this.opts[key].delay)
         .map(key => this.opts[key].delay),
     );
+  }
+
+  /**
+   * Scraping is complete:
+   * A) when there are no scrape-in-progress resources and buffer is empty
+   * not good enough, in a distributed environment there may be scrape-in-progress resources on other scraper instances
+   * B) when there are no scrape-in-progress resources AND buffer is empty for a 'considerable' amount of time
+   * 'considerable' amount of time can be something like 3 standard deviations above the mean resource scrape time
+   *  mean resource scrape time is not computed atm, a hardcoded value is presently used
+   */
+  isScrapingComplete(dateNow: number): boolean {
+    // no results found, check if scraping is complete
+    if (this.resourceBuffer.length === 0) {
+      // no more scrape-in-progress resources
+      if (this.status.project.requests === 0) {
+        /*
+        buffer was empty for more than it takes to scrape a resource in a worst case scenario
+        any other distributed scraper instances have also finished scraping
+        there are no scrape-in-progress resources capable of discovering new to-be-scraped resources
+        */
+        const maxResourceScrapeTime = 1 * 1000;
+        if (!this.status.project.lastStartTime || dateNow - this.status.project.lastStartTime > maxResourceScrapeTime) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -170,41 +213,67 @@ export default class ConcurrencyManager {
 
     in a worst case scenario scraping will not proceed at full capacity
     since we have available proxies but are throttled by domain/session concurrency conditions
-    this is possible when we scrape from multiple domains and getResourceToScrape keeps retrieving resources from a single domain
+    this is possible when we scrape from multiple domains and getResourcesToScrape keeps retrieving resources from a single domain
 
     this won't be a problem when:
     - scraping a single domain
     - scraping lots of domains with few resources per domain
 
-    this could be tweaked by:
-      1) query sequentally possible to-be-scraped resources from different hostnames if no domain/proxy is available for the resource hostname
-          - requires adding hostname as a db column to support query against it or endure some penalties querying using regexps
-      2) retrieve at the same time multiple to-be-scraped resources (hopefully from different domains)
-          - check if one can be scraped meeting the domain/session constraints
+    can be partially mitigated by keeping an in-memory resource buffer allowing to test all entries for met concurrency conditions
     */
-    const resource = this.stop ? null : await project.getResourceToScrape();
+    let resource;
 
-    // no more resources available for scraping
-    if (!resource) {
-      // project scraping is complete, there is no in-progress scraping possibly adding new resources
-      if (this.status.project.requests === 0) {
-        return null;
+    // stop signal has been received, gracefully stop scraping, allow all scrape-in-progress resources to be scraped
+    if (this.stop) {
+      resource = null;
+
+      if (this.resourceBuffer.length > 0) {
+        // re-make to-be-scraped buffered resources eligible for scraping by reseting their status flag
+        await Promise.all(this.resourceBuffer.map(resource => project.queue.updateStatus(resource.queueEntryId, null)));
+        this.resourceBuffer = [];
       }
 
-      /*
-      either:
-        - no resource available right now, but there may be more as in-progress scraping completes
-        - project was stopped, only wait for in-progress scraping to complete
-      */
+      if (this.isScrapingComplete(Date.now())) {
+        return null;
+      }
+    }
+    // normal scraping
+    else {
+      // attemp to re-fill buffer
+      if (this.resourceBuffer.length === 0) {
+        // buffer is only filled sequentially
+        if (!this.refillBufferInProgress) {
+          this.refillBufferInProgress = true;
+          this.resourceBuffer = await project.queue.getResourcesToScrape(10);
+
+          // trim and update buffer results
+          const dateNow = Date.now();
+          this.refillBufferInProgress = false;
+
+          if (this.isScrapingComplete(dateNow)) {
+            return null;
+          }
+        }
+      }
+
+      // in the future, don't just retrieve the 1st resource, attempt to search for one meeting the concurrency conditions
+      resource = this.resourceBuffer.length > 0 ? this.resourceBuffer.shift() : null;
+    }
+
+    /*
+    either:
+    - no resource available right now, but there may be more as in-progress scraping completes
+    - project was stopped, only wait for in-progress scraping to complete
+    */
+    if (!resource) {
       throw new ConcurrencyError(ConcurrencyLevel.Project);
     }
 
     // domain thresholds don't allow it
     const { hostname } = new URL(resource.url);
     if (!this.conditionsMet(this.status.domain[hostname], this.opts.domain)) {
-      // re-make resource eligible for scraping by reseting the scrapeInProgress flag
-      resource.scrapeInProgress = false;
-      await resource.update();
+      // new resource is not meeting concurrency conditions, postpone its scraping, re-add it to the buffer
+      this.resourceBuffer.push(resource);
 
       throw new ConcurrencyError(ConcurrencyLevel.Domain);
     }
@@ -215,9 +284,8 @@ export default class ConcurrencyManager {
     }
     // abort if no proxy is available based on session thresholds
     if (proxy === undefined) {
-      // re-make resource eligible for scraping by reseting the scrapeInProgress flag
-      resource.scrapeInProgress = false;
-      await resource.update();
+      // new resource is not meeting concurrency conditions, postpone its scraping, re-add it to the buffer
+      this.resourceBuffer.push(resource);
 
       throw new ConcurrencyError(ConcurrencyLevel.Session);
     }
@@ -273,7 +341,7 @@ export default class ConcurrencyManager {
     do {
       const candidateProxy = this.getNextProxy();
       proxy = this.conditionsMet(this.status.proxy[this.proxyId(candidateProxy)], this.opts.proxy)
-      && this.conditionsMet(this.status.session[this.sessionId(candidateProxy, hostname)], this.opts.session)
+        && this.conditionsMet(this.status.session[this.sessionId(candidateProxy, hostname)], this.opts.session)
         ? candidateProxy : undefined;
 
       checkCount += 1;
@@ -330,7 +398,7 @@ export default class ConcurrencyManager {
 
   removeResourceFromStatus(status: StatusEntry) {
     return {
-      lastStartTime: Date.now(),
+      lastStartTime: status.lastStartTime,
       requests: status.requests - 1,
     };
   }

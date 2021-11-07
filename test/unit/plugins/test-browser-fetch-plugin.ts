@@ -137,16 +137,26 @@ describe('BrowserFetchPlugin', () => {
         .returns('text/html'),
     };
 
-    const result:Partial<Resource> = await plugin.openInTab(<Resource>{ url: 'http://www.a.com/a.html' }, <any>client);
+    let err;
+    try {
+      await plugin.openInTab(<Resource>{ url: 'http://www.a.com/a.html' }, <any>client);
+    }
+    catch (e) {
+      err = e;
+    }
+    assert.deepInclude(
+      {
+        status: 301,
+        redirectUrl: 'http://www.a.com/a-after-redirect.html',
+      },
+      err,
+    );
+
+    const result:Partial<Resource> = await plugin.apply(<any>{}, <Resource>{ url: 'http://www.a.com/a.html' }, <any>client);
     assert.deepEqual(
       {
-        status: 201,
-        contentType: 'text/html',
-        url: 'http://www.a.com/a-after-redirect.html',
-        resourcesToAdd: [ {
-          url: 'http://www.a.com/a.html',
-          status: 301,
-        } ],
+        status: 301,
+        resourcesToAdd: [ { url: 'http://www.a.com/a-after-redirect.html' } ],
       },
       result,
     );

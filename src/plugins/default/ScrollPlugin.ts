@@ -88,7 +88,7 @@ export default class ScrollPlugin extends Plugin {
     switch (stabilityStatus) {
       // dom changed and now stable
       case DomStabilityStatus.Stable:
-        return { actions: [ `scroll#${this.actionNo}` ] };
+        return { actions: [ `scroll#${this.actionNo}` ], status: 200 };
       // dom unchanged, nothing more to scroll
       case DomStabilityStatus.Unchanged:
         return null;

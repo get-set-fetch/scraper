@@ -7,7 +7,7 @@ import { join } from 'path';
 import ZipExporter from '../../../src/export/ZipExporter';
 import KnexProject from '../../../src/storage/knex/KnexProject';
 import Exporter from '../../../src/export/Exporter';
-import * as StorageUtils from '../../../src/storage/storage-utils';
+import ModelStorage from '../../../src/storage/ModelStorage';
 
 describe('ZipExporter', () => {
   let sandbox:SinonSandbox;
@@ -18,17 +18,17 @@ describe('ZipExporter', () => {
   beforeEach(() => {
     sandbox = createSandbox();
     project = sandbox.createStubInstance(KnexProject);
-    project.Constructor.storage = { };
-
-    sandbox.stub(StorageUtils, 'initStorage').returns({
-      connect: sandbox.stub(),
-      close: sandbox.stub(),
-      Project: {
-        get: sandbox.stub().returns(project),
-      },
-    } as any);
+    project.Constructor.storage = { config: {} };
 
     writeStub = sandbox.stub(fs, 'writeFileSync');
+
+    sandbox.stub(ModelStorage.prototype, 'connect');
+    sandbox.stub(ModelStorage.prototype, 'getModels').returns(<any>{
+      Project: {
+        get: () => project,
+      },
+    });
+    sandbox.stub(ModelStorage.prototype, 'close');
 
     exporter = new ZipExporter({ filepath: 'archiveA.zip' });
   });

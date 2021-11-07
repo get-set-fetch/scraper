@@ -1,5 +1,6 @@
-import Resource, { IStaticResource } from './Resource';
 import Project, { IStaticProject } from './Project';
+import Queue, { IStaticQueue } from './Queue';
+import Resource, { IStaticResource } from './Resource';
 
 export type StorageOptions = {
   client: string,
@@ -7,16 +8,10 @@ export type StorageOptions = {
 }
 
 /**
- * Each storage option extends this class.
- * On a succesfull db connection it returns Project and Resource classes linked to that connection.
+ * Each storage option (db, in-memory) extends this class.
  */
 export default abstract class Storage {
   config: StorageOptions;
-
-  connected:boolean;
-
-  Project: IStaticProject & typeof Project;
-  Resource: IStaticResource & typeof Resource;
 
   /**
    * Stores db connection.
@@ -24,15 +19,17 @@ export default abstract class Storage {
    */
   constructor(config) {
     this.config = config;
-    this.connected = false;
   }
 
-  /** Connects to db and returns Project and Resource classes linked to the db connection. */
-  abstract connect():Promise<{
-    Project: IStaticProject & typeof Project,
-    Resource: IStaticResource & typeof Resource
-  }>;
+  /** Open db connection */
+  abstract connect():Promise<void>;
 
-  /** Closes the database. */
+  /** Close db connection. */
   abstract close():Promise<void>;
+
+  abstract getProject():Promise<typeof Project & IStaticProject>;
+  abstract getQueue():Promise<typeof Queue & IStaticQueue>;
+  abstract getResource():Promise<typeof Resource & IStaticResource>;
+
+  abstract toJSON(data: Resource | Queue | Project);
 }

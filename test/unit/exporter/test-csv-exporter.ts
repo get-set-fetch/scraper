@@ -4,7 +4,7 @@ import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
 import CsvExporter from '../../../src/export/CsvExporter';
 import KnexProject from '../../../src/storage/knex/KnexProject';
-import * as StorageUtils from '../../../src/storage/storage-utils';
+import ModelStorage from '../../../src/storage/ModelStorage';
 
 describe('CsvExporter', () => {
   let sandbox:SinonSandbox;
@@ -17,15 +17,7 @@ describe('CsvExporter', () => {
     content = '';
     sandbox = createSandbox();
     project = sandbox.createStubInstance(KnexProject);
-    project.Constructor.storage = { };
-
-    sandbox.stub(StorageUtils, 'initStorage').returns({
-      connect: sandbox.stub(),
-      close: sandbox.stub(),
-      Project: {
-        get: sandbox.stub().returns(project),
-      },
-    } as any);
+    project.Constructor.storage = { config: {} };
 
     sandbox.stub(fs, 'createWriteStream').returns(<any>{
       write: (val: string) => {
@@ -33,6 +25,14 @@ describe('CsvExporter', () => {
       },
       close: () => {},
     });
+
+    sandbox.stub(ModelStorage.prototype, 'connect');
+    sandbox.stub(ModelStorage.prototype, 'getModels').returns(<any>{
+      Project: {
+        get: () => project,
+      },
+    });
+    sandbox.stub(ModelStorage.prototype, 'close');
 
     exporter = new CsvExporter({ filepath: 'fileA.csv' });
   });

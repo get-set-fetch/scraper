@@ -14,8 +14,8 @@ import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
 import { IDomClientConstructor } from '../domclient/DomClient';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
 import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMetrics';
-import { initStorage } from '../storage/storage-utils';
 import initClient from '../domclient/client-utils';
+import ModelStorage, { ModelStorageOptions } from '../storage/ModelStorage';
 
 export const enum ScrapeEvent {
   ResourceSelected = 'resource-selected',
@@ -86,7 +86,7 @@ export type ScrapeConfig = {
 export default class Scraper extends EventEmitter {
   logger = getLogger('Scraper');
 
-  storage: Storage;
+  modelStorage: ModelStorage;
 
   browserClient: BrowserClient;
   domClientConstruct: IDomClientConstructor;
@@ -102,10 +102,10 @@ export default class Scraper extends EventEmitter {
   */
   metrics: RuntimeMetrics;
 
-  constructor(storageOpts: StorageOptions | Storage, clientOpts:ClientOptions | BrowserClient | IDomClientConstructor) {
+  constructor(storageOpts: StorageOptions | Storage | ModelStorageOptions, clientOpts: ClientOptions | BrowserClient | IDomClientConstructor) {
     super();
 
-    this.storage = this.isStorageOpts(storageOpts) ? initStorage(storageOpts) : storageOpts;
+    this.modelStorage = new ModelStorage(storageOpts);
 
     if (!clientOpts) {
       const err = new Error('A browser or DOM client needs to be provided');
@@ -174,6 +174,10 @@ export default class Scraper extends EventEmitter {
     });
   }
 
+  initConcurrencyManager(concurrencyOpts?: Partial<ConcurrencyOptions>): ConcurrencyManager {
+    return new ConcurrencyManager(concurrencyOpts);
+  }
+
   /**
    * Pre-scrape preparations regarding PluginStore, storage and browser client.
    * Making sure default plugins are registered, a connection to a database is opened, a browser (if apllicable) is launched.
@@ -184,10 +188,8 @@ export default class Scraper extends EventEmitter {
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
     }
 
-    if (!this.storage.connected) {
-      await this.storage.connect();
-      this.logger.info('Storage connected');
-    }
+    await this.modelStorage.connect();
+    this.logger.info('Storage connected');
 
     if (this.concurrency) {
       throw new Error('scraping already in progress');
@@ -200,7 +202,7 @@ export default class Scraper extends EventEmitter {
         throw new Error('concurrency condition maxRequests is not supported on browser clients');
       }
 
-      this.concurrency = new ConcurrencyManager(concurrencyOpts);
+      this.concurrency = this.initConcurrencyManager(concurrencyOpts);
       // concurrencyManager needs to update its status based on resource error/complete
       this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
       this.on(ScrapeEvent.ResourceError, this.concurrency.resourceError);
@@ -234,7 +236,8 @@ export default class Scraper extends EventEmitter {
       throw new Error(`Pipeline ${projectOpts.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
 
-    let project = await this.storage.Project.get(projectOpts.name);
+    const { Project: ExtProject } = await this.modelStorage.getModels();
+    let project = await ExtProject.get(projectOpts.name);
 
     if (project) {
       if (cliOpts.overwrite) {
@@ -247,7 +250,7 @@ export default class Scraper extends EventEmitter {
       }
     }
 
-    project = new (<IStaticProject> this.storage.Project)({
+    project = new (<IStaticProject>ExtProject)({
       name: projectOpts.name,
       pluginOpts: pipelines[projectOpts.pipeline]
         ? mergePluginOpts(pipelines[projectOpts.pipeline].defaultPluginOpts, projectOpts.pluginOpts)
@@ -260,13 +263,13 @@ export default class Scraper extends EventEmitter {
     let { resourcePath } = projectOpts;
     if (resourcePath) {
       resourcePath = isAbsolute(resourcePath) ? resourcePath : join(process.cwd(), resourcePath);
-      await project.batchInsertResourcesFromFile(resourcePath);
+      await project.queue.batchInsertResourcesFromFile(resourcePath);
     }
 
     // link resources to the project from inline definition
     const { resources } = projectOpts;
     if (resources && Array.isArray(resources)) {
-      await project.batchInsertResources(resources);
+      await project.queue.batchInsertResources(resources);
     }
 
     return project;
@@ -292,8 +295,8 @@ export default class Scraper extends EventEmitter {
         await this.browserClient.close();
       }
 
-      if (this.storage && this.storage.connected) {
-        await this.storage.close();
+      if (this.modelStorage) {
+        await this.modelStorage.close();
       }
     }
     catch (err) {
@@ -319,7 +322,8 @@ export default class Scraper extends EventEmitter {
 
       // when discover flag is set ignore projectOpts, retrieve first project containing unscraped resources
       if (cliOpts && cliOpts.discover) {
-        this.project = await this.storage.Project.getProjectToScrape();
+        const { Project: ExtProject } = await this.modelStorage.getModels();
+        this.project = await ExtProject.getProjectToScrape();
         if (!this.project) {
           this.logger.info('All existing project have been scraped, discovery complete');
           this.postScrape();
@@ -381,17 +385,13 @@ export default class Scraper extends EventEmitter {
 
   async save(projectOpts: ProjectOptions | Project, cliOpts: Partial<CliOptions>) {
     try {
-      if (!this.storage.connected) {
-        await this.storage.connect();
-        this.logger.info('Storage connected');
-      }
+      await this.modelStorage.connect();
+      this.logger.info('Storage connected');
 
       this.project = await this.initProject(projectOpts, cliOpts);
       if (!this.project) throw new Error('could not find project');
 
-      if (this.storage && this.storage.connected) {
-        await this.storage.close();
-      }
+      await this.modelStorage.close();
     }
     catch (err) {
       this.logger.error(err);
@@ -403,24 +403,29 @@ export default class Scraper extends EventEmitter {
    * After all in-progress scraping completes, a "project-stopped" event is emitted.
    */
   stop() {
-    this.concurrency.stop = true;
+    if (this.concurrency) {
+      this.concurrency.stop = true;
+    }
   }
 
-  async getResourceToScrape() {
+  async getResourceToScrape(): Promise<Resource> {
+    let resource: Resource;
+
     try {
       // check if scraper cpu and memory usage are within the defined limits
       this.metrics.check();
 
-      const resource = await this.concurrency.getResourceToScrape(this.project);
+      resource = await this.concurrency.getResourceToScrape(this.project);
+
+      if (resource) {
+        this.emit(ScrapeEvent.ResourceSelected, this.project, resource);
+        await this.scrapeResource(resource);
+      }
       // no more available resources to be scraped, project scraping complete
-      if (!resource) {
+      else {
         await this.postScrape();
         this.logger.info(`Project ${this.project.name} scraping complete`);
         this.emit(ScrapeEvent.ProjectScraped, this.project);
-      }
-      else {
-        this.emit(ScrapeEvent.ResourceSelected, this.project, resource);
-        this.scrapeResource(resource);
       }
     }
     catch (err) {
@@ -431,18 +436,19 @@ export default class Scraper extends EventEmitter {
       if (err instanceof RuntimeMetricsError) {
         this.logger.debug(err.snapshot, `Runtime conditions for project ${this.project.name} not met`);
       }
-
       // normal concurrency errors based on the existing concurrency options
-      if (err instanceof ConcurrencyError) {
+      else if (err instanceof ConcurrencyError) {
         this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
       }
       // invalid concurrency state, abort the entire scraping process
       else {
-        this.logger.error(err, 'concurrency error');
-        await this.postScrape();
+        this.logger.error(err, 'getResourceToScrape');
+        this.stop();
         this.emit(ScrapeEvent.ProjectError, this.project, err);
       }
     }
+
+    return resource;
   }
 
   /**
@@ -483,10 +489,13 @@ export default class Scraper extends EventEmitter {
       }
     }
     catch (err) {
+      // optional chaining not available till node v14, check all chains are valid, we may be in an invalid state
       this.logger.error(
         err,
         'Scrape error for project %s , Plugin %s against resource %s',
-        this.project.name, this.project.plugins[pluginIdx].constructor.name, resource ? resource.url : '',
+        this.project ? this.project.name : 'undefined project',
+        this.project && this.project.plugins && this.project.plugins[pluginIdx] && this.project.plugins[pluginIdx].constructor ? this.project.plugins[pluginIdx].constructor.name : 'unknown plugin',
+        resource ? resource.url : '',
       );
 
       /*
@@ -503,9 +512,10 @@ export default class Scraper extends EventEmitter {
       if (resource) {
         /*
         unknown error occured,
-        add scrapedAt field to the current resource so it won't be scraped again, possibly ending in an infinite loop retrying again and again
+        resource is not yet saved to db, update the corresponding queue entry with an error status
+        so that we don't attempt to scrape the same url again,  possibly ending with the same error in an infinite loop
         */
-        await resource.update();
+        await this.project.queue.updateStatus(resource.queueEntryId, 500);
       }
 
       this.emit(ScrapeEvent.ResourceError, this.project, resource, err);
@@ -516,14 +526,23 @@ export default class Scraper extends EventEmitter {
     resource is a dynamic one, successfully modified by a dynamic action: scroll, click, ..
     scrape the newly generated content by re-triggering the scrape plugins
     keep the same proxy as chained dynamic actions only make sense within the same session
+    only do it if scraper is not about to stop
     */
     if (
       resource
-    && resource.actions
-    && resource.actions.length > 0
+      && resource.actions
+      && resource.actions.length > 0
+      && this.concurrency
+      && !this.concurrency.stop
     ) {
-      const dynamicResource:Resource = (
-        ({ url, depth, contentType, parent, actions, proxy }) => this.project.createResource({ url, depth, contentType, parent, actions, proxy })
+      const dynamicResource: Resource = (
+        (
+          { url, queueEntryId, status, depth, contentType, parent, actions, proxy },
+        ) => this.project.createResource(
+          {
+            url, queueEntryId, status, depth, contentType, parent, actions, proxy,
+          },
+        )
       )(resource);
       this.scrapeResource(dynamicResource);
     }
@@ -544,7 +563,7 @@ export default class Scraper extends EventEmitter {
    * @param resource - current scrape resource
    * @param plugin - current scrape plugin
    */
-  async executePlugin(resource: Resource, plugin: Plugin):Promise<void | Partial<Resource>> {
+  async executePlugin(resource: Resource, plugin: Plugin): Promise<void | Partial<Resource>> {
     this.logger.debug(
       'Executing plugin %s using options %o , against resource %o',
       plugin.constructor.name, plugin.opts, resource,
@@ -625,34 +644,5 @@ export default class Scraper extends EventEmitter {
     }
 
     return result;
-  }
-
-  async getResources():Promise<Resource[]> {
-    let resources:Resource[];
-
-    try {
-      if (!this.project) {
-        throw new Error('no project is linked to the current scraper instance');
-      }
-
-      // use a separate db connection, scrape and getResources have different db lifecycles and may run in parallel
-      const storage:Storage = initStorage(this.storage.config);
-      await storage.connect();
-
-      const project:Project = await storage.Project.get(this.project.id);
-      if (!project) {
-        throw new Error(`could not find project ${this.project.name}`);
-      }
-
-      resources = await project.getResources();
-
-      await storage.close();
-    }
-    catch (err) {
-      this.logger.error(err);
-      return null;
-    }
-
-    return resources;
   }
 }

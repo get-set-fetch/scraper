@@ -1,22 +1,21 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable import/prefer-default-export */
-import { moduleExists } from '../plugins/file-utils';
+import Project, { IStaticProject } from './base/Project';
+import Queue, { IStaticQueue } from './base/Queue';
+import Resource, { IStaticResource } from './base/Resource';
 import Storage, { StorageOptions } from './base/Storage';
 
-const KnexStorage = moduleExists('knex') ? require('./knex/KnexStorage').default : null;
+export type ModelStorageOptions<T = StorageOptions | Storage> = {
+  [key in 'Project'|'Queue'|'Resource'] : T;
+}
 
-export function initStorage(config: StorageOptions):Storage {
-  let storage:Storage;
-  switch (config.client) {
-    case 'sqlite3':
-    case 'mysql':
-    case 'pg':
-      if (!KnexStorage) throw new Error('knex package not installed');
-      storage = new KnexStorage(config);
-      break;
-    default:
-      throw new Error(`unsupported storage client ${config.client}`);
-  }
+export type ModelCombination = {
+  Project: typeof Project & IStaticProject,
+  Queue: typeof Queue & IStaticQueue,
+  Resource: typeof Resource & IStaticResource
+}
 
-  return storage;
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export function staticImplements<T>(ctor: T) {
+  return ctor;
 }

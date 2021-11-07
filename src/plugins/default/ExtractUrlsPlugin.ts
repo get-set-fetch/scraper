@@ -4,6 +4,7 @@ import Project from '../../storage/base/Project';
 import Resource from '../../storage/base/Resource';
 import { IDomClientConstructor, IDomNode } from '../../domclient/DomClient';
 import NativeClient from '../../domclient/NativeClient';
+import { QueueEntry } from '../../storage/base/Queue';
 
 /** Extracts new URLs to be scraped based on CSS selectors. Runs in browser. */
 export default class ExtractUrlsPlugin extends Plugin {
@@ -73,13 +74,13 @@ export default class ExtractUrlsPlugin extends Plugin {
   apply(project: Project, resource: Resource, DomClient?: IDomClientConstructor) {
     this.document = DomClient ? new DomClient(resource.data) : new NativeClient(document.querySelector('body'));
 
-    const allResourcesToAdd: Partial<Resource>[] = this.extractResources(resource);
+    const allResourcesToAdd: Partial<QueueEntry>[] = this.extractResources(resource);
     const resourcesToAdd = this.diffAndMerge(allResourcesToAdd);
 
     return resourcesToAdd.length > 0 ? { resourcesToAdd } : null;
   }
 
-  extractResources(resource:Resource): Partial<Resource>[] {
+  extractResources(resource: Resource): Partial<QueueEntry>[] {
     const currentUrl = new URL(resource.url);
 
     const resources = this.opts.selectorPairs.reduce(
@@ -121,10 +122,10 @@ export default class ExtractUrlsPlugin extends Plugin {
     return uniqueResources;
   }
 
-  extractSelectorResources(urlSelector: string, titleSelector: string): Partial<Resource>[] {
-    const titles: string[] = titleSelector ? Array.from(this.document.querySelectorAll(titleSelector)).map((titleNode:IDomNode) => titleNode.getAttribute('innerText').trim()) : [];
-    const resources: Partial<Resource>[] = Array.from(this.document.querySelectorAll(urlSelector)).map((elm:IDomNode, idx) => {
-      let resource: Partial<Resource> = null;
+  extractSelectorResources(urlSelector: string, titleSelector: string): Partial<QueueEntry>[] {
+    const titles: string[] = titleSelector ? Array.from(this.document.querySelectorAll(titleSelector)).map((titleNode: IDomNode) => titleNode.getAttribute('innerText').trim()) : [];
+    const resources: Partial<QueueEntry>[] = Array.from(this.document.querySelectorAll(urlSelector)).map((elm: IDomNode, idx) => {
+      let resource: Partial<QueueEntry> = null;
       if (elm.getAttribute('href')) {
         resource = {
           url: elm.getAttribute('href'),

@@ -1,4 +1,8 @@
+import { LogWrapper } from '../../logger/Logger';
+import { ModelCombination } from '../storage-utils';
 import Entity, { IStaticEntity } from './Entity';
+import { QueueEntry } from './Queue';
+import Storage from './Storage';
 
 export type IResourceParent = {
   linkText?: string;
@@ -13,14 +17,14 @@ export type Proxy = {
 
 /** Each url (web page, image, API endpoint, ...) represents a Resource. */
 export default abstract class Resource extends Entity {
+  logger: LogWrapper;
+
   id: number;
-  projectId: number;
   url: string;
   actions: string[];
 
   depth: number;
   scrapedAt: Date;
-  scrapeInProgress: boolean;
 
   /** response status code */
   status: number;
@@ -40,19 +44,16 @@ export default abstract class Resource extends Entity {
   parent: IResourceParent;
 
   /** not stored, populated by the ExtractUrlsPlugin and saved as new resources by the InsertResourcesPlugin */
-  resourcesToAdd: Partial<Resource>[];
+  resourcesToAdd: Partial<QueueEntry>[];
 
   /** not stored, populated by ConcurrencyManager based on the available proxy pool. If present, plugins should use this proxy when making requests. */
   proxy: Proxy;
 
+  /** not stored, provides a link to the corresponding scrape queue entry */
+  queueEntryId: number;
+
   constructor(kwArgs: Partial<Resource> = {}) {
     super(kwArgs);
-
-    if (!kwArgs.depth) {
-      this.depth = 0;
-    }
-
-    this.scrapeInProgress = !!this.scrapeInProgress;
 
     if (kwArgs.scrapedAt && !(kwArgs.scrapedAt instanceof Date)) {
       this.scrapedAt = new Date(kwArgs.scrapedAt);
@@ -72,7 +73,11 @@ export default abstract class Resource extends Entity {
   }
 
   get dbCols() {
-    return [ 'id', 'projectId', 'url', 'actions', 'depth', 'scrapedAt', 'scrapeInProgress', 'status', 'contentType', 'content', 'data', 'parent' ];
+    return [ 'id', 'url', 'actions', 'depth', 'scrapedAt', 'status', 'contentType', 'content', 'data', 'parent' ];
+  }
+
+  toJSON() {
+    return (<IStaticResource> this.constructor).storage.toJSON(this);
   }
 
   /**
@@ -95,17 +100,26 @@ export type ResourceQuery = {
   offset: number;
   limit: number;
   where: Partial<{
-    projectId: number;
     [prop: string]: string|number;
   }>,
+  whereIn: {
+    [prop: string]: string[]|number[];
+  }
   whereNotNull: string[],
   cols: string[];
 }
 
 export interface IStaticResource extends IStaticEntity {
+  storage: Storage;
+  models: ModelCombination;
+  projectId: number;
+
   new(kwArgs: Partial<Resource>): Resource;
-  getResource(projectId:number, url: string):Promise<Resource>;
-  getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
-  getAll(projectId: number):Promise<any[]>;
-  getResourceToScrape(projectId:number):Promise<Resource>;
+  init():Promise<void>;
+
+  getResource(url: string):Promise<Resource>;
+  getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>
+  getAll():Promise<Resource[]>;
+
+  drop():Promise<void>;
 }

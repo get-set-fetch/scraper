@@ -10,6 +10,9 @@ import Storage from '../../src/storage/base/Storage';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
 import { PluginOpts, ZipExporter } from '../../src';
+import { setLogger } from '../../src/logger/Logger';
+import ModelStorage from '../../src/storage/ModelStorage';
+import { IStaticResource } from '../../src/storage/base/Resource';
 
 function getConcurrencyInfo(concurrencyOpts: Partial<ConcurrencyOptions>):string {
   const concurrencyInfo = [ 'project', 'proxy', 'domain', 'session' ]
@@ -66,6 +69,8 @@ export default function acceptanceSuite(
   describe(suiteTitle, () => {
     let srv: GsfServer;
     let Project: IStaticProject;
+    let Resource: IStaticResource;
+    let modelStorage: ModelStorage;
 
     before(async () => {
       // start web server
@@ -80,19 +85,23 @@ export default function acceptanceSuite(
           storage.config.connection.filename = join(__dirname, '..', 'tmp', storage.config.connection.filename);
         }
       }
+
+      /*
+      keep a separate db connection for project handling outside the scraper instance
+      scraper opens and closes its own db connection
+      */
+      modelStorage = new ModelStorage(storage.config);
+      await modelStorage.connect();
+      ({ Project, Resource } = await modelStorage.getModels());
     });
 
     beforeEach(async () => {
-      /*
-      conn is automatically closed after each scrape operation,
-      re-open it to be able to create test projects outside of scraper logic
-      */
-      ({ Project } = await storage.connect());
       await Project.delAll();
     });
 
     after(async () => {
       srv.stop();
+      await modelStorage.close();
     });
 
     const scrapingTest = (
@@ -114,23 +123,38 @@ export default function acceptanceSuite(
         pluginOpts,
       });
       await project.save();
-      await project.batchInsertResources(test.definition.resources);
+      await project.queue.batchInsertResources(test.definition.resources);
 
       // start scraping
+      setLogger({ level: 'error' });
       const scraper = new Scraper(storage, client);
       const scrapeComplete = new Promise((resolve, reject) => {
         scraper.addListener(ScrapeEvent.ProjectScraped, resolve);
-        scraper.addListener(ScrapeEvent.ProjectError, err => {
+        scraper.addListener(ScrapeEvent.ProjectError, (proj, err) => {
           reject(err);
         });
       });
       scraper.scrape(project, concurrencyOpts);
       await scrapeComplete;
 
-      // compare results
-      const resources = await scraper.getResources();
-      // console.log(JSON.stringify(resources));
-      ScrapingSuite.checkResources(resources, test.resources);
+      /*
+      compare results
+      - expected results contain all scraped urls regardless of status
+      - actual results is a combination of project queue entries and resources
+          * project queue contains scraped urls without content with valid and invalid (301, 404, ..) status
+          * project resources should (not atm) contain only scraped resources with a valid 2xx status
+            - this is not the case atm, UpsertResourcePlugin saves all resources regardless of their status
+      */
+      const resources = await project.getResources();
+      const resourceUrls = resources.map(resource => resource.url);
+      const queueEntries = await project.queue.getAll();
+      const actualResources = resources.concat(
+        queueEntries
+          .filter(queueEntry => !resourceUrls.includes(queueEntry.url))
+          .map(queueEntry => new Resource({ ...queueEntry, contentType: null, content: null })),
+      );
+      // console.log(JSON.stringify(actualResources));
+      ScrapingSuite.checkResources(actualResources, test.resources);
 
       // check archive for binary scraping
       if (test.archiveEntries) {

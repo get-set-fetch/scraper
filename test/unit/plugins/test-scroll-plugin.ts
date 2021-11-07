@@ -40,7 +40,7 @@ describe('ScrollPlugin', () => {
     stubWaitForStability.returns(new Promise(resolve => resolve(utils.DomStabilityStatus.Stable)));
 
     const actualResult = await plugin.apply();
-    const expectedResult = { actions: [ 'scroll#1' ] };
+    const expectedResult = { actions: [ 'scroll#1' ], status: 200 };
     assert.deepEqual(actualResult, expectedResult);
   });
 

@@ -185,15 +185,12 @@ export default class BrowserFetchPlugin extends BaseFetchPlugin {
     both puppeteer and playwright follow redirects automatically
     puppeteer can control/abort redirects via page.setRequestInterception
     playwright can't: https://github.com/microsoft/playwright/issues/3993
-    the redirect origin needs to be saved as an already scraped resource so we don't keep visiting it
-    current valid resource will have the its url updated to the last redirect location
+    the redirect origin needs to be saved as an already scraped queue entry so we don't keep visiting it
+    current resource will keep its initial url
+    a new queue entry will be generated with last redirect location
     */
     if (redirectResponse) {
-      result.resourcesToAdd = [ {
-        status: redirectResponse.status(),
-        url: redirectResponse.url(),
-      } ];
-      result.url = response.url();
+      throw new FetchError(redirectResponse.status(), response.url());
     }
 
     return result;

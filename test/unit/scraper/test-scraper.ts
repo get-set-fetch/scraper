@@ -1,19 +1,22 @@
 import { assert } from 'chai';
-import { SinonSandbox, createSandbox } from 'sinon';
+import { SinonSandbox, createSandbox, SinonStubbedInstance } from 'sinon';
 import Scraper, { ScrapeEvent } from '../../../src/scraper/Scraper';
 import Project from '../../../src/storage/base/Project';
 import BrowserClient from '../../../src/browserclient/BrowserClient';
 import Storage from '../../../src/storage/base/Storage';
+import Queue from '../../../src/storage/base/Queue';
+import ModelStorage from '../../../src/storage/ModelStorage';
 
 describe('Scraper', () => {
   let sandbox:SinonSandbox;
-  let storage;
+  let storage:SinonStubbedInstance<Storage>;
   let browserClient;
   let scraper:Scraper;
+  let queue: SinonStubbedInstance<Queue>;
 
   const checkEntity = (reject : (err) => void, actual, expected) => {
     try {
-      assert.strictEqual(actual, expected);
+      assert.include(actual, expected);
     }
     catch (err) {
       reject(err);
@@ -22,10 +25,15 @@ describe('Scraper', () => {
 
   beforeEach(() => {
     sandbox = createSandbox();
-    storage = <Storage>{};
-    storage.connect = sandbox.stub();
-    storage.close = sandbox.stub();
-    storage.Project = <Project>{};
+    storage = sandbox.stub<Storage>(<any>{
+      connect: () => null,
+      close: () => null,
+      config: { client: 'client' },
+      toJSON: () => null,
+    });
+
+    queue = sandbox.stub<Queue>(<any>{ getResourcesToScrape: () => [], updateStatus: () => null });
+
     browserClient = <BrowserClient>{};
     browserClient.launch = sandbox.stub();
     scraper = new Scraper(storage, browserClient);
@@ -48,17 +56,10 @@ describe('Scraper', () => {
   });
 
   it('preScrape - do storage.connect', async () => {
-    storage.connected = false;
     await scraper.preScrape();
 
-    assert.isTrue(storage.connect.calledOnce);
-  });
-
-  it('preScrape - skip storage.connect', async () => {
-    storage.connected = true;
-    await scraper.preScrape();
-
-    assert.isTrue(storage.connect.neverCalledWith());
+    // called once for each model storage
+    assert.strictEqual(storage.connect.callCount, 3);
   }); // vladut iepurasul
 
   it('preScrape - do browserClient.launch', async () => {
@@ -131,10 +132,16 @@ describe('Scraper', () => {
     };
 
     const saveStub = sandbox.stub();
-    storage.Project = sandbox.stub().callsFake(
+
+    const Project = sandbox.stub().callsFake(
       () => ({ save: saveStub, ...expectedProject }),
     );
-    storage.Project.get = sandbox.stub();
+    Project.get = sandbox.stub();
+
+    const modelStorage = sandbox.createStubInstance(ModelStorage);
+    modelStorage.getModels.returns({ Project } as any);
+
+    scraper.modelStorage = <any>modelStorage;
 
     const preScrapeProject = await scraper.initProject({
       name: 'a.com',
@@ -148,23 +155,20 @@ describe('Scraper', () => {
 
   it('scrape - emit events - happy path', async () => {
     const resource = {
+      queueId: 10,
       url: 'http://siteA.com/resource.html',
-      update: sandbox.stub(),
+      proxy: null,
     };
+
+    queue.getResourcesToScrape
+      .onCall(0)
+      .returns(Promise.resolve([ { queueId: 10, url: 'http://siteA.com/resource.html' } as any ]))
+      .returns(Promise.resolve([]));
+
     const project = Object.assign(sandbox.createStubInstance(Project), {
       pluginOpts: [],
       initPlugins: () => [],
-      getResourceToScrape: sandbox.stub()
-        .onCall(0)
-        .returns(resource)
-        .onCall(1)
-        .returns(null),
-    });
-
-    const scrapeComplete = new Promise<void>(resolve => {
-      scraper.on(ScrapeEvent.ProjectScraped, () => {
-        resolve();
-      });
+      queue,
     });
 
     const eventChain: ScrapeEvent[] = [];
@@ -181,6 +185,7 @@ describe('Scraper', () => {
       scraper.on(ScrapeEvent.ResourceSelected, (eventProject, eventResource) => {
         checkEntity(reject, eventProject, project);
         checkEntity(reject, eventResource, resource);
+
         eventChain.push(ScrapeEvent.ResourceSelected);
       });
       scraper.on(ScrapeEvent.ResourceScraped, (eventProject, eventResource) => {
@@ -199,18 +204,15 @@ describe('Scraper', () => {
   });
 
   it('scrape - emit events - project error', async () => {
-    const resource = {
-      url: 'invalid_url',
-      update: sandbox.stub(),
-    };
+    queue.getResourcesToScrape
+      .onCall(0)
+      .returns(Promise.resolve([ { queueId: 10, url: 'invalid_url' } as any ]))
+      .returns(Promise.resolve([]));
+
     const project = Object.assign(sandbox.createStubInstance(Project), {
       pluginOpts: [],
       initPlugins: () => [],
-      getResourceToScrape: sandbox.stub()
-        .onCall(0)
-        .returns(resource)
-        .onCall(1)
-        .returns(null),
+      queue,
     });
 
     const eventChain: ScrapeEvent[] = [];
@@ -238,9 +240,16 @@ describe('Scraper', () => {
 
   it('scrape - emit events - resource error', async () => {
     const resource = {
+      queueId: 10,
       url: 'http://siteA.com/resource.html',
-      update: sandbox.stub(),
+      proxy: null,
     };
+
+    queue.getResourcesToScrape
+      .onCall(0)
+      .returns(Promise.resolve([ { queueId: 10, url: 'http://siteA.com/resource.html', update: sandbox.stub() } as any ]))
+      .returns(Promise.resolve([]));
+
     const project = Object.assign(sandbox.createStubInstance(Project), {
       pluginOpts: [],
       initPlugins: () => [
@@ -251,11 +260,7 @@ describe('Scraper', () => {
           },
         },
       ],
-      getResourceToScrape: sandbox.stub()
-        .onCall(0)
-        .returns(resource)
-        .onCall(1)
-        .returns(null),
+      queue,
     });
 
     const eventChain: ScrapeEvent[] = [];
