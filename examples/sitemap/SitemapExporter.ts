@@ -13,7 +13,8 @@ export default class SitemapExporter extends Exporter {
 
   async preParse() {
     this.wstream = fs.createWriteStream(this.opts.filepath);
-    this.wstream.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n');
+    this.wstream.write('<?xml version="1.0" encoding="UTF-8"?>\n');
+    this.wstream.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n');
   }
 
   async parse(resource: Partial<Resource>) {
