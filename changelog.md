@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.8.0 - 2021-11-16
+- Storage
+  - Scrape queue is now a separate collection.
+  - Each project has its own Queue, Resource collections with their own storage options. In future versions this allows for storage combinations like in-memory scrape queue with database scraped content.
+
 ### 0.7.1 - 2021-09-27
 - All default plugins are now exported so that they can be easily extended.
 
