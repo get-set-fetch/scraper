@@ -282,54 +282,8 @@ export default class KnexQueue extends Queue {
     this.logger.info(`inserting resources from ${resourcePath} done`);
   }
 
-  /**
-   * Number of unscraped resources linked to current project.
-   * Uses count(*) for exact counting. Just for postgresql uses ANALYZE output for count estimation.
-   * Estimation is orders of magnitude faster than exact count.
-   * @param estimate - whether to make an estimation or an exact count
-   * @returns
-   */
-  async countUnscrapedResources(estimate?:boolean):Promise<number> {
-    let selectCount:Knex.QueryBuilder;
-
-    if (estimate && this.Constructor.storage.client === 'pg') {
-      selectCount = (await this.Constructor.storage.knex.raw(
-        'SELECT count_estimate(\'SELECT 1 FROM ?? WHERE  "status" = NULL\') as "count"',
-        this.Constructor.tableName,
-      )).rows;
-    }
-    else {
-      // regular table storage scan
-      selectCount = this.builder.whereNull('status').count('id', { as: 'count' });
-    }
-
-    const [ result ] = await selectCount;
-    return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
-  }
-
-  /**
-   * Number of total resources linked to current project.
-   * Uses count(*) for exact counting. Just for postgresql uses ANALYZE output for count estimation.
-   * Estimation is orders of magnitude faster than exact count.
-   * @param estimate - whether to make an estimation or an exact count
-   * @returns
-   */
-  async countResources(estimate?:boolean):Promise<number> {
-    let selectCount:Knex.QueryBuilder;
-
-    if (estimate && this.Constructor.storage.client === 'pg') {
-      selectCount = (await this.Constructor.storage.knex.raw(
-        'SELECT count_estimate(\'SELECT 1 FROM ??\') as "count"',
-        this.Constructor.tableName,
-      )).rows;
-    }
-    else {
-      // regular table storage scan
-      selectCount = this.builder.count('*', { as: 'count' });
-    }
-
-    const [ result ] = await selectCount;
-    return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
+  count():Promise<number> {
+    return this.Constructor.storage.count(this.Constructor.tableName);
   }
 
   async updateStatus(id: number, status: number):Promise<void> {

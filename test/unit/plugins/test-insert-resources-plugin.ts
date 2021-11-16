@@ -13,11 +13,11 @@ describe('InsertResourcesPlugin', () => {
     sandbox = createSandbox();
 
     const queue = sandbox.stub<Queue>(<any>{
-      countResources: () => null,
+      count: () => null,
       checkIfPresent: () => null,
       add: () => null,
     });
-    queue.countResources.returns(Promise.resolve(0));
+    queue.count.returns(Promise.resolve(0));
     queue.checkIfPresent.returns(Promise.resolve([]));
 
     project = { queue };

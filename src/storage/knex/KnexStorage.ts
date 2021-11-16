@@ -84,6 +84,40 @@ export default class KnexStorage extends Storage {
     return staticImplements<typeof KnexResource & IStaticResource>(ExtResource);
   }
 
+  /**
+   * On Queue and Resource tables we only add entries, not remove them.
+   * Use last autoincrement sequence value to get total number of entries.
+   * @param tableName table to count entries from
+   * @returns number of entries
+   */
+  async count(tableName: string):Promise<number> {
+    let selectCount:Knex.QueryBuilder | Knex.Raw;
+    let result;
+
+    switch (this.client) {
+      case 'sqlite3':
+        selectCount = this.knex.raw(
+          'SELECT seq as "count" FROM main.sqlite_sequence WHERE name = ?',
+          tableName,
+        );
+        [ result ] = await selectCount;
+        break;
+      case 'pg':
+        selectCount = this.knex.raw(
+          'SELECT last_value as "count" FROM pg_sequences WHERE sequencename = ?',
+          `${tableName}_id_seq`,
+        );
+        [ result ] = (await selectCount).rows;
+        break;
+      // regular table storage scan
+      default:
+        selectCount = this.knex(tableName).count('*', { as: 'count' });
+        [ result ] = await selectCount;
+    }
+
+    return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
+  }
+
   toJSON(entity) {
     const { dbCols } = entity;
 

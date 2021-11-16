@@ -50,24 +50,25 @@ export default function crudProject(storage: Storage) {
       }
       await projectByName.queue.batchInsertResources(resourcesToBeInserted);
 
-      let unscrapedResourceNo = await projectByName.queue.countUnscrapedResources();
-      assert.strictEqual(unscrapedResourceNo, 50);
+      let queueCount = await projectByName.queue.count();
+      assert.strictEqual(queueCount, 50);
 
       const toScrapePromises = [];
       for (let i = 0; i < 40; i += 1) {
         toScrapePromises.push(projectByName.queue.getResourcesToScrape(1));
       }
-      const resourcesToScrape:Resource[][] = await Promise.all(toScrapePromises);
+      const resourcesToScrape:Resource[] = (await Promise.all(toScrapePromises)).flat();
+      await Promise.all(resourcesToScrape.map(resource => resource.save()));
 
-      const [ [ resourceToScrape ] ] = resourcesToScrape;
+      const [ resourceToScrape ] = resourcesToScrape;
       assert.isUndefined(resourceToScrape.status);
       assert.isNumber(resourceToScrape.queueEntryId);
 
-      const resourceNo = await projectByName.queue.countResources();
-      assert.strictEqual(resourceNo, 50);
+      queueCount = await projectByName.queue.count();
+      assert.strictEqual(queueCount, 50);
 
-      unscrapedResourceNo = await projectByName.queue.countUnscrapedResources();
-      assert.strictEqual(unscrapedResourceNo, 10);
+      const resourceCount = await projectByName.Constructor.models.Resource.count();
+      assert.strictEqual(resourceCount, 40);
     });
 
     it(`${storage.config.client} project batchInsertResources`, async () => {
@@ -154,7 +155,7 @@ export default function crudProject(storage: Storage) {
       assert.isUndefined(actualProject);
     });
 
-    it(`${storage.config.client} project saveResources`, async () => {
+    it(`${storage.config.client} project.queue.add`, async () => {
       const projectById = await Project.get(expectedProject.id);
       const resources:Partial<Resource>[] = [];
       for (let i = 0; i < 50; i += 1) {
@@ -166,7 +167,7 @@ export default function crudProject(storage: Storage) {
       assert.strictEqual(savedResources.length, 50);
     });
 
-    it(`${storage.config.client} project saveResources with ignored conflict`, async () => {
+    it(`${storage.config.client} project.queue.add with ignored conflict`, async () => {
       const projectById = await Project.get(expectedProject.id);
       const resources:Partial<Resource>[] = [];
 
@@ -185,7 +186,7 @@ export default function crudProject(storage: Storage) {
       assert.strictEqual(savedResources.length, 50);
     });
 
-    it(`${storage.config.client} project countResources - exact count`, async () => {
+    it(`${storage.config.client} project.queue.count`, async () => {
       const projectById = await Project.get(expectedProject.id);
 
       const resources:Partial<Resource>[] = [];
@@ -194,47 +195,8 @@ export default function crudProject(storage: Storage) {
       }
       await projectById.queue.add(resources);
 
-      const resourceNo = await projectById.queue.countResources();
+      const resourceNo = await projectById.queue.count();
       assert.strictEqual(resourceNo, 50);
-    });
-
-    it(`${storage.config.client} project countResources - valid estimate count query`, async () => {
-      const projectById = await Project.get(expectedProject.id);
-
-      const resources:Partial<Resource>[] = [];
-      for (let i = 0; i < 50; i += 1) {
-        resources.push({ url: `url${i}` });
-      }
-      await projectById.queue.add(resources);
-
-      const resourceNo = await projectById.queue.countResources(true);
-      assert.isNotNull(resourceNo);
-    });
-
-    it(`${storage.config.client} project countUnscrapedResources - exact count`, async () => {
-      const projectById = await Project.get(expectedProject.id);
-
-      const resources:Partial<Resource>[] = [];
-      for (let i = 0; i < 50; i += 1) {
-        resources.push({ url: `url${i}` });
-      }
-      await projectById.queue.add(resources);
-
-      const resourceNo = await projectById.queue.countUnscrapedResources();
-      assert.strictEqual(resourceNo, 50);
-    });
-
-    it(`${storage.config.client} project countUnscrapedResources - valid estimate count query`, async () => {
-      const projectById = await Project.get(expectedProject.id);
-
-      const resources:Partial<Resource>[] = [];
-      for (let i = 0; i < 50; i += 1) {
-        resources.push({ url: `url${i}` });
-      }
-      await projectById.queue.add(resources);
-
-      const resourceNo = await projectById.queue.countUnscrapedResources(true);
-      assert.isNotNull(resourceNo);
     });
   });
 }

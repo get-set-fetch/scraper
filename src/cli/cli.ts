@@ -35,8 +35,8 @@ function getFullPath(relativeOrAbsolutePath:string):string {
   return isAbsolute(relativeOrAbsolutePath) ? relativeOrAbsolutePath : join(process.cwd(), relativeOrAbsolutePath);
 }
 
-export function completionPercentage(resourceNo: number, unscrapedResourceNo: number) {
-  return Math.floor(((resourceNo - unscrapedResourceNo) / resourceNo) * 10000) / 100;
+export function completionPercentage(resourceCount: number, queueCount: number) {
+  return Math.floor((resourceCount / queueCount) * 10000) / 100;
 }
 
 /**
@@ -190,10 +190,11 @@ export async function invokeScraper(argObj:ArgObjType) {
   // report progress to console every `report` seconds
   if (report) {
     const reportProgressFnc = async (project:Project) => {
-      const resourceNo = await project.queue.countResources();
-      const unscrapedResourceNo = await project.queue.countUnscrapedResources();
-      const prct = completionPercentage(resourceNo, unscrapedResourceNo);
-      console.log(`progress (scraped / total resources): ${resourceNo - unscrapedResourceNo} / ${resourceNo} | ${prct}%`);
+      const resourceCount = await project.Constructor.models.Resource.count();
+      const queueCount = await project.queue.count();
+
+      const prct = completionPercentage(resourceCount, queueCount);
+      console.log(`progress (scraped / total resources): ${resourceCount} / ${queueCount} | ${prct}%`);
     };
 
     let reportTimeout:NodeJS.Timeout;

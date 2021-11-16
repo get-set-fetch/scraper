@@ -105,6 +105,10 @@ export default class KnexResource extends Resource {
     return this.storage.knex.schema.dropTable(this.tableName);
   }
 
+  static count():Promise<number> {
+    return this.storage.count(this.tableName);
+  }
+
   get Constructor():typeof KnexResource {
     return (<typeof KnexResource> this.constructor);
   }

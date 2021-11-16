@@ -364,7 +364,7 @@ describe('Command Line Interface', () => {
     assert.isTrue(/\/home\/dirA does not exist/.test(stderr), '"log dirpath does not exist" log entry not found');
   });
 
-  xit('new project with external resources --scrape --report --loglevel info --export', async () => {
+  it('new project with external resources --scrape --report --loglevel info --export', async () => {
     const { stdout } = await new Promise<{stderr: string, stdout: string}>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-with-external-resources.json --loglevel info --scrape --report 10 --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
@@ -409,9 +409,9 @@ describe('Command Line Interface', () => {
   });
 
   it('completionPercentage', async () => {
-    assert.strictEqual(completionPercentage(1, 1), 0);
-    assert.strictEqual(completionPercentage(4, 3), 25);
-    assert.strictEqual(completionPercentage(3, 2), 33.33);
-    assert.strictEqual(completionPercentage(1, 0), 100);
+    assert.strictEqual(completionPercentage(1, 1), 100);
+    assert.strictEqual(completionPercentage(3, 4), 75);
+    assert.strictEqual(completionPercentage(1, 3), 33.33);
+    assert.strictEqual(completionPercentage(0, 1), 0);
   });
 });

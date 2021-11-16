@@ -54,7 +54,7 @@ export default class InsertResourcesPlugin extends Plugin {
 
     // a threshold is defined, take it into account
     if (this.opts.maxResources > 0) {
-      const resourceCount = await project.queue.countResources();
+      const resourceCount = await project.queue.count();
       const maxResourcesToAdd = Math.max(0, this.opts.maxResources - resourceCount);
 
       // add resources below the threshold

@@ -36,20 +36,7 @@ export default abstract class Queue {
   abstract add(entries: Partial<QueueEntry>[]):Promise<void>;
   abstract checkIfPresent(urls:string[]):Promise<Partial<QueueEntry>[]>;
 
-  /**
-    * Number of unscraped resources linked to current project.
-    * @param estimate - whether to make an estimation or an exact count
-    * @returns
-    */
-  abstract countUnscrapedResources(estimate?:boolean):Promise<number>;
-
-  /**
-    * Number of total resources linked to current project.
-    * @param estimate - whether to make an estimation or an exact count
-    * @returns
-    */
-  abstract countResources(estimate?:boolean):Promise<number>;
-
+  abstract count():Promise<number>;
   abstract updateStatus(id: number, status: number):Promise<void>;
 
   abstract getAll():Promise<QueueEntry[]>;

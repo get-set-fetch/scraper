@@ -120,6 +120,7 @@ export interface IStaticResource extends IStaticEntity {
   getResource(url: string):Promise<Resource>;
   getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>
   getAll():Promise<Resource[]>;
+  count():Promise<number>;
 
   drop():Promise<void>;
 }
