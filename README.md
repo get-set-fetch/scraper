@@ -12,9 +12,13 @@ get-set, Fetch! is a plugin based, nodejs web scraper. It scrapes, stores and ex
 Supports multiple storage options: SQLite, MySQL, PostgreSQL.  
 Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom. 
 
-You can use it from your own javascript/typescript code, via [command line](https://www.getsetfetch.org/node/command-line.html) or [docker container](https://www.getsetfetch.org/node/docker.html).
+For quick, small projects under 10K URLs storing the queue and scraped content under SQLite is fine. For anything larger use PostgreSQL. You will be able to start/stop/resume the scraping process across multiple scraper instances each with its own IP and/or dedicated proxies. Using PostgreSQL it takes 90 minutes to scrape 1 million URLs with a concurrency of 100 parallel scrape actions. That's 5.5ms per scraped URL. See [benchmarks](https://github.com/get-set-fetch/benchmarks) for more info.
 
-What follows is a brief "Getting Started" guide using SQLite as storage and Puppeteer as browser client. For an in-depth documentation vist [getsetfetch.org](https://www.getsetfetch.org). See [changelog](changelog.md) for past release notes and [development](development.md) for technical tidbits.
+<img src="https://get-set-fetch.github.io/benchmarks/charts/v0.8.0-pg-total-exec-time-1e+6-web.png">
+
+You can use the scraper from your own javascript/typescript code, via [command line](https://www.getsetfetch.org/node/command-line.html) or [docker container](https://www.getsetfetch.org/node/docker.html).
+
+What follows is a brief "Getting Started" guide using SQLite as storage and Puppeteer as browser client. For an in-depth documentation visit [getsetfetch.org](https://www.getsetfetch.org). See [changelog](changelog.md) for past release notes and [development](development.md) for technical tidbits.
 
 #### Install the scraper
 ```
