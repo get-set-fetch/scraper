@@ -38,7 +38,7 @@ export default class UpsertResourcePlugin extends Plugin {
   async apply(project: Project, resource: Resource) {
     // guard against incomplete resources not capable of updating the scrape queue
     if (!resource.status || !resource.queueEntryId) {
-      throw new Error('incomplere resource');
+      throw new Error('incomplete resource');
     }
 
     /*

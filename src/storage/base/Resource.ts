@@ -32,7 +32,8 @@ export default abstract class Resource extends Entity {
   /** response content-type */
   contentType: string;
 
-  /** Stores text based content.
+  /**
+   * Stores text based content.
    * Data rows with each row containing one or multiple entries.
    * Usually each entry corresponds to content from a CSS selector.
    */
