@@ -1,0 +1,40 @@
+{
+    "storage": {
+        "client": "sqlite3",
+        "useNullAsDefault": true,
+        "connection": {
+        "filename": "console-content.sqlite"
+        },
+        "debug": false
+    },
+    "client": {
+        "name": "puppeteer"
+    },
+    "project": {
+        "name": "ConsoleContent",
+        "pipeline": "browser-static-content",
+        "pluginOpts": [
+            {
+				"name": "ConsoleBrowserFetchPlugin",
+                "path": "ConsoleBrowserFetchPlugin.ts",
+				"replace": "BrowserFetchPlugin"
+			},
+            {
+                "name": "InsertResourcesPlugin",
+                "maxResources": 5
+            }
+        ],
+        "resources": [
+            {
+                "url": "https://getsetfetch.org/node/storage.html"
+            }
+        ]
+    },
+    "concurrency": {
+        "session": {
+            "maxRequests": 1,
+            "delay": 1000
+        }
+    }
+}
+  
