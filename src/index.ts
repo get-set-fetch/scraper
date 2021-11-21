@@ -3,11 +3,18 @@
 
 import { moduleExists } from './plugins/file-utils';
 
-const KnexStorage = moduleExists('knex') ? require('./storage/knex/KnexStorage').default : null;
-const PuppeteerClient = moduleExists('puppeteer') ? require('./browserclient/PuppeteerClient').default : null;
-const PlaywrightClient = moduleExists('playwright-core') ? require('./browserclient/PlaywrightClient').default : null;
-const CheerioClient = moduleExists('cheerio') ? require('./domclient/CheerioClient').default : null;
-const JsdomClient = moduleExists('jsdom') ? require('./domclient/JsdomClient').default : null;
+// typescript optional module loading, use both `require` to conditionally load modules and `import` to just expose module types
+import KnexStorageDefault from './storage/knex/KnexStorage';
+import PuppeteerClientDefault from './browserclient/PuppeteerClient';
+import PlaywrightClientDefault from './browserclient/PlaywrightClient';
+import CheerioClientDefault from './domclient/CheerioClient';
+import JsdomClientDefault from './domclient/JsdomClient';
+
+const KnexStorage:typeof KnexStorageDefault = moduleExists('knex') ? require('./storage/knex/KnexStorage').default : null;
+const PuppeteerClient:typeof PuppeteerClientDefault = moduleExists('puppeteer') ? require('./browserclient/PuppeteerClient').default : null;
+const PlaywrightClient:typeof PlaywrightClientDefault = moduleExists('playwright-core') ? require('./browserclient/PlaywrightClient').default : null;
+const CheerioClient:typeof CheerioClientDefault = moduleExists('cheerio') ? require('./domclient/CheerioClient').default : null;
+const JsdomClient:typeof JsdomClientDefault = moduleExists('jsdom') ? require('./domclient/JsdomClient').default : null;
 
 export {
   KnexStorage,
