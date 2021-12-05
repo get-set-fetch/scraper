@@ -1,5 +1,9 @@
 ## Changelog
 
+### Unreleased
+- Storage
+  - linkage update between Project/Queue/Resource and their corresponding, independent storage options.
+  
 ### 0.8.0 - 2021-11-16
 - Storage
   - Scrape queue is now a separate collection.

@@ -14,11 +14,11 @@ describe('InsertResourcesPlugin', () => {
 
     const queue = sandbox.stub<Queue>(<any>{
       count: () => null,
-      checkIfPresent: () => null,
+      filterNewUrls: urls => null,
       add: () => null,
     });
     queue.count.returns(Promise.resolve(0));
-    queue.checkIfPresent.returns(Promise.resolve([]));
+    queue.filterNewUrls.callsFake((urls:string[]) => Promise.resolve(urls));
 
     project = { queue };
   });
@@ -38,7 +38,7 @@ describe('InsertResourcesPlugin', () => {
     plugin = new InsertResourcesPlugin();
     await plugin.apply(<any>project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
-    assert.isTrue(project.queue.checkIfPresent.notCalled);
+    assert.isTrue(project.queue.filterNewUrls.notCalled);
     assert.isTrue(project.queue.add.calledOnce);
 
     const [ saveResources ] = project.queue.add.args[0];
@@ -49,7 +49,7 @@ describe('InsertResourcesPlugin', () => {
     plugin = new InsertResourcesPlugin({ maxResources: 2 });
     await plugin.apply(<any>project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
-    assert.isTrue(project.queue.checkIfPresent.notCalled);
+    assert.isTrue(project.queue.filterNewUrls.notCalled);
     assert.isTrue(project.queue.add.calledOnce);
 
     const [ saveResources ] = project.queue.add.args[0];
@@ -60,7 +60,7 @@ describe('InsertResourcesPlugin', () => {
     plugin = new InsertResourcesPlugin({ maxResources: 1 });
     await plugin.apply(<any>project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
-    assert.isTrue(project.queue.checkIfPresent.calledOnce);
+    assert.isTrue(project.queue.filterNewUrls.calledOnce);
     assert.isTrue(project.queue.add.calledOnce);
 
     const [ saveResources ] = project.queue.add.args[0];
@@ -68,11 +68,11 @@ describe('InsertResourcesPlugin', () => {
   });
 
   it('partially save new/existing resources', async () => {
-    project.queue.checkIfPresent.returns(Promise.resolve([ { url: 'urlA' } ]));
+    project.queue.filterNewUrls.returns(Promise.resolve([ 'urlB' ]));
     plugin = new InsertResourcesPlugin({ maxResources: 1 });
     await plugin.apply(<any>project, <Resource>{ depth: 0, resourcesToAdd: [ { url: 'urlA' }, { url: 'urlB' } ] });
 
-    assert.isTrue(project.queue.checkIfPresent.calledOnce);
+    assert.isTrue(project.queue.filterNewUrls.calledOnce);
     assert.isTrue(project.queue.add.calledOnce);
 
     const [ saveResources ] = project.queue.add.args[0];

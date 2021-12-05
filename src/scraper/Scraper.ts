@@ -4,18 +4,18 @@
 import { join, isAbsolute } from 'path';
 import EventEmitter from 'events';
 import BrowserClient from '../browserclient/BrowserClient';
-import Project, { IStaticProject } from '../storage/base/Project';
+import Project from '../storage/base/Project';
 import Resource from '../storage/base/Resource';
 import Plugin, { PluginOpts } from '../plugins/Plugin';
 import PluginStore, { StoreEntry } from '../pluginstore/PluginStore';
 import { getLogger } from '../logger/Logger';
-import Storage, { StorageOptions } from '../storage/base/Storage';
 import { pipelines, mergePluginOpts } from '../pipelines/pipelines';
 import { IDomClientConstructor } from '../domclient/DomClient';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyOptions } from './ConcurrencyManager';
 import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMetrics';
 import initClient from '../domclient/client-utils';
-import ModelStorage, { ModelStorageOptions } from '../storage/ModelStorage';
+import ConnectionManager, { PerModelConfig } from '../storage/ConnectionManager';
+import Connection, { ConnectionConfig } from '../storage/base/Connection';
 
 export const enum ScrapeEvent {
   ResourceSelected = 'resource-selected',
@@ -69,7 +69,7 @@ export type ProjectOptions = {
 }
 
 export type ScrapeConfig = {
-  storage: StorageOptions | Storage,
+  storage: ConnectionConfig | Connection,
   client: ClientOptions | BrowserClient | IDomClientConstructor,
   project: ProjectOptions | Project,
   concurrency: ConcurrencyOptions,
@@ -86,7 +86,7 @@ export type ScrapeConfig = {
 export default class Scraper extends EventEmitter {
   logger = getLogger('Scraper');
 
-  modelStorage: ModelStorage;
+  connectionMng: ConnectionManager;
 
   browserClient: BrowserClient;
   domClientConstruct: IDomClientConstructor;
@@ -102,10 +102,10 @@ export default class Scraper extends EventEmitter {
   */
   metrics: RuntimeMetrics;
 
-  constructor(storageOpts: StorageOptions | Storage | ModelStorageOptions, clientOpts: ClientOptions | BrowserClient | IDomClientConstructor) {
+  constructor(storageOpts: ConnectionConfig | Connection | PerModelConfig, clientOpts: ClientOptions | BrowserClient | IDomClientConstructor) {
     super();
 
-    this.modelStorage = new ModelStorage(storageOpts);
+    this.connectionMng = new ConnectionManager(storageOpts);
 
     if (!clientOpts) {
       const err = new Error('A browser or DOM client needs to be provided');
@@ -142,10 +142,6 @@ export default class Scraper extends EventEmitter {
     */
     return config.constructor.name === 'Object'
       && Object.keys(config).find(key => typeof config[key] === 'function') === undefined;
-  }
-
-  isStorageOpts(storage): storage is StorageOptions {
-    return this.isJSONConfig(storage);
   }
 
   isClientOpts(client): client is ClientOptions {
@@ -187,7 +183,7 @@ export default class Scraper extends EventEmitter {
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
     }
 
-    await this.modelStorage.connect();
+    await this.connectionMng.connect();
     this.logger.info('Storage connected');
 
     if (this.concurrency) {
@@ -235,7 +231,7 @@ export default class Scraper extends EventEmitter {
       throw new Error(`Pipeline ${projectOpts.pipeline} not found. Available pipelines are:  ${Object.keys(pipelines).join(', ')}`);
     }
 
-    const { Project: ExtProject } = await this.modelStorage.getModels();
+    const ExtProject = await this.connectionMng.getProject();
     let project = await ExtProject.get(projectOpts.name);
 
     if (project) {
@@ -249,7 +245,7 @@ export default class Scraper extends EventEmitter {
       }
     }
 
-    project = new (<IStaticProject>ExtProject)({
+    project = new ExtProject({
       name: projectOpts.name,
       pluginOpts: pipelines[projectOpts.pipeline]
         ? mergePluginOpts(pipelines[projectOpts.pipeline].defaultPluginOpts, projectOpts.pluginOpts)
@@ -262,13 +258,13 @@ export default class Scraper extends EventEmitter {
     let { resourcePath } = projectOpts;
     if (resourcePath) {
       resourcePath = isAbsolute(resourcePath) ? resourcePath : join(process.cwd(), resourcePath);
-      await project.queue.batchInsertResourcesFromFile(resourcePath);
+      await project.queue.addFromFile(resourcePath);
     }
 
     // link resources to the project from inline definition
     const { resources } = projectOpts;
     if (resources && Array.isArray(resources)) {
-      await project.queue.batchInsertResources(resources);
+      await project.queue.normalizeAndAdd(resources);
     }
 
     return project;
@@ -298,8 +294,8 @@ export default class Scraper extends EventEmitter {
         await this.browserClient.close();
       }
 
-      if (this.modelStorage) {
-        await this.modelStorage.close();
+      if (this.connectionMng) {
+        await this.connectionMng.close();
       }
     }
     catch (err) {
@@ -325,7 +321,7 @@ export default class Scraper extends EventEmitter {
 
       // when discover flag is set ignore projectOpts, retrieve first project containing unscraped resources
       if (cliOpts && cliOpts.discover) {
-        const { Project: ExtProject } = await this.modelStorage.getModels();
+        const ExtProject = await this.connectionMng.getProject();
         this.project = await ExtProject.getProjectToScrape();
         if (!this.project) {
           this.logger.info('All existing project have been scraped, discovery complete');
@@ -363,9 +359,16 @@ export default class Scraper extends EventEmitter {
   async discover(concurrencyOpts: Partial<ConcurrencyOptions>, runtimeOpts: Partial<RuntimeOptions>, cliOpts: Partial<CliOptions>) {
     this.retryTimeout = null;
 
-    const projectScrapedHandler = () => {
+    const projectScrapedHandler = (proj:Project, err) => {
       this.logger.info('Discovering new project(s)');
-      this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
+
+      /*
+      in case of proj err don't continue the discovery process
+      we run the risk to encounter the same project error on each scrape attempt in an infinite loop
+      */
+      if (!err) {
+        this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
+      }
     };
 
     const discoveryCompleteHandler = () => {
@@ -390,13 +393,13 @@ export default class Scraper extends EventEmitter {
 
   async save(projectOpts: ProjectOptions | Project, cliOpts: Partial<CliOptions>) {
     try {
-      await this.modelStorage.connect();
+      await this.connectionMng.connect();
       this.logger.info('Storage connected');
 
       this.project = await this.initProject(projectOpts, cliOpts);
       if (!this.project) throw new Error('could not find project');
 
-      await this.modelStorage.close();
+      await this.connectionMng.close();
     }
     catch (err) {
       this.logger.error(err);

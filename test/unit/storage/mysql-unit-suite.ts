@@ -1,7 +1,7 @@
-import Storage from '../../../src/storage/base/Storage';
-import KnexStorage from '../../../src/storage/knex/KnexStorage';
 import unitSuite from './unit-suite';
-import * as conn from '../../config/storage/mysql/mysql-conn.json';
+import * as connConfig from '../../config/storage/mysql/mysql-conn.json';
+import Connection from '../../../src/storage/base/Connection';
+import KnexConnection from '../../../src/storage/knex/KnexConnection';
 
-const storage:Storage = new KnexStorage(conn);
-unitSuite(storage);
+const conn:Connection = new KnexConnection(connConfig);
+unitSuite(conn);

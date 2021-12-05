@@ -3,7 +3,7 @@ import { isAbsolute, join } from 'path';
 import { LogWrapper } from '../logger/Logger';
 import Project from '../storage/base/Project';
 import Resource, { ResourceQuery } from '../storage/base/Resource';
-import ModelStorage from '../storage/ModelStorage';
+import ConnectionManager from '../storage/ConnectionManager';
 
 export type ExportOptions = {
   pageLimit?: number;
@@ -27,13 +27,13 @@ export default abstract class Exporter {
   }
 
   async export(project: Project) {
-    let modelStorage: ModelStorage;
+    let connManager: ConnectionManager;
 
     try {
       // use a separate db connection, scrape and export have different db lifecycles and may run in parallel
-      modelStorage = new ModelStorage(project.Constructor.storage.config);
-      await modelStorage.connect();
-      const { Project: ExtProject } = await modelStorage.getModels();
+      connManager = ConnectionManager.clone(project);
+      await connManager.connect();
+      const ExtProject = await connManager.getProject();
 
       // retrieve the project from the currently active db connection
       this.project = await ExtProject.get(project.id);
@@ -76,8 +76,8 @@ export default abstract class Exporter {
       this.logger.error(err, `error exporting using options ${JSON.stringify(this.opts)}`);
     }
     finally {
-      if (modelStorage) {
-        await modelStorage.close();
+      if (connManager) {
+        await connManager.close();
       }
     }
   }

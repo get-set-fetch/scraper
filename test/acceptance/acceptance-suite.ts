@@ -5,14 +5,13 @@ import { GsfServer, ScrapingSuite, IScrapingTest } from '@get-set-fetch/test-uti
 import BrowserClient from '../../src/browserclient/BrowserClient';
 import { pipelines, mergePluginOpts } from '../../src/pipelines/pipelines';
 import Scraper, { ScrapeEvent } from '../../src/scraper/Scraper';
-import { IStaticProject } from '../../src/storage/base/Project';
-import Storage from '../../src/storage/base/Storage';
+import Connection from '../../src/storage/base/Connection';
 import { IDomClientConstructor } from '../../src/domclient/DomClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
-import { PluginOpts, ZipExporter } from '../../src';
+import { ConnectionManager, PluginOpts, ZipExporter } from '../../src';
+import Project from '../../src/storage/base/Project';
+import Resource from '../../src/storage/base/Resource';
 import { setLogger } from '../../src/logger/Logger';
-import ModelStorage from '../../src/storage/ModelStorage';
-import { IStaticResource } from '../../src/storage/base/Resource';
 
 function getConcurrencyInfo(concurrencyOpts: Partial<ConcurrencyOptions>):string {
   const concurrencyInfo = [ 'project', 'proxy', 'domain', 'session' ]
@@ -40,7 +39,7 @@ function getHeadersInfo(accPluginOpts: PluginOpts[]):string {
 
 export function getSuiteTitle(
   pipeline:string,
-  storage: Storage,
+  conn: Connection,
   client:BrowserClient|IDomClientConstructor,
   concurrencyOpts: Partial<ConcurrencyOptions>,
   accPluginOpts?: PluginOpts[],
@@ -50,7 +49,7 @@ export function getSuiteTitle(
 
   return [
     clientInfo,
-    storage.config.client,
+    conn.config.client,
     getConcurrencyInfo(concurrencyOpts),
     getPipelineInfo(pipeline),
     getHeadersInfo(accPluginOpts),
@@ -59,18 +58,18 @@ export function getSuiteTitle(
 
 export default function acceptanceSuite(
   pipeline:string,
-  storage: Storage,
+  conn: Connection,
   client:BrowserClient|IDomClientConstructor,
   concurrencyOpts: Partial<ConcurrencyOptions>,
   accPluginOpts?: PluginOpts[],
 ) {
-  const suiteTitle = this.getSuiteTitle(pipeline, storage, client, concurrencyOpts, accPluginOpts);
+  const suiteTitle = getSuiteTitle(pipeline, conn, client, concurrencyOpts, accPluginOpts);
 
   describe(suiteTitle, () => {
     let srv: GsfServer;
-    let Project: IStaticProject;
-    let Resource: IStaticResource;
-    let modelStorage: ModelStorage;
+    let ExtProject: typeof Project;
+    let ExtResource: typeof Resource;
+    let connMng: ConnectionManager;
 
     before(async () => {
       // start web server
@@ -78,11 +77,11 @@ export default function acceptanceSuite(
       srv.start();
 
       // init storage
-      if (storage.config.client === 'sqlite3') {
+      if (conn.config.client === 'sqlite3') {
         // can't used :memory db since we connect/disconnect multiple times and can't loose data betweeen scraping and export actions
         // make sure we don't update the path multiple times
-        if (!/tmp/.test(storage.config.connection.filename)) {
-          storage.config.connection.filename = join(__dirname, '..', 'tmp', storage.config.connection.filename);
+        if (!/tmp/.test(conn.config.connection.filename)) {
+          conn.config.connection.filename = join(__dirname, '..', 'tmp', conn.config.connection.filename);
         }
       }
 
@@ -90,18 +89,18 @@ export default function acceptanceSuite(
       keep a separate db connection for project handling outside the scraper instance
       scraper opens and closes its own db connection
       */
-      modelStorage = new ModelStorage(storage.config);
-      await modelStorage.connect();
-      ({ Project, Resource } = await modelStorage.getModels());
+      connMng = new ConnectionManager(conn);
+      await connMng.connect();
+      ExtProject = await connMng.getProject();
     });
 
     beforeEach(async () => {
-      await Project.delAll();
+      await ExtProject.delAll();
     });
 
     after(async () => {
       srv.stop();
-      await modelStorage.close();
+      await connMng.close();
     });
 
     const scrapingTest = (
@@ -118,16 +117,16 @@ export default function acceptanceSuite(
       }
 
       // save a project for the current scrape test
-      const project = new Project({
+      const project = new ExtProject({
         name: test.title,
         pluginOpts,
       });
       await project.save();
-      await project.queue.batchInsertResources(test.definition.resources);
+      await project.queue.normalizeAndAdd(test.definition.resources);
 
       // start scraping
       setLogger({ level: 'error' });
-      const scraper = new Scraper(storage, client);
+      const scraper = new Scraper(ConnectionManager.clone(project), client);
       const scrapeComplete = new Promise((resolve, reject) => {
         scraper.addListener(ScrapeEvent.ProjectScraped, resolve);
         scraper.addListener(ScrapeEvent.ProjectError, (proj, err) => {
@@ -151,7 +150,7 @@ export default function acceptanceSuite(
       const actualResources = resources.concat(
         queueEntries
           .filter(queueEntry => !resourceUrls.includes(queueEntry.url))
-          .map(queueEntry => new Resource({ ...queueEntry, contentType: null, content: null })),
+          .map(queueEntry => new ExtResource({ ...queueEntry, contentType: null, content: null })),
       );
       // console.log(JSON.stringify(actualResources));
       ScrapingSuite.checkResources(actualResources, test.resources);

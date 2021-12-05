@@ -1,28 +1,21 @@
 /* eslint-disable no-param-reassign */
-import { createReadStream } from 'fs';
-import { pipeline, Writable } from 'stream';
-import { Knex } from 'knex';
-import { getUrlColIdx, normalizeUrl } from '../../plugins/url-utils';
-import Queue, { IStaticQueue, QueueEntry } from '../base/Queue';
+import { IQueueStorage, QueueEntry } from '../base/Queue';
 import KnexStorage from './KnexStorage';
-import Resource, { IStaticResource } from '../base/Resource';
-import { getLogger } from '../../logger/Logger';
-import { ModelCombination } from '../storage-utils';
+import { Project } from '../..';
 
-export default class KnexQueue extends Queue {
-  static storage:KnexStorage;
-  static models: ModelCombination;
-  static projectId: number;
+export default class KnexQueue extends KnexStorage implements IQueueStorage {
+  projectId: string | number;
 
-  static get tableName():string {
+  get tableName():string {
     if (!this.projectId) throw new Error('projectId not set');
     return `${this.projectId}-queue`;
   }
 
-  static async init():Promise<void> {
-    if (!this.projectId) throw new Error('projectId not set');
+  async init(project:Project):Promise<void> {
+    if (!project.id) throw new Error('project.id not set');
+    this.projectId = project.id;
 
-    const schemaBuilder = this.storage.knex.schema;
+    const schemaBuilder = this.knex.schema;
     const tablePresent = await schemaBuilder.hasTable(this.tableName);
     if (tablePresent) return;
 
@@ -33,14 +26,14 @@ export default class KnexQueue extends Queue {
         builder.string('url').index(`ix_${this.projectId}_url`).unique();
         builder.integer('depth').defaultTo(0);
 
-        if (this.storage.client === 'pg') {
+        if (this.client === 'pg') {
           builder.specificType('status', 'smallint');
         }
         else {
           builder.integer('status');
         }
 
-        this.storage.jsonCol(builder, 'parent');
+        this.jsonCol(builder, 'parent');
       },
     );
 
@@ -59,13 +52,13 @@ export default class KnexQueue extends Queue {
     */
   }
 
-  static async drop() {
-    const hasTable = await this.storage.knex.schema.hasTable(this.tableName);
+  async drop() {
+    const hasTable = await this.knex.schema.hasTable(this.tableName);
     if (hasTable) {
       // drop index
       await new Promise<void>(async (resolve, reject) => {
         try {
-          await this.storage.knex.schema.table(
+          await this.knex.schema.table(
             this.tableName,
             async t => {
               await t.dropUnique([ 'url' ], `ix_${this.projectId}_url`);
@@ -79,34 +72,24 @@ export default class KnexQueue extends Queue {
       });
 
       // drop table
-      await this.storage.knex.schema.dropTable(this.tableName);
+      await this.knex.schema.dropTable(this.tableName);
     }
   }
 
-  logger = getLogger('KnexQueue');
-
-  get Constructor():typeof KnexQueue & IStaticQueue {
-    return (<typeof KnexQueue & IStaticQueue> this.constructor);
-  }
-
   get builder() {
-    return this.Constructor.storage.knex(this.Constructor.tableName);
-  }
-
-  getAll():Promise<QueueEntry[]> {
-    return this.builder.select();
+    return this.knex(this.tableName);
   }
 
   /**
    * Find a resource to scrape and update its queue status
    * @returns - null if no to-be-scraped resource has been found
    */
-  async getResourcesToScrape(limit:number = 10):Promise<Resource[]> {
+  async getResourcesToScrape(limit:number = 10):Promise<QueueEntry[]> {
     let queueEntries:QueueEntry[];
 
     // pg optimization
-    if (this.Constructor.storage.client === 'pg') {
-      const query = this.Constructor.storage.knex.raw<{rows: QueueEntry[]}>(
+    if (this.client === 'pg') {
+      const query = this.knex.raw<{rows: QueueEntry[]}>(
         `
           update ?? set "status" = 1
           where "id" in (
@@ -117,7 +100,7 @@ export default class KnexQueue extends Queue {
           )
           returning "id", "url", "depth", "parent";
         `,
-        [ this.Constructor.tableName, this.Constructor.tableName, limit ],
+        [ this.tableName, this.tableName, limit ],
       );
 
       const result = await query;
@@ -125,7 +108,7 @@ export default class KnexQueue extends Queue {
     }
     // generic approach
     else {
-      await this.Constructor.storage.knex.transaction(async trx => {
+      await this.knex.transaction(async trx => {
         queueEntries = await this.builder
           .transacting(trx)
           .whereNull('status')
@@ -139,151 +122,11 @@ export default class KnexQueue extends Queue {
       });
     }
 
-    if (queueEntries && queueEntries.length > 0) {
-      return queueEntries
-        .map(queueEntry => new (<IStaticResource> this.Constructor.models.Resource)({
-          queueEntryId: queueEntry.id,
-          url: queueEntry.url,
-          depth: queueEntry.depth,
-          parent: queueEntry.parent,
-        }));
-    }
-
-    return [];
-  }
-
-  /**
-   * Assumes resources contain only url and optionally depth.
-   * @param resources - resources to be saved
-   * @param chunkSize - number of resources within a transaction
-   */
-  async batchInsertResources(resources: {url: string, depth?: number}[], chunkSize:number = 1000) {
-    resources.forEach(resource => {
-      try {
-        resource.url = normalizeUrl(resource.url);
-      }
-      catch (err) {
-        this.logger.error(err);
-        delete resource.url;
-      }
-    });
-
-    const toBeInserted = resources.filter(resource => resource.url);
-    this.logger.info(`batchInsert ${toBeInserted.length} urls`);
-    await this.Constructor.storage.knex.batchInsert(this.Constructor.tableName, toBeInserted, chunkSize);
-  }
-
-  /**
-   * Creates a stream pipeline from a reable file stream to a db writable stream. Attempts to keep memory usage down.
-   * Input file contains an url per line.
-   * @param resourcePath - input filepath
-   * @param chunkSize - number of resources within a transaction
-   */
-  async batchInsertResourcesFromFile(resourcePath: string, chunkSize:number = 1000) {
-    let urlCount:number = 0;
-
-    let urls: {url: string}[] = [];
-
-    /*
-    reading chunk by chunk, partialLine represents the last read line which can be incomplete
-    parse it only on final when we have guarantee of its completness
-    */
-    let partialLine:string = '';
-    let urlIdx:number;
-
-    this.logger.info(`inserting urls from ${resourcePath}`);
-    await new Promise<void>((resolve, reject) => {
-      const readStream = createReadStream(resourcePath);
-
-      const writeStream = new Writable({
-        write: async (chunk, encoding, done) => {
-          try {
-            const chunkContent:string = partialLine + Buffer.from(chunk).toString('utf-8');
-            const chunkLines = chunkContent.split(/\r?\n/);
-            partialLine = chunkLines.pop();
-
-            if (chunkLines.length > 0) {
-              // find out on what position on the csv row is the url
-              if (urlIdx === undefined) {
-                urlIdx = getUrlColIdx(chunkLines[0]);
-              }
-
-              chunkLines.forEach(line => {
-                const rawUrl = line.split(',')[urlIdx];
-                try {
-                  urls.push({ url: normalizeUrl(rawUrl) });
-                }
-                catch (err) {
-                  this.logger.error(err);
-                }
-              });
-
-              if (urls.length >= chunkSize) {
-                await this.Constructor.storage.knex.batchInsert(this.Constructor.tableName, urls, chunkSize);
-                urlCount += urls.length;
-                this.logger.info(`${urlCount} total urls inserted`);
-                urls = [];
-              }
-            }
-          }
-          catch (err) {
-            this.logger.error(err);
-          }
-
-          done();
-        },
-
-        final: async done => {
-          try {
-            // try to retrieve a new resources from the now complete last read line
-            if (partialLine.length > 0) {
-              // find out on what position on the csv row is the url
-              if (urlIdx === undefined) {
-                urlIdx = getUrlColIdx(partialLine);
-              }
-
-              const rawUrl = partialLine.split(',')[urlIdx];
-              try {
-                urls.push({ url: normalizeUrl(rawUrl) });
-              }
-              catch (err) {
-                this.logger.error(err);
-              }
-
-              // insert pending resources
-              if (urls.length > 0) {
-                await this.Constructor.storage.knex.batchInsert(this.Constructor.tableName, urls, chunkSize);
-                urlCount += urls.length;
-                this.logger.info(`${urlCount} total resources inserted`);
-              }
-            }
-          }
-          catch (err) {
-            this.logger.error(err);
-            reject(err);
-          }
-          done();
-        },
-      });
-
-      const onComplete = async err => {
-        if (err) {
-          this.logger.error(err);
-          reject(err);
-        }
-        else {
-          resolve();
-        }
-      };
-
-      pipeline(readStream, writeStream, onComplete);
-    });
-
-    this.logger.info(`inserting resources from ${resourcePath} done`);
+    return queueEntries;
   }
 
   count():Promise<number> {
-    return this.Constructor.storage.count(this.Constructor.tableName);
+    return super.count(this.tableName);
   }
 
   async updateStatus(id: number, status: number):Promise<void> {
@@ -291,15 +134,11 @@ export default class KnexQueue extends Queue {
   }
 
   async add(entries: QueueEntry[]) {
-    if (entries.length === 0) return;
-
-    const serializedEntries = entries.map(
-      (entry:QueueEntry) => Object.assign(entry, { parent: entry.parent ? JSON.stringify(entry.parent) : entry.parent }),
-    );
-    await this.builder.insert(serializedEntries).onConflict('url').ignore();
+    await this.builder.insert(entries).onConflict('url').ignore();
   }
 
-  checkIfPresent(urls: string[]):Promise<Partial<QueueEntry>[]> {
-    return this.builder.select('url').whereIn('url', urls);
+  async filterExistingEntries(urls: string[]) {
+    const existingEntries:Partial<QueueEntry>[] = await this.builder.select('url').whereIn('url', urls);
+    return existingEntries;
   }
 }

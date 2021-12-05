@@ -1,17 +1,21 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable max-classes-per-file */
 import Plugin, { PluginOpts } from '../../plugins/Plugin';
-import { LogWrapper } from '../../logger/Logger';
-import { ModelCombination } from '../storage-utils';
-import Storage from './Storage';
+import { LogWrapper, getLogger } from '../../logger/Logger';
 import Queue from './Queue';
 import Resource, { ResourceQuery } from './Resource';
-import Entity, { IStaticEntity } from './Entity';
+import Entity from './Entity';
 import PluginStore, { StoreEntry } from '../../pluginstore/PluginStore';
+import Connection from './Connection';
 
-export default abstract class Project extends Entity {
+export default class Project extends Entity {
+  static storage:IProjectStorage;
+  static ExtQueue: typeof Queue;
+  static ExtResource:typeof Resource;
+
   queue: Queue;
-  logger: LogWrapper;
+  logger: LogWrapper = getLogger('Project');
 
-  id: number;
   name: string;
 
   // stored as json string, initialized as PluginOpts[]
@@ -23,8 +27,8 @@ export default abstract class Project extends Entity {
   // populated based on countResources, usefull info to have when serializing to plugin exection in DOM
   resourceCount:number;
 
-  get Constructor():typeof Project & IStaticProject {
-    return (<typeof Project & IStaticProject> this.constructor);
+  get Constructor():typeof Project {
+    return (<typeof Project> this.constructor);
   }
 
   constructor(kwArgs: Partial<Project> = {}) {
@@ -65,22 +69,112 @@ export default abstract class Project extends Entity {
     return plugins;
   }
 
-  abstract getResource(url: string):Promise<Resource>;
-  abstract getResources():Promise<Resource[]>;
-  abstract getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>;
-  abstract createResource(resource: Partial<Resource>):Resource;
+  static async get(nameOrId: number | string) {
+    const rawProject = await this.storage.get(nameOrId);
 
-  abstract initQueue():Promise<void>;
-  abstract initResource():Promise<void>;
+    if (rawProject) {
+      // each project has its own static linkage, needs new class
+      const ExtProject = class extends Project {};
+      ExtProject.storage = this.storage;
+      const project = new (ExtProject)(rawProject);
+      await project.initResource(this.ExtResource.storage.conn);
+      await project.initQueue(this.ExtQueue.storage.conn);
+      return project;
+    }
 
-  abstract update():Promise<void>;
+    return undefined;
+  }
+
+  getResource(url: string):Promise<Resource> {
+    return this.Constructor.ExtResource.getResource(url);
+  }
+
+  async getResources():Promise<Resource[]> {
+    const rawResources = await this.Constructor.ExtResource.getAll();
+    return rawResources.map(rawResource => new (this.Constructor.ExtResource)(rawResource));
+  }
+
+  async getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]> {
+    return this.Constructor.ExtResource.getPagedResources(query);
+  }
+
+  createResource(resource: Partial<Resource>) {
+    return new (this.Constructor.ExtResource)({ ...resource });
+  }
+
+  async save():Promise<number> {
+    this.id = await this.Constructor.storage.save(this);
+
+    // init its scraping queue and resource tables
+    await this.initResource(this.Constructor.ExtResource.storage.conn);
+    await this.initQueue(this.Constructor.ExtQueue.storage.conn);
+
+    return this.id;
+  }
+
+  async initQueue(queueConn:Connection):Promise<void> {
+    const ExtQueue = class extends Queue {};
+    ExtQueue.storage = queueConn.getQueueStorage();
+    await ExtQueue.storage.init(this);
+
+    this.Constructor.ExtQueue = ExtQueue;
+    this.Constructor.ExtQueue.ExtResource = this.Constructor.ExtResource;
+    this.queue = new ExtQueue();
+  }
+
+  async initResource(resourceConn:Connection):Promise<void> {
+    const ExtResource = class extends Resource {};
+    ExtResource.storage = resourceConn.getResourceStorage();
+    await ExtResource.storage.init(this);
+
+    this.Constructor.ExtResource = ExtResource;
+  }
+
+  async del():Promise<void> {
+    await this.Constructor.storage.del(this.id);
+
+    await this.Constructor.ExtResource.storage.drop();
+    await this.Constructor.ExtQueue.storage.drop();
+  }
+
+  update():Promise<void> {
+    return this.Constructor.storage.update(this);
+  }
+
+  static async delAll():Promise<void> {
+    const rawProjects = await this.storage.getAll();
+
+    // delete projects one by one, since we also need to drop Queue and Resource tables linked to them
+    // individual Project.get links the retrieve project to its Queue and Resource tables
+    await Promise.all(rawProjects.map(async rawProject => {
+      const p:Project = await this.get(rawProject.id);
+      return p.del();
+    }));
+  }
+
+  static async getProjectToScrape() {
+    let project: Project;
+    const projects:Project[] = await this.storage.getAll();
+
+    for (let i = 0; i < projects.length; i += 1) {
+      const candidateProject = await this.get(projects[i].id);
+      const [ resource ] = await candidateProject.queue.getResourcesToScrape(1);
+      if (resource) {
+        await candidateProject.queue.updateStatus(resource.queueEntryId, null);
+        project = candidateProject;
+        break;
+      }
+    }
+
+    return project;
+  }
 
   get dbCols() {
     return [ 'id', 'name', 'pluginOpts' ];
   }
 
   toJSON() {
-    return (<IStaticProject> this.constructor).storage.toJSON(this);
+    return this.Constructor.storage.toJSON(this);
   }
 
   /**
@@ -96,13 +190,14 @@ export default abstract class Project extends Entity {
   }
 }
 
-export interface IStaticProject extends IStaticEntity {
-  storage: Storage;
-  models: ModelCombination;
+export interface IProjectStorage {
+  conn: Connection;
 
-  new(kwArgs: Partial<Project>): Project;
   init():Promise<void>;
+  save(project: Project):Promise<number>;
   get(nameOrId: string | number):Promise<Project>;
-  getAll():Promise<any[]>;
-  getProjectToScrape():Promise<Project>;
+  getAll():Promise<Project[]>;
+  update(project:Project):Promise<void>;
+  del(id:string | number):Promise<void>;
+  toJSON(entity);
 }

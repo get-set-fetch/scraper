@@ -3,15 +3,15 @@ import { join } from 'path';
 import fs from 'fs';
 import { exec, execFile } from 'child_process';
 import { GsfServer, ScrapingSuite } from '@get-set-fetch/test-utils';
-import { IStaticProject } from '../../../src/storage/base/Project';
+import Project from '../../../src/storage/base/Project';
 import { pipelines, mergePluginOpts } from '../../../src/pipelines/pipelines';
 import { completionPercentage } from '../../../src/cli/cli';
-import { ModelStorage } from '../../../src';
+import { ConnectionManager } from '../../../src';
 
 describe('Command Line Interface', () => {
   let srv: GsfServer;
-  let modelStorage: ModelStorage;
-  let Project: IStaticProject;
+  let ExtProject: typeof Project;
+  let connMng: ConnectionManager;
   let config;
 
   before(async () => {
@@ -28,9 +28,10 @@ describe('Command Line Interface', () => {
     */
     config = JSON.parse(fs.readFileSync(join(__dirname, 'config', 'config-single-page-single-content-entry.json')).toString('utf-8'));
     config.storage.connection.filename = join(__dirname, 'config', config.storage.connection.filename);
-    modelStorage = new ModelStorage(config.storage);
-    await modelStorage.connect();
-    ({ Project } = await modelStorage.getModels());
+
+    connMng = new ConnectionManager(config.storage);
+    await connMng.connect();
+    ExtProject = await connMng.getProject();
 
     // init gsf web server
     const test = ScrapingSuite.getTests().find(test => test.title === 'Static - Single Page - Single Content Entry');
@@ -40,11 +41,11 @@ describe('Command Line Interface', () => {
   });
 
   beforeEach(async () => {
-    await Project.delAll();
+    await ExtProject.delAll();
   });
 
   after(async () => {
-    await modelStorage.close();
+    await connMng.close();
     srv.stop();
   });
 
@@ -120,12 +121,12 @@ describe('Command Line Interface', () => {
   });
 
   it('existing project --config --loglevel info --scrape --overwrite', async () => {
-    const project = new Project({
+    const project = new ExtProject({
       name: 'sitea.com',
       pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await project.save();
-    await project.queue.batchInsertResources(config.project.resources);
+    await project.queue.normalizeAndAdd(config.project.resources);
 
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape --overwrite',
@@ -139,12 +140,12 @@ describe('Command Line Interface', () => {
   });
 
   it('existing project --config --loglevel info --scrape --overwrite false', async () => {
-    const project = new Project({
+    const project = new ExtProject({
       name: 'sitea.com',
       pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await project.save();
-    await project.queue.batchInsertResources(config.project.resources);
+    await project.queue.normalizeAndAdd(config.project.resources);
 
     // by default overwrite is false, just make sure --overwrite flag is not present
     const stdout = await new Promise<string>(resolve => exec(
@@ -268,19 +269,19 @@ describe('Command Line Interface', () => {
   });
 
   it('existing projects --discover --loglevel info --export', async () => {
-    const projectA = new Project({
+    const projectA = new ExtProject({
       name: 'projectA',
       pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await projectA.save();
-    await projectA.queue.batchInsertResources(config.project.resources);
+    await projectA.queue.normalizeAndAdd(config.project.resources);
 
-    const projectB = new Project({
+    const projectB = new ExtProject({
       name: 'projectB',
       pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
     });
     await projectB.save();
-    await projectB.queue.batchInsertResources(config.project.resources);
+    await projectB.queue.normalizeAndAdd(config.project.resources);
 
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --discover --loglevel info --export ../test/tmp/export.csv',

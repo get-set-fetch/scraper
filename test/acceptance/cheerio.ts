@@ -1,6 +1,6 @@
 import acceptanceSuite from './acceptance-suite';
-import Storage from '../../src/storage/base/Storage';
-import KnexStorage from '../../src/storage/knex/KnexStorage';
+import Connection from '../../src/storage/base/Connection';
+import KnexConnection from '../../src/storage/knex/KnexConnection';
 import * as sqliteConn from '../config/storage/sqlite/sqlite-conn.json';
 import * as mysqlConn from '../config/storage/mysql/mysql-conn.json';
 import * as pgConn from '../config/storage/pg/pg-conn.json';
@@ -8,10 +8,10 @@ import CheerioClient from '../../src/domclient/CheerioClient';
 import { ConcurrencyOptions } from '../../src/scraper/ConcurrencyManager';
 import { PluginOpts } from '../../src';
 
-const storage:Storage[] = [
-  new KnexStorage(sqliteConn),
-  new KnexStorage(mysqlConn),
-  new KnexStorage(pgConn),
+const conn:Connection[] = [
+  new KnexConnection(sqliteConn),
+  new KnexConnection(mysqlConn),
+  new KnexConnection(pgConn),
 ];
 
 const concurrencyOptions:ConcurrencyOptions[] = [
@@ -56,7 +56,7 @@ const pluginOptions: PluginOpts[][] = [
   ],
 ];
 
-for (let i = 0; i < storage.length; i += 1) {
+for (let i = 0; i < conn.length; i += 1) {
   for (let j = 0; j < concurrencyOptions.length; j += 1) {
     /*
     only when using cheerio
@@ -69,7 +69,7 @@ for (let i = 0; i < storage.length; i += 1) {
       for (let k = 0; k < pluginOptions.length; k += 1) {
         acceptanceSuite(
           'dom-static-content',
-          storage[i],
+          conn[i],
           CheerioClient,
           concurrencyOptions[j],
           pluginOptions[k],
@@ -79,7 +79,7 @@ for (let i = 0; i < storage.length; i += 1) {
     else {
       acceptanceSuite(
         'dom-static-content',
-        storage[i],
+        conn[i],
         CheerioClient,
         concurrencyOptions[j],
       );

@@ -8,11 +8,12 @@ import pino from 'pino';
 import { ExportOptions } from '../export/Exporter';
 
 import { Scraper, ScrapeEvent, ProjectOptions,
-  setLogger, StorageOptions, Project, Exporter, CsvExporter, ZipExporter } from '../index';
+  setLogger, Project, Exporter, CsvExporter, ZipExporter } from '../index';
 import { getPackageDir } from '../plugins/file-utils';
 import { ConcurrencyOptions } from '../scraper/ConcurrencyManager';
 import { RuntimeOptions } from '../scraper/RuntimeMetrics';
 import { ClientOptions, CliOptions } from '../scraper/Scraper';
+import { ConnectionConfig } from '../storage/base/Connection';
 
 const defaultArgObj = {
   version: false,
@@ -128,19 +129,19 @@ export function invokeLogger(argObj:ArgObjType) {
   );
 }
 
-function updateStorageOpts(fullConfigPath: string, storageOpts:StorageOptions):StorageOptions {
-  if (!storageOpts) throw new Error('missing storage options');
-  if (!storageOpts.client) throw new Error('missing storage client');
+function updateConnConfig(fullConfigPath: string, connConfig:ConnectionConfig):ConnectionConfig {
+  if (!connConfig) throw new Error('missing storage options');
+  if (!connConfig.client) throw new Error('missing storage client');
 
-  if (storageOpts.client === 'sqlite3') {
+  if (connConfig.client === 'sqlite3') {
     // generate full sqlite3 filepath relative to config file
-    if (storageOpts.connection.filename !== ':memory:') {
-      storageOpts.connection.filename = join(dirname(fullConfigPath), storageOpts.connection.filename);
-      console.log(`using sqlite file ${storageOpts.connection.filename}`);
+    if (connConfig.connection.filename !== ':memory:') {
+      connConfig.connection.filename = join(dirname(fullConfigPath), connConfig.connection.filename);
+      console.log(`using sqlite file ${connConfig.connection.filename}`);
     }
   }
 
-  return storageOpts;
+  return connConfig;
 }
 
 export async function invokeScraper(argObj:ArgObjType) {
@@ -153,13 +154,13 @@ export async function invokeScraper(argObj:ArgObjType) {
 
   const configFile = fs.readFileSync(fullConfigPath).toString('utf-8');
   const {
-    storage: storageOpts,
+    storage: connConfig,
     client: clientOpts,
     project: projectOpts,
     concurrency: concurrencyOpts,
     runtime: runtimeOpts,
   }: {
-    storage: StorageOptions,
+    storage: ConnectionConfig,
     client: ClientOptions,
     project: ProjectOptions,
     concurrency: ConcurrencyOptions,
@@ -185,12 +186,12 @@ export async function invokeScraper(argObj:ArgObjType) {
     });
   }
 
-  const scraper = new Scraper(updateStorageOpts(fullConfigPath, storageOpts), clientOpts);
+  const scraper = new Scraper(updateConnConfig(fullConfigPath, connConfig), clientOpts);
 
   // report progress to console every `report` seconds
   if (report) {
     const reportProgressFnc = async (project:Project) => {
-      const resourceCount = await project.Constructor.models.Resource.count();
+      const resourceCount = await project.Constructor.ExtResource.count();
       const queueCount = await project.queue.count();
 
       const prct = completionPercentage(resourceCount, queueCount);

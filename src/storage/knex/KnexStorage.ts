@@ -1,21 +1,25 @@
 /* eslint-disable max-classes-per-file */
-import { Knex, knex } from 'knex';
-import { IStaticProject } from '../base/Project';
-import { IStaticQueue } from '../base/Queue';
-import { IStaticResource } from '../base/Resource';
-import Storage, { StorageOptions } from '../base/Storage';
-import { staticImplements } from '../storage-utils';
-import KnexProject from './KnexProject';
-import KnexQueue from './KnexQueue';
-import KnexResource from './KnexResource';
+import { Knex } from 'knex';
+import Storage from '../base/Storage';
+import Entity from '../base/Entity';
+
+import KnexConnection from './KnexConnection';
 
 export type CapabilitiesType = {
   returning: boolean;
 }
 
-export default class KnexStorage extends Storage {
+export default abstract class KnexStorage extends Storage {
   knex: Knex;
   config: Knex.Config & {client: string};
+
+  abstract get builder():Knex.QueryBuilder;
+
+  constructor(conn: KnexConnection) {
+    super(conn);
+    this.knex = conn.knex;
+    this.config = conn.config;
+  }
 
   get client():string {
     if (!this.knex) {
@@ -39,49 +43,12 @@ export default class KnexStorage extends Storage {
     };
   }
 
-  constructor(config?:StorageOptions) {
-    // if no config present, use in memory sqlite
-    super(config || {
-      client: 'sqlite3',
-      useNullAsDefault: true,
-      connection: {
-        filename: ':memory:',
-      },
-      debug: false,
-    });
+  get(id:number):Promise<Entity> {
+    return this.builder.where({ id }).first();
   }
 
-  async connect() {
-    if (!this.knex) {
-      this.knex = knex(this.config);
-    }
-  }
-
-  async close():Promise<void> {
-    if (this.knex) {
-      const { knex } = this;
-      delete this.knex;
-      await knex.destroy();
-    }
-  }
-
-  async getProject(): Promise<typeof KnexProject & IStaticProject> {
-    const ExtProject = class extends KnexProject {};
-    ExtProject.storage = this;
-    await ExtProject.init();
-    return staticImplements<typeof KnexProject & IStaticProject>(ExtProject);
-  }
-
-  async getQueue(): Promise<typeof KnexQueue & IStaticQueue> {
-    const ExtQueue = class extends KnexQueue {};
-    ExtQueue.storage = this;
-    return staticImplements<typeof KnexQueue & IStaticQueue>(ExtQueue);
-  }
-
-  async getResource(): Promise<typeof KnexResource & IStaticResource> {
-    const ExtResource = class extends KnexResource {};
-    ExtResource.storage = this;
-    return staticImplements<typeof KnexResource & IStaticResource>(ExtResource);
+  getAll<T extends Partial<Entity> = Partial<Entity>>():Promise<T[]> {
+    return this.builder.select();
   }
 
   /**
@@ -116,6 +83,10 @@ export default class KnexStorage extends Storage {
     }
 
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
+  }
+
+  del(id:string | number):Promise<void> {
+    return this.builder.where('id', id).del();
   }
 
   toJSON(entity) {

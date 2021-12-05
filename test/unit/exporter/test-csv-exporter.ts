@@ -3,8 +3,8 @@ import fs from 'fs';
 import { assert } from 'chai';
 import { SinonSandbox, createSandbox } from 'sinon';
 import CsvExporter from '../../../src/export/CsvExporter';
-import KnexProject from '../../../src/storage/knex/KnexProject';
-import ModelStorage from '../../../src/storage/ModelStorage';
+import Project from '../../../src/storage/base/Project';
+import ConnectionManager from '../../../src/storage/ConnectionManager';
 
 describe('CsvExporter', () => {
   let sandbox:SinonSandbox;
@@ -16,8 +16,7 @@ describe('CsvExporter', () => {
   beforeEach(() => {
     content = '';
     sandbox = createSandbox();
-    project = sandbox.createStubInstance(KnexProject);
-    project.Constructor.storage = { config: {} };
+    project = sandbox.createStubInstance(Project);
 
     sandbox.stub(fs, 'createWriteStream').returns(<any>{
       write: (val: string) => {
@@ -26,13 +25,12 @@ describe('CsvExporter', () => {
       close: () => {},
     });
 
-    sandbox.stub(ModelStorage.prototype, 'connect');
-    sandbox.stub(ModelStorage.prototype, 'getModels').returns(<any>{
-      Project: {
-        get: () => project,
-      },
-    });
-    sandbox.stub(ModelStorage.prototype, 'close');
+    sandbox.stub(ConnectionManager, 'clone').returns(
+      <any>sandbox.createStubInstance(
+        ConnectionManager,
+        <any>{ getProject: { get: () => project } },
+      ),
+    );
 
     exporter = new CsvExporter({ filepath: 'fileA.csv' });
   });

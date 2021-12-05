@@ -1,8 +1,8 @@
-import { LogWrapper } from '../../logger/Logger';
-import { ModelCombination } from '../storage-utils';
-import Entity, { IStaticEntity } from './Entity';
+import { LogWrapper, getLogger } from '../../logger/Logger';
+import Connection from './Connection';
+import Entity from './Entity';
+import Project from './Project';
 import { QueueEntry } from './Queue';
-import Storage from './Storage';
 
 export type IResourceParent = {
   linkText?: string;
@@ -16,10 +16,50 @@ export type Proxy = {
 }
 
 /** Each url (web page, image, API endpoint, ...) represents a Resource. */
-export default abstract class Resource extends Entity {
-  logger: LogWrapper;
+export default class Resource extends Entity {
+  static storage:IResourceStorage;
 
-  id: number;
+  static async get(resourceId:string | number):Promise<Resource> {
+    const rawResource = await this.storage.get(resourceId);
+    return rawResource ? new this(rawResource) : undefined;
+  }
+
+  static getAll():Promise<Resource[]> {
+    return this.storage.getAll();
+  }
+
+  static async getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]> {
+    const rawResources:any[] = await this.storage.getPagedResources(query);
+
+    // json value returned as string not obj, parse the content string into proper json obj
+    if (rawResources.length > 0 && typeof rawResources[0].content === 'string') {
+      return rawResources.map(rawResource => Object.assign(rawResource, { content: JSON.parse(rawResource.content) }));
+    }
+
+    // json value returned as string not obj, parse the parent string into proper json obj
+    if (rawResources.length > 0 && typeof rawResources[0].parent === 'string') {
+      return rawResources.map(rawResource => Object.assign(rawResource, { parent: JSON.parse(rawResource.parent) }));
+    }
+
+    // no conversion required
+    return rawResources;
+  }
+
+  static async getResource(url: string):Promise<Resource> {
+    const rawResource = await this.storage.getResource(url);
+    return rawResource ? new this(rawResource) : undefined;
+  }
+
+  static delAll():Promise<void> {
+    return this.storage.delAll();
+  }
+
+  static count() {
+    return this.storage.count();
+  }
+
+  logger: LogWrapper = getLogger('Resource');
+
   url: string;
   actions: string[];
 
@@ -51,7 +91,11 @@ export default abstract class Resource extends Entity {
   proxy: Proxy;
 
   /** not stored, provides a link to the corresponding scrape queue entry */
-  queueEntryId: number;
+  queueEntryId: number | string;
+
+  get Constructor():typeof Resource {
+    return (<typeof Resource> this.constructor);
+  }
 
   constructor(kwArgs: Partial<Resource> = {}) {
     super(kwArgs);
@@ -78,7 +122,7 @@ export default abstract class Resource extends Entity {
   }
 
   toJSON() {
-    return (<IStaticResource> this.constructor).storage.toJSON(this);
+    return this.Constructor.storage.toJSON(this);
   }
 
   /**
@@ -95,6 +139,15 @@ export default abstract class Resource extends Entity {
 
     return jsonObj;
   }
+
+  async save() {
+    this.id = await this.Constructor.storage.save(this);
+    return this.id;
+  }
+
+  del():Promise<void> {
+    return this.Constructor.storage.del(this.id);
+  }
 }
 
 export type ResourceQuery = {
@@ -110,18 +163,18 @@ export type ResourceQuery = {
   cols: string[];
 }
 
-export interface IStaticResource extends IStaticEntity {
-  storage: Storage;
-  models: ModelCombination;
-  projectId: number;
+export interface IResourceStorage {
+  conn: Connection;
 
-  new(kwArgs: Partial<Resource>): Resource;
-  init():Promise<void>;
-
+  init(project:Project):Promise<void>;
+  save(resource: Resource):Promise<number>;
+  get(id: string | number):Promise<Entity>;
   getResource(url: string):Promise<Resource>;
   getPagedResources(query: Partial<ResourceQuery>):Promise<Partial<Resource>[]>
   getAll():Promise<Resource[]>;
   count():Promise<number>;
-
+  delAll():Promise<void>;
+  del(id: string | number):Promise<void>;
   drop():Promise<void>;
+  toJSON(entity);
 }

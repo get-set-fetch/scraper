@@ -3,13 +3,13 @@ import { SinonSandbox, createSandbox, SinonStubbedInstance } from 'sinon';
 import Scraper, { ScrapeEvent } from '../../../src/scraper/Scraper';
 import Project from '../../../src/storage/base/Project';
 import BrowserClient from '../../../src/browserclient/BrowserClient';
-import Storage from '../../../src/storage/base/Storage';
 import Queue from '../../../src/storage/base/Queue';
-import ModelStorage from '../../../src/storage/ModelStorage';
+import Connection from '../../../src/storage/base/Connection';
+import ConnectionManager from '../../../src/storage/ConnectionManager';
 
 describe('Scraper', () => {
   let sandbox:SinonSandbox;
-  let storage:SinonStubbedInstance<Storage>;
+  let conn:SinonStubbedInstance<Connection>;
   let browserClient;
   let scraper:Scraper;
   let queue: SinonStubbedInstance<Queue>;
@@ -25,18 +25,17 @@ describe('Scraper', () => {
 
   beforeEach(() => {
     sandbox = createSandbox();
-    storage = sandbox.stub<Storage>(<any>{
-      connect: () => null,
+    conn = sandbox.stub<Connection>(<any>{
+      open: () => null,
       close: () => null,
       config: { client: 'client' },
-      toJSON: () => null,
     });
 
     queue = sandbox.stub<Queue>(<any>{ getResourcesToScrape: () => [], updateStatus: () => null });
 
     browserClient = <BrowserClient>{};
     browserClient.launch = sandbox.stub();
-    scraper = new Scraper(storage, browserClient);
+    scraper = new Scraper(conn, browserClient);
     scraper.browserClient = browserClient;
   });
 
@@ -55,11 +54,11 @@ describe('Scraper', () => {
     assert.isFalse(scraper.isJSONConfig(new ClassDef()));
   });
 
-  it('preScrape - do storage.connect', async () => {
+  it('preScrape - do connManager.connec', async () => {
     await scraper.preScrape();
 
     // called once for each model storage
-    assert.strictEqual(storage.connect.callCount, 3);
+    assert.strictEqual(conn.open.callCount, 3);
   }); // vladut iepurasul
 
   it('preScrape - do browserClient.launch', async () => {
@@ -138,10 +137,10 @@ describe('Scraper', () => {
     );
     Project.get = sandbox.stub();
 
-    const modelStorage = sandbox.createStubInstance(ModelStorage);
-    modelStorage.getModels.returns({ Project } as any);
+    const connectionMng = sandbox.createStubInstance(ConnectionManager);
+    connectionMng.getProject.returns(<any>Project);
 
-    scraper.modelStorage = <any>modelStorage;
+    scraper.connectionMng = <any>connectionMng;
 
     const preScrapeProject = await scraper.initProject({
       name: 'a.com',

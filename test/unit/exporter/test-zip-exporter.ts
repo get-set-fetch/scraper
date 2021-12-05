@@ -5,9 +5,9 @@ import { SinonSandbox, createSandbox } from 'sinon';
 import JSZip from 'jszip';
 import { join } from 'path';
 import ZipExporter from '../../../src/export/ZipExporter';
-import KnexProject from '../../../src/storage/knex/KnexProject';
+import Project from '../../../src/storage/base/Project';
 import Exporter from '../../../src/export/Exporter';
-import ModelStorage from '../../../src/storage/ModelStorage';
+import ConnectionManager from '../../../src/storage/ConnectionManager';
 
 describe('ZipExporter', () => {
   let sandbox:SinonSandbox;
@@ -17,18 +17,16 @@ describe('ZipExporter', () => {
 
   beforeEach(() => {
     sandbox = createSandbox();
-    project = sandbox.createStubInstance(KnexProject);
-    project.Constructor.storage = { config: {} };
+    project = sandbox.createStubInstance(Project);
 
     writeStub = sandbox.stub(fs, 'writeFileSync');
 
-    sandbox.stub(ModelStorage.prototype, 'connect');
-    sandbox.stub(ModelStorage.prototype, 'getModels').returns(<any>{
-      Project: {
-        get: () => project,
-      },
-    });
-    sandbox.stub(ModelStorage.prototype, 'close');
+    sandbox.stub(ConnectionManager, 'clone').returns(
+      <any>sandbox.createStubInstance(
+        ConnectionManager,
+        <any>{ getProject: { get: () => project } },
+      ),
+    );
 
     exporter = new ZipExporter({ filepath: 'archiveA.zip' });
   });

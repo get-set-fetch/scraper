@@ -5,12 +5,14 @@ import { moduleExists } from './plugins/file-utils';
 
 // typescript optional module loading, use both `require` to conditionally load modules and `import` to just expose module types
 import KnexStorageDefault from './storage/knex/KnexStorage';
+import KnexConnectionDefault from './storage/knex/KnexConnection';
 import PuppeteerClientDefault from './browserclient/PuppeteerClient';
 import PlaywrightClientDefault from './browserclient/PlaywrightClient';
 import CheerioClientDefault from './domclient/CheerioClient';
 import JsdomClientDefault from './domclient/JsdomClient';
 
 const KnexStorage:typeof KnexStorageDefault = moduleExists('knex') ? require('./storage/knex/KnexStorage').default : null;
+const KnexConnection:typeof KnexConnectionDefault = moduleExists('knex') ? require('./storage/knex/KnexConnection').default : null;
 const PuppeteerClient:typeof PuppeteerClientDefault = moduleExists('puppeteer') ? require('./browserclient/PuppeteerClient').default : null;
 const PlaywrightClient:typeof PlaywrightClientDefault = moduleExists('playwright-core') ? require('./browserclient/PlaywrightClient').default : null;
 const CheerioClient:typeof CheerioClientDefault = moduleExists('cheerio') ? require('./domclient/CheerioClient').default : null;
@@ -18,6 +20,7 @@ const JsdomClient:typeof JsdomClientDefault = moduleExists('jsdom') ? require('.
 
 export {
   KnexStorage,
+  KnexConnection,
   PuppeteerClient,
   PlaywrightClient,
   CheerioClient,
@@ -27,11 +30,13 @@ export {
 export { default as BrowserClient } from './browserclient/BrowserClient';
 export { IDomClientConstructor } from './domclient/DomClient';
 
-export { default as Storage, StorageOptions } from './storage/base/Storage';
-export { default as ModelStorage } from './storage/ModelStorage';
+export { default as Storage } from './storage/base/Storage';
+export { default as Connection } from './storage/base/Connection';
+export { default as ConnectionManager } from './storage/ConnectionManager';
 
-export { default as Project } from './storage/base/Project';
-export { default as Resource, ResourceQuery } from './storage/base/Resource';
+export { default as Project, IProjectStorage } from './storage/base/Project';
+export { default as Resource, ResourceQuery, IResourceStorage } from './storage/base/Resource';
+export { default as Queue, QueueEntry, IQueueStorage } from './storage/base/Queue';
 export { default as Plugin, PluginOpts } from './plugins/Plugin';
 
 export { default as BrowserFetchPlugin } from './plugins/default/BrowserFetchPlugin';

@@ -66,8 +66,8 @@ export default class InsertResourcesPlugin extends Plugin {
         // inserting all resources exceeds the threshold, only insert a subset
         else {
           const toCheckUrls = resourcesToAdd.map(resourceToAdd => resourceToAdd.url);
-          const existingUrls = (await project.queue.checkIfPresent(toCheckUrls)).map(resource => resource.url);
-          let newResourcesNotInStorage = resourcesToAdd.filter(resourceToAdd => !existingUrls.includes(resourceToAdd.url));
+          const newUrls = await project.queue.filterNewUrls(toCheckUrls);
+          let newResourcesNotInStorage = resourcesToAdd.filter(resourceToAdd => newUrls.includes(resourceToAdd.url));
 
           if (newResourcesNotInStorage.length > 0) {
             newResourcesNotInStorage = newResourcesNotInStorage.slice(0, Math.min(maxResourcesToAdd, newResourcesNotInStorage.length));
