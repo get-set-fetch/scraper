@@ -150,7 +150,7 @@ export default function acceptanceSuite(
       const actualResources = resources.concat(
         queueEntries
           .filter(queueEntry => !resourceUrls.includes(queueEntry.url))
-          .map(queueEntry => new ExtResource({ ...queueEntry, contentType: null, content: null })),
+          .map(queueEntry => new project.Constructor.ExtResource({ ...queueEntry, contentType: null, content: null })),
       );
       // console.log(JSON.stringify(actualResources));
       ScrapingSuite.checkResources(actualResources, test.resources);
