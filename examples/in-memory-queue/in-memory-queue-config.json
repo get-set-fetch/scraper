@@ -1,0 +1,43 @@
+{
+	"storage": {
+        "client": "sqlite3",
+        "useNullAsDefault": true,
+        "connection": {
+            "filename": "gsf.sqlite"
+        },
+        "debug": false
+	},
+	"client": {
+		"name": "cheerio"
+	},
+	"project": {
+		"name": "sitemap",
+		"resources": [
+			{
+				"url": "https://getsetfetch.org/node/storage.html"
+			}
+		],
+		"pipeline": "dom-static-content",
+		"pluginOpts": [
+			{
+                "name": "ExtractHtmlContentPlugin",
+                "selectorPairs": [
+                    {
+                    "contentSelector": "h2.card-header-title",
+                    "label": "title"
+                    }
+                ]
+            },
+			{
+				"name": "InsertResourcesPlugin",
+				"maxResources": 3
+			}
+		]
+	},
+	"concurrency": {
+		"session": {
+			"maxRequests": 1,
+			"delay": 1000
+		}
+	}
+}
