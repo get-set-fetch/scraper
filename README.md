@@ -33,15 +33,15 @@ Supported storage options and browser clients are defined as peer dependencies. 
 
 #### Init storage
 ```js
-const { KnexStorage } = require('@get-set-fetch/scraper');
-const conn = {
+const { KnexConnection } = require('@get-set-fetch/scraper');
+const connConfig = {
   client: 'sqlite3',
   useNullAsDefault: true,
   connection: {
     filename: ':memory:'
   }
 }
-const storage = new KnexStorage(conn);
+const conn = new KnexConnection(connConfig);
 ```
 See [Storage](https://www.getsetfetch.org/node/storage.html) on full configurations for supported SQLite, MySQL, PostgreSQL.
 
@@ -57,7 +57,7 @@ const client = new PuppeteerClient(launchOpts);
 #### Init scraper
 ```js
 const { Scraper } = require('@get-set-fetch/scraper');
-const scraper = new Scraper(storage, client);
+const scraper = new Scraper(conn, client);
 ```
 
 #### Define project options

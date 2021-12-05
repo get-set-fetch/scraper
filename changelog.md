@@ -1,8 +1,8 @@
 ## Changelog
 
-### Unreleased
+### 0.9.0 - 2021-12-05
 - Storage
-  - linkage update between Project/Queue/Resource and their corresponding, independent storage options.
+  - Linkage update between Project/Queue/Resource and their corresponding, independent storage options via Connection and ConnectionManager.
   
 ### 0.8.0 - 2021-11-16
 - Storage
