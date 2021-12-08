@@ -20,13 +20,22 @@
 				"replace": "BrowserFetchPlugin"
 			},
             {
+				"name": "ExtractUrlsPlugin",
+				"maxDepth": 1,
+				"selectorPairs": [
+					{
+						"urlSelector": "nav a"
+					}
+				]
+			},
+            {
                 "name": "InsertResourcesPlugin",
                 "maxResources": 5
             }
         ],
         "resources": [
             {
-                "url": "https://getsetfetch.org/node/storage.html"
+                "url": "https://en.wikipedia.org/wiki/Main_Page"
             }
         ]
     },

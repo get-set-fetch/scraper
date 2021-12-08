@@ -1,8 +1,7 @@
 /* for standalone projects replace '../../src/index' with '@get-set-fetch/scraper' */
-import { IQueueStorage, QueueEntry, Connection, Storage } from '../../src/index';
+import { IQueueStorage, QueueEntry, Storage } from '../../src/index';
 
 export default class InMemoryQueue extends Storage implements IQueueStorage {
-  conn: Connection;
   queue:Map<string, QueueEntry>;
 
   async drop() {
@@ -19,18 +18,16 @@ export default class InMemoryQueue extends Storage implements IQueueStorage {
       .map(url => ({ url }));
   }
 
-  add(entries: QueueEntry[]) {
+  async add(entries: QueueEntry[]) {
     entries.forEach(entry => {
       if (!this.queue.has(entry.url)) {
         this.queue.set(entry.url, { ...entry, id: entry.url });
       }
     });
-
-    return Promise.resolve();
   }
 
-  count() {
-    return Promise.resolve(this.queue.size);
+  async count() {
+    return this.queue.size;
   }
 
   async getResourcesToScrape(limit:number = 10) {
