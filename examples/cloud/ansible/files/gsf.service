@@ -1,0 +1,14 @@
+[Unit]
+Description=get-set-fetch-scraper
+After=network.target
+
+[Service]
+ExecStart=+gsfscrape --config gsf-config.json <args> --loglevel <log_level> --logdestination <log_destination>
+Restart=always
+User=nobody
+Group=nogroup
+Environment=PATH=/usr/bin:/usr/local/bin
+WorkingDirectory=<working_directory>
+
+[Install]
+WantedBy=multi-user.target

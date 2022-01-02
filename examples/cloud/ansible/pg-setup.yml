@@ -1,0 +1,66 @@
+- hosts: all
+  become: true
+  become_user: root
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: "Create app database"
+      postgresql_db:
+        state: present
+        name: "{{ db_name }}"
+      become: true
+      become_user: postgres
+
+    - name: "Create db user"
+      postgresql_user:
+        state: present
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+      become: true
+      become_user: postgres
+
+    - name: "Grant db user access to app db"
+      postgresql_privs:
+        type: database
+        database: "{{ db_name }}"
+        roles: "{{ db_user }}"
+        grant_option: false
+        privs: all
+      become: true
+      become_user: postgres
+
+    - name: "Allow remote connections on private network"
+      postgresql_set:
+        name: listen_addresses
+        value: 'localhost, {{ private_ip_address }}'
+      become: true
+      become_user: postgres
+      notify: restart postgres
+
+    - name: "Allow md5 connection for the db user"
+      postgresql_pg_hba:
+        dest: /etc/postgresql/14/main/pg_hba.conf
+        contype: host
+        address: all
+        databases: all
+        method: md5
+        users: "{{ db_user }}"
+        create: true
+      become: true
+      become_user: postgres
+      notify: restart postgres
+
+    - name: "Tunning for 8GB RAM"
+      postgresql_set:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+      become: true
+      become_user: postgres
+      notify: restart postgres
+      with_dict: "{{ pg_config }}"
+
+  handlers:
+    - name: restart postgres
+      service: name=postgresql state=restarted

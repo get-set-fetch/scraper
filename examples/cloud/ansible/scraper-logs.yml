@@ -1,0 +1,12 @@
+- hosts: scraper
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: fetch scrape log
+      ansible.builtin.fetch:
+        src: "{{ scrape_dir }}/{{ scrape_log_destination }}"
+        dest: "../exports/{{ ansible_host }}-scrape.log"
+        validate_checksum: false # it keeps changing as resources are scraped
+        flat: true

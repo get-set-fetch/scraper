@@ -1,0 +1,16 @@
+- hosts: scraper[0]
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: "export results as csv"
+      ansible.builtin.shell: gsfscrape --config gsf-config.json --loglevel {{scrape_log_level}} --logdestination {{scrape_log_destination}} --scrape --export {{ scrape_export_file  }}
+      args:
+        chdir: "{{ scrape_dir }}"
+
+    - name: fetch results
+      ansible.builtin.fetch:
+        src: "{{ scrape_dir }}/{{ scrape_export_file }}"
+        dest: "../exports/{{ scrape_export_file }}"
+        flat: true

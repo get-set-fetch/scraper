@@ -1,0 +1,97 @@
+- hosts: all
+  become: true
+  become_user: root
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    # community.general.npm is not installing cheerio@rc version for some reason
+    - name: "Install get-set-fetch scraper and peer dependencies"
+      ansible.builtin.shell: npm install -g {{ item.name }}@{{ item.version }}
+      with_items:
+        - { name: "@get-set-fetch/scraper", version: "0.9.0" }
+        - { name: "knex", version: "0.95.14" }
+        - { name: "pg", version: "8.7.1" }
+        - { name: "cheerio", version: "1.0.0-rc.10" }
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ scrape_dir }}"
+        state: directory
+        mode: 0644
+
+    - name: "Copy input csv file(s)"
+      ansible.builtin.copy:
+        src: "files/{{ item }}"
+        dest: "{{ scrape_dir }}/{{ item }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - "{{ scrape_resource_file }}"
+      when: scraper_idx == "0"
+
+    - name: "Copy input config and plugin files"
+      ansible.builtin.copy:
+        src: "files/{{ item }}"
+        dest: "{{ scrape_dir }}/{{ item }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - gsf-config.json
+        - ExtractScriptsPlugin.js
+
+    - name: "Update scrape config"
+      ansible.builtin.replace:
+        path: "{{ scrape_dir }}/gsf-config.json"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      with_items:
+        - { regexp: "<db_host>", replace: "{{ db_host }}" }
+        - { regexp: "<db_user>", replace: "{{ db_user }}" }
+        - { regexp: "<db_password>", replace: "{{ db_password }}" }
+        - { regexp: "<db_name>", replace: "{{ db_name }}" }
+        - { regexp: "<user_agent>", replace: "{{ scrape_user_agent }}" }
+
+    - name: "Update scrape config external resource path"
+      ansible.builtin.replace:
+        path: "{{ scrape_dir }}/gsf-config.json"
+        regexp: "<resource_path>"
+        replace: "{{ scrape_resource_file }}"
+      when: scraper_idx == "0"
+
+    - name: "Remove scrape config external resource path"
+      ansible.builtin.replace:
+        path: "{{ scrape_dir }}/gsf-config.json"
+        regexp: ".+resourcePath.+"
+        replace: ""
+      when: scraper_idx != "0"
+
+    - name: Copy systemd service file
+      ansible.builtin.copy:
+        src: files/gsf.service
+        dest: /etc/systemd/system
+        owner: root
+        group: root
+
+    - name: "Update systemd service file"
+      ansible.builtin.replace:
+        path: "/etc/systemd/system/gsf.service"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      with_items:
+        - { regexp: "<log_level>", replace: "{{ scrape_log_level }}" }
+        - { regexp: "<log_destination>", replace: "{{ scrape_log_destination }}" }
+        - { regexp: "<working_directory>", replace: "{{ scrape_dir }}" }
+        - { regexp: "<args>", replace: "{{ '--save --discover --retry 30' if scraper_idx == '0' else '--discover --retry 30' }}" }
+      notify:
+        - start scraper
+
+  handlers:
+    - name: start scraper
+      systemd:
+        name: gsf
+        state: started
+        enabled: yes

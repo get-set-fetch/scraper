@@ -1,0 +1,32 @@
+---
+db_user:
+db_password:
+db_name:
+db_stats_file: pg-stats.csv
+
+# pg tunning for 4 vCPU, 8 GB RAM, using pgtune as base config
+pg_config:
+    max_connections: 100
+    shared_buffers: 2GB
+    effective_cache_size: 6GB
+    maintenance_work_mem: 512MB
+    checkpoint_completion_target: 0.9
+    wal_buffers: 16MB
+    default_statistics_target: 100
+    random_page_cost: 1.1
+    effective_io_concurrency: 200
+    work_mem: 10485kB
+    min_wal_size: 1GB
+    max_wal_size: 4GB
+    max_worker_processes: 4
+    max_parallel_workers_per_gather: 2
+    max_parallel_workers: 4
+    max_parallel_maintenance_workers: 2
+
+scrape_dir: /srv/gsf
+scrape_log_level: debug
+scrape_log_destination: scrape.log
+scrape_resource_file: majestic_million-29-dec-2021.csv
+scrape_user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0
+scrape_export_file: project.csv
+

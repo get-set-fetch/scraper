@@ -1,0 +1,19 @@
+- hosts: scraper
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: "Retrieve systemd log messages since last boot"
+      ansible.builtin.shell: "journalctl -u gsf.service -b"
+      register: journalctl
+
+    - name: "Retrieve service status"
+      ansible.builtin.shell: systemctl status gsf.service
+      register: systemctl
+
+    - name: "Copy output to local file"
+      delegate_to: localhost
+      ansible.builtin.copy:
+        dest: "../exports/{{ inventory_hostname }}-systemd.log"
+        content: "{{ systemctl.stdout }}\n\n{{ journalctl.stdout }}"

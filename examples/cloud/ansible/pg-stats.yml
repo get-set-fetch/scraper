@@ -1,0 +1,133 @@
+- hosts: postgresql
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: "sql: postgresql version"
+      postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        login_host: "localhost"
+        query: SELECT version()
+      register: sql_version
+
+    - debug:
+        var: sql_version.query_result
+
+    - name: "sql: count scraped resources with a non_success (error, redirect) status"
+      postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        login_host: "localhost"
+        query: select count(*) as "count" from "1-queue" where status is not null and status > 1 and status / 100 != 2
+      register: sql_non_success
+
+    - name: "sql: count scraped resources with a success (2xx) status"
+      postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        login_host: "localhost"
+        query: select count(*) as "count" from "1-queue" where status is not null and status / 100 = 2
+      register: sql_success
+
+    - name: "sql: count scrape-in-progress resources"
+      postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        login_host: "localhost"
+        query: select count(*) as "count" from "1-queue" where status = 1
+      register: sql_in_progress
+
+    - name: "sql: count not-scraped resources"
+      postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        login_host: "localhost"
+        query: select count(*) as "count" from "1-queue" where status is null
+      register: sql_not_scraped
+
+    - name: "db_stats_file: check existence"
+      delegate_to: localhost
+      stat:
+        path: "../exports/{{ db_stats_file }}"
+      register: stats_file
+
+    - name: "db_stats_file: read content"
+      delegate_to: localhost
+      set_fact:
+        stats_content: "{{ lookup('file', '../exports/{{ db_stats_file }}') }}"
+      when: stats_file.stat.exists
+
+    - name: "db_stats_file: read last line"
+      delegate_to: localhost
+      set_fact:
+        stats_last_line: "{{ (stats_content).split('\n')[-1] }}"
+      register: sqlresults
+      when: stats_file.stat.exists
+
+    - name: "db_stats_file: write csv header"
+      delegate_to: localhost
+      ansible.builtin.copy:
+        dest: "../exports/{{ db_stats_file }}"
+        content: "time, success count, non-success count, in-progress count, not-scraped count, per-second count, scraper instances"
+      when: not stats_file.stat.exists
+
+    - name: count newly scraped resources from last playbook execution
+      set_fact:
+        success_diff: "{{ sql_success.query_result[0].count | int - (stats_last_line.split(', ')[1] | int) }}"
+        non_success_diff: "{{ sql_non_success.query_result[0].count | int - (stats_last_line.split(', ')[2] | int) }}"
+        time_diff: "{{ ansible_date_time.epoch | int - (stats_last_line.split(', ')[0] | int) }}"
+      when: stats_file.stat.exists
+
+    - name: get scraped resources per second from last playbook execution
+      set_fact:
+        scraped_per_second: "{{ (success_diff | int + non_success_diff | int) / (time_diff | int) }}"
+      when: stats_file.stat.exists
+
+    - name: "db_stats_file: append with new stats entry"
+      delegate_to: localhost
+      ansible.builtin.lineinfile:
+        path:  "../exports/{{ db_stats_file }}"
+        insertafter: EOF
+        line: >-
+          {{ ansible_date_time.epoch }},
+          {{ sql_success.query_result[0].count }},
+          {{ sql_non_success.query_result[0].count }},
+          {{ sql_in_progress.query_result[0].count }},
+          {{ sql_not_scraped.query_result[0].count }},
+          {{ scraped_per_second }}, 
+          {{ groups['scraper'] | length  }}"
+      when: stats_file.stat.exists
+
+    - name: "db_stats_file: add first (incomplete) stats entry"
+      delegate_to: localhost
+      ansible.builtin.lineinfile:
+        path:  "../exports/{{ db_stats_file }}"
+        insertafter: EOF
+        line: >-
+          {{ ansible_date_time.epoch }}, 
+          {{ sql_success.query_result[0].count }},
+          {{ sql_non_success.query_result[0].count }},
+          {{ sql_in_progress.query_result[0].count }}, 
+          {{ sql_not_scraped.query_result[0].count }}, 
+          , 
+          {{ groups['scraper'] | length  }}"
+      when: not stats_file.stat.exists
+
+    - name: last invocation stats
+      debug:
+        msg:
+        - "-- Stats from last invocation --"
+        - "Duration: {{ time_diff | default('not available, first run') }}s"
+        - "Scraper instances: {{ groups['scraper'] | length  }}"
+        - "Sucessfully scraped resources: {{ success_diff | default(sql_success.query_result[0].count) }}"
+        - "Non-sucessfully scraped resources: {{ non_success_diff | default(sql_non_success.query_result[0].count) }}"
+        - "Scrape-in-progress resources: {{ sql_in_progress.query_result[0].count }}"
+        - "Scraped resources per second: {{ scraped_per_second | default('not available, first run') }}"
+        - "Not yet scraped resources: {{ sql_not_scraped.query_result[0].count }}"
