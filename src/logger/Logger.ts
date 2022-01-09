@@ -68,6 +68,10 @@ export class LogWrapper {
       childWrapper.logger = this.logger.child(childWrapper.bindings);
     });
   }
+
+  get level() {
+    return this.logger.level;
+  }
 }
 
 const logWrapper = new LogWrapper(pino(defaultOpts));
