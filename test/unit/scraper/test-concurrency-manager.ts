@@ -25,7 +25,9 @@ describe('ConcurrencyManager', () => {
     concurrency = new ConcurrencyManager();
     assert.deepEqual(
       {
-        project: undefined,
+        project: {
+          maxRequests: 1,
+        },
         proxy: {
           maxRequests: 1,
           delay: 500,
@@ -47,11 +49,13 @@ describe('ConcurrencyManager', () => {
       proxy: { maxRequests: 5 },
       domain: { delay: 7000 },
       session: { maxRequests: 11 },
+      proxyPool: [ { host: 'a', port: 80 }, { host: 'B', port: 80 } ],
     });
     assert.deepEqual(
       {
         project: {
           delay: 300,
+          maxRequests: 5 * 2,
         },
         proxy: {
           maxRequests: 5,
@@ -64,7 +68,7 @@ describe('ConcurrencyManager', () => {
         session: {
           maxRequests: 11,
         },
-        proxyPool: [ null ],
+        proxyPool: [ { host: 'a', port: 80 }, { host: 'B', port: 80 } ],
       },
       concurrency.opts,
     );
@@ -495,6 +499,11 @@ describe('ConcurrencyManager', () => {
   it('getResourceToScrape, scraping complete', async () => {
     concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
     concurrency.status.project.requests = 0;
+    /*
+    maxResourceScrapeTime from isScrapingComplete is fixed at 1000ms,
+    lastStartTime should be at least 1000ms in the past for complete condition to trigger
+    */
+    concurrency.status.project.lastStartTime = Date.now() - 1100;
 
     const resource = await concurrency.getResourceToScrape(<any>{ queue });
     assert.isTrue(queue.getResourcesToScrape.calledOnce);
@@ -540,8 +549,10 @@ describe('ConcurrencyManager', () => {
       lastStartTime: 0,
     };
 
+    // to-be-scraped resources are retrieved from resourceBuffer
     const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
-    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ resourceToScrape ]));
+    concurrency.resourceBuffer = [ resourceToScrape ];
+
     let err;
     try {
       await concurrency.getResourceToScrape(<any>{ queue });
@@ -567,8 +578,9 @@ describe('ConcurrencyManager', () => {
       lastStartTime: 0,
     };
 
+    // to-be-scraped resources are retrieved from resourceBuffer
     const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
-    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ resourceToScrape ]));
+    concurrency.resourceBuffer = [ resourceToScrape ];
 
     let err;
     try {
@@ -593,7 +605,9 @@ describe('ConcurrencyManager', () => {
 
     concurrency = new ConcurrencyManager();
 
-    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ { queueEntryId, url: 'http://siteA.com/resource.html' } as any ]));
+    // to-be-scraped resources are retrieved from resourceBuffer
+    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
+    concurrency.resourceBuffer = [ resourceToScrape ];
 
     const resource = await concurrency.getResourceToScrape(<any>{ queue });
     assert.isNull(resource.proxy);
@@ -636,7 +650,9 @@ describe('ConcurrencyManager', () => {
     const proxy: Proxy = { host: 'proxyA', port: 80 };
     concurrency = new ConcurrencyManager({ proxyPool: [ proxy ] });
 
-    queue.getResourcesToScrape.returns(Promise.resolve<Resource[]>([ { queueEntryId, url: 'http://siteA.com/resource.html' } as any ]));
+    // to-be-scraped resources are retrieved from resourceBuffer
+    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
+    concurrency.resourceBuffer = [ resourceToScrape ];
 
     const resource = await concurrency.getResourceToScrape(<any>{ queue });
     assert.deepEqual(resource.proxy, proxy);

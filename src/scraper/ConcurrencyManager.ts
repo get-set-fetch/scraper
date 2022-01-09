@@ -118,15 +118,23 @@ export default class ConcurrencyManager {
    */
   resourceBuffer: Resource[];
 
+  resourceBufferSize: number;
+
   /**
    * Prevents parallel project.queue.getResourcesToScrape calls
    */
   refillBufferInProgress: boolean;
 
+  /**
+   * Only used when logging is set to trace mode.
+   * Keeps a map of scrape-in-progress resources: key: url, value: start time (ms).
+   */
+  inProgressUrls:Map<string, number>;
+
   constructor(opts: Partial<ConcurrencyOptions> = {}) {
     this.opts = {
       // concurrency conditions at project/proxy/domain/session level
-      project: opts.project,
+      project: opts.project || {},
       proxy: Object.assign(ConcurrencyManager.DEFAULT_OPTS.proxy, opts.proxy),
       domain: Object.assign(ConcurrencyManager.DEFAULT_OPTS.domain, opts.domain),
       session: opts.session,
@@ -138,9 +146,23 @@ export default class ConcurrencyManager {
       proxyPool: opts.proxyPool || [ null ],
     };
 
+    // if missing compute project.maxRequests based on number of proxies and proxy.maxRequests
+    if (!this.opts.project.maxRequests) {
+      this.opts.project.maxRequests = this.opts.proxy.maxRequests * this.opts.proxyPool.length;
+    }
+    this.logger.info(`concurrency options: ${JSON.stringify(this.opts)}`);
+
+    /*
+    compute buffer size based on project.maxRequests, enforce a minimum buffer size
+    multiplier value of 2 is kind of arbitrary:
+      - too little and scraping may briefly pause due to an empty buffer
+      - too large and we needlessly mark to-be-scraped resources as in progress so that other scraper instances can't touch them
+    */
+    this.resourceBufferSize = Math.max(this.opts.project.maxRequests * 2, 10);
+
     this.status = {
       project: {
-        lastStartTime: 0,
+        lastStartTime: null,
         requests: 0,
       },
       proxy: {},
@@ -152,6 +174,10 @@ export default class ConcurrencyManager {
 
     this.resourceScraped = this.resourceScraped.bind(this);
     this.resourceError = this.resourceError.bind(this);
+
+    if (this.logger.level === 'trace') {
+      this.inProgressUrls = new Map();
+    }
   }
 
   /**
@@ -174,7 +200,7 @@ export default class ConcurrencyManager {
    * 'considerable' amount of time can be something like 3 standard deviations above the mean resource scrape time
    *  mean resource scrape time is not computed atm, a hardcoded value is presently used
    */
-  isScrapingComplete(dateNow: number): boolean {
+  isScrapingComplete(): boolean {
     // no results found, check if scraping is complete
     if (this.resourceBuffer.length === 0) {
       // no more scrape-in-progress resources
@@ -185,13 +211,23 @@ export default class ConcurrencyManager {
         there are no scrape-in-progress resources capable of discovering new to-be-scraped resources
         */
         const maxResourceScrapeTime = 1 * 1000;
-        if (!this.status.project.lastStartTime || dateNow - this.status.project.lastStartTime > maxResourceScrapeTime) {
+        if (this.status.project.lastStartTime && (Date.now() - this.status.project.lastStartTime > maxResourceScrapeTime)) {
           return true;
         }
       }
     }
 
     return false;
+  }
+
+  async refillBuffer(project:Project):Promise<void> {
+    // buffer is only filled sequentially
+    if (this.refillBufferInProgress) return;
+
+    this.refillBufferInProgress = true;
+    const toBeScrapedResources = await project.queue.getResourcesToScrape(this.resourceBufferSize - this.resourceBuffer.length);
+    this.resourceBuffer.push(...toBeScrapedResources);
+    this.refillBufferInProgress = false;
   }
 
   /**
@@ -233,27 +269,20 @@ export default class ConcurrencyManager {
         this.resourceBuffer = [];
       }
 
-      if (this.isScrapingComplete(Date.now())) {
+      // all scrape-in-progress resources have been scraped
+      if (this.status.project.requests === 0) {
         return null;
       }
     }
     // normal scraping
     else {
       // attemp to re-fill buffer
-      if (this.resourceBuffer.length === 0) {
-        // buffer is only filled sequentially
-        if (!this.refillBufferInProgress) {
-          this.refillBufferInProgress = true;
-          this.resourceBuffer = await project.queue.getResourcesToScrape(10);
+      if (this.resourceBuffer.length < this.resourceBufferSize / 2) {
+        this.refillBuffer(project);
+      }
 
-          // trim and update buffer results
-          const dateNow = Date.now();
-          this.refillBufferInProgress = false;
-
-          if (this.isScrapingComplete(dateNow)) {
-            return null;
-          }
-        }
+      if (this.isScrapingComplete()) {
+        return null;
       }
 
       // in the future, don't just retrieve the 1st resource, attempt to search for one meeting the concurrency conditions
@@ -296,6 +325,11 @@ export default class ConcurrencyManager {
     // update status
     this.addResource(proxy, hostname);
     this.logger.debug({ proxy, url: resource.url }, 'resource added to concurrency status');
+
+    if (this.logger.level === 'trace') {
+      this.inProgressUrls.set(resource.url, Date.now());
+      this.logger.trace(`In-Progress URLs: ${Array.from(this.inProgressUrls.entries()).join(';')}`);
+    }
 
     return resource;
   }
@@ -411,7 +445,11 @@ export default class ConcurrencyManager {
   resourceScraped(project: Project, resource: Resource) {
     const { hostname } = new URL(resource.url);
     this.removeResource(resource.proxy, hostname);
+
     this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped and removed from concurrency status');
+    if (this.logger.level === 'trace') {
+      this.inProgressUrls.delete(resource.url);
+    }
   }
 
   /**
@@ -424,6 +462,10 @@ export default class ConcurrencyManager {
   resourceError(project: Project, resource: Resource) {
     const { hostname } = new URL(resource.url);
     this.removeResource(resource.proxy, hostname);
+
     this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped in error and removed from concurrency status');
+    if (this.logger.level === 'trace') {
+      this.inProgressUrls.delete(resource.url);
+    }
   }
 }

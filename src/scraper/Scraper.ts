@@ -201,6 +201,9 @@ export default class Scraper extends EventEmitter {
       // concurrencyManager needs to update its status based on resource error/complete
       this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
       this.on(ScrapeEvent.ResourceError, this.concurrency.resourceError);
+
+      this.on(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
+      this.on(ScrapeEvent.ResourceError, this.fastForwardGetResourceToScrape);
     }
 
     if (this.metrics) {
@@ -213,6 +216,14 @@ export default class Scraper extends EventEmitter {
     if (this.browserClient && !this.browserClient.isLaunched) {
       await this.browserClient.launch();
       this.logger.info('Browser launched');
+    }
+  }
+
+  fastForwardGetResourceToScrape() {
+    if (this.concurrency.status.project.requests === this.concurrency.opts.project.maxRequests - 1) {
+      clearInterval(this.checkTimeout);
+      this.getResourceToScrape();
+      this.checkTimeout = setInterval(this.getResourceToScrape.bind(this), this.concurrency.getCheckInterval());
     }
   }
 
@@ -284,6 +295,8 @@ export default class Scraper extends EventEmitter {
       // scraping stopped, if resumed new concurrency, metrics instances will be created
       if (this.concurrency) {
         clearInterval(this.checkTimeout);
+        this.off(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
+        this.off(ScrapeEvent.ResourceError, this.fastForwardGetResourceToScrape);
         this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
         this.off(ScrapeEvent.ResourceError, this.concurrency.resourceError);
       }
@@ -447,6 +460,7 @@ export default class Scraper extends EventEmitter {
       // normal concurrency errors based on the existing concurrency options
       else if (err instanceof ConcurrencyError) {
         this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
+        this.logger.debug(`Concurrency status at ${err.level} : ${JSON.stringify(this.concurrency.status[err.level])}`);
       }
       // invalid concurrency state, abort the entire scraping process
       else {
