@@ -28,6 +28,14 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
           type: 'boolean',
           default: true,
         },
+        connectTimeout: {
+          type: 'number',
+          default: 10 * 1000,
+        },
+        readTimeout: {
+          type: 'number',
+          default: 20 * 1000,
+        },
       },
     } as const;
   }
@@ -74,7 +82,7 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         path: pathname,
         host: hostname,
         headers: reqHeaders,
-        timeout: 10 * 1000,
+        timeout: this.opts.connectTimeout,
         rejectUnauthorized: this.opts.rejectUnauthorized,
         ...resource.proxy,
       };
@@ -132,10 +140,22 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         }
       });
 
+      req.setTimeout(this.opts.readTimeout, () => {
+        req.destroy(new FetchError(408));
+      });
+
       req.on('error', err => {
-        this.logger.error(opts, 'Error using request options');
+        if (err instanceof FetchError) {
+          this.logger.error(opts, `Timeout using request options, readTimeout: ${this.opts.readTimeout}`);
+        }
+        else {
+          this.logger.error(opts, 'Error using request options');
+        }
+
+        req.destroy();
         reject(err);
       });
+
       req.end();
     });
   }
