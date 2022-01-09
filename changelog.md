@@ -1,5 +1,16 @@
 ## Changelog
 
+### Unreleased
+- Concurrency:
+  - improved buffering, total number of scrape-in-progress resources deviates less from concurrency maxRequests option
+  - improved debugging
+- Plugins
+  - NodeFetchPlugin:
+    - new connectTimeout, readTimeout options
+- Logging
+  - LogWrapper
+    - new level getter for the wrapped logger level
+
 ### 0.9.0 - 2021-12-05
 - Storage
   - Linkage update between Project/Queue/Resource and their corresponding, independent storage options via Connection and ConnectionManager.
