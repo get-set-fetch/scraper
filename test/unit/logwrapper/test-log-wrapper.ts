@@ -16,4 +16,29 @@ describe('LogWrapper', () => {
     // revert back to default log level
     setLogger({ level: 'warn' });
   });
+
+  it('filter out log arguments', () => {
+    const childWrapper = getLogger('test');
+
+    const rawObj = [
+      { a: 1, b: Buffer.from('a'), c: null },
+      { d: 'message C', e: Buffer.from('a'), cert: {}, f: null },
+    ];
+
+    // extra circular reference :)
+    rawObj[1].f = rawObj;
+
+    assert.sameDeepMembers(
+      childWrapper.filterArg(rawObj),
+      [
+        { a: 1, b: '<Buffer> not included', c: null },
+        {
+          d: 'message C',
+          e: '<Buffer> not included',
+          cert: '<cert> not included',
+          f: null,
+        },
+      ],
+    );
+  });
 });

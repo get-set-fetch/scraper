@@ -3,10 +3,6 @@ import pino, { Logger, Bindings, DestinationStream, LoggerOptions } from 'pino';
 const defaultOpts:LoggerOptions = {
   base: null,
   level: 'warn',
-  redact: {
-    paths: [ 'data' ],
-    censor: '<Buffer> not included',
-  },
 };
 
 export class LogWrapper {
@@ -21,28 +17,67 @@ export class LogWrapper {
     this.children = new Map();
   }
 
-  trace(...args) {
-    this.logger.trace.call(this.logger, ...args);
+  /**
+   * @param obj object to be serialized
+   * @param msg the log message to write
+   * @param ...args format string values when `msg` is a format string
+   */
+  trace(obj, msg?:string, ...args) {
+    this.logger.trace.call(this.logger, obj, msg, ...args);
   }
 
-  debug(...args) {
-    this.logger.debug.call(this.logger, ...args);
+  debug(obj, msg?:string, ...args) {
+    this.logger.debug.call(this.logger, obj, msg, ...args);
   }
 
-  info(...args) {
-    this.logger.info.call(this.logger, ...args);
+  info(obj, msg?:string, ...args) {
+    this.logger.info.call(this.logger, this.filterArg(obj), msg, ...args);
   }
 
-  warn(...args) {
-    this.logger.warn.call(this.logger, ...args);
+  warn(obj, msg?:string, ...args) {
+    this.logger.warn.call(this.logger, this.filterArg(obj), msg, ...args);
   }
 
-  error(...args) {
-    this.logger.error.call(this.logger, ...args);
+  error(obj, msg?:string, ...args) {
+    this.logger.error.call(this.logger, this.filterArg(obj), msg, ...args);
   }
 
-  fatal(...args) {
-    this.logger.fatal.call(this.logger, ...args);
+  fatal(obj, msg?:string, ...args) {
+    this.logger.error.call(this.logger, this.filterArg(obj), msg, ...args);
+  }
+
+  /**
+   * Filter out properties like Buffer to prevent needless log pollution
+   * @param args - log arguments
+   * @returns - filtered out arguments
+   */
+  filterArg(arg, visited = new WeakMap()) {
+    if (!arg) return arg;
+
+    // avoid circular references
+    if (visited.has(arg)) return null;
+
+    switch (typeof arg) {
+      case 'object':
+        visited.set(arg, true);
+
+        if (Buffer.isBuffer(arg)) return '<Buffer> not included';
+        if (Array.isArray(arg)) return arg.map(a => this.filterArg(a, visited));
+
+        return Object.keys(arg).reduce(
+          (acc, curr) => {
+            /*
+            tls specific cases where we want to filter all sorts of cert info like manifest, content...
+            you can still log them in debug where filterArg is not applied
+            */
+            acc[curr] = curr === 'cert' ? '<cert> not included' : this.filterArg(arg[curr], visited);
+            return acc;
+          },
+          {},
+        );
+      default:
+        return arg;
+    }
   }
 
   child(bindings):LogWrapper {

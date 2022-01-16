@@ -488,11 +488,13 @@ export default class Scraper extends EventEmitter {
     }
 
     let pluginIdx: number;
+    let plugin: Plugin;
     try {
       // sequentially execute project plugins in the defined order
       for (pluginIdx = 0; pluginIdx < this.project.plugins.length; pluginIdx += 1) {
+        plugin = this.project.plugins[pluginIdx];
         // a plugin result represents additional data/content to be merged with the current resource
-        const result = await this.executePlugin(resource, this.project.plugins[pluginIdx]);
+        const result = await this.executePlugin(resource, plugin);
         this.logger.debug(result || {}, 'Plugin result');
 
         // current plugin did not returned a result, move on to the next one
@@ -513,10 +515,10 @@ export default class Scraper extends EventEmitter {
     catch (err) {
       // optional chaining not available till node v14, check all chains are valid, we may be in an invalid state
       this.logger.error(
-        err,
+        { error: err, pluginOpts: plugin ? plugin.opts : null },
         'Scrape error for project %s , Plugin %s against resource %s',
         this.project ? this.project.name : 'undefined project',
-        this.project && this.project.plugins && this.project.plugins[pluginIdx] && this.project.plugins[pluginIdx].constructor ? this.project.plugins[pluginIdx].constructor.name : 'unknown plugin',
+        plugin && plugin.constructor ? plugin.constructor.name : 'unknown plugin',
         resource ? resource.url : '',
       );
 

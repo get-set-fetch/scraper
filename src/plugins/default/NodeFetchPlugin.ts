@@ -145,13 +145,6 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
       });
 
       req.on('error', err => {
-        if (err instanceof FetchError) {
-          this.logger.error(opts, `Timeout using request options, readTimeout: ${this.opts.readTimeout}`);
-        }
-        else {
-          this.logger.error(opts, 'Error using request options');
-        }
-
         req.destroy();
         reject(err);
       });
