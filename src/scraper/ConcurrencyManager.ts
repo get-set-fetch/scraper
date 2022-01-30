@@ -120,6 +120,8 @@ export default class ConcurrencyManager {
 
   resourceBufferSize: number;
 
+  error: Error;
+
   /**
    * Prevents parallel project.queue.getResourcesToScrape calls
    */
@@ -224,10 +226,16 @@ export default class ConcurrencyManager {
     // buffer is only filled sequentially
     if (this.refillBufferInProgress) return;
 
-    this.refillBufferInProgress = true;
-    const toBeScrapedResources = await project.queue.getResourcesToScrape(this.resourceBufferSize - this.resourceBuffer.length);
-    this.resourceBuffer.push(...toBeScrapedResources);
-    this.refillBufferInProgress = false;
+    try {
+      this.refillBufferInProgress = true;
+      const toBeScrapedResources = await project.queue.getResourcesToScrape(this.resourceBufferSize - this.resourceBuffer.length);
+      this.resourceBuffer.push(...toBeScrapedResources);
+      this.refillBufferInProgress = false;
+    }
+    catch (err) {
+      // parent call doesn't wait for this async to finish thus can't catch it, store err separately
+      this.error = err;
+    }
   }
 
   /**
@@ -276,6 +284,14 @@ export default class ConcurrencyManager {
     }
     // normal scraping
     else {
+      /*
+      stop signal was received due to buffer error in an independent async call, throw the error up
+      parent scraper will catch any errors and stop the process via concurrency.stop = true
+      */
+      if (this.error) {
+        throw (this.error);
+      }
+
       // attemp to re-fill buffer
       if (this.resourceBuffer.length < this.resourceBufferSize / 2) {
         this.refillBuffer(project);

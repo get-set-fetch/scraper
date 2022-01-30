@@ -17,10 +17,16 @@ export type QueueEntry = {
    * Not yet scraped urls have NULL status.
    * Scrape in progress is denoted by status = 1.
    * Succesfull scraping updates status to the http(s) response status.
-   * Failed scraping updates status to the http(s) response status or custom error code if blocking is detected.
+   * Failed scraping updates status to the http(s) 3xx, 4xx, 5xx response status (if present) or 500 with an additional custom error code.
+   * DNS errors, network timeouts, connection reset are considered 500 server errors.
    * Urls with error status codes can be re-scraped.
    */
   status: number;
+
+  /**
+   * Custom error codes in addition or outside http response status thrown by plugin execution like connection or parsing errors.
+   */
+  error?: string;
 
   parent?: IResourceParent;
 }
@@ -76,8 +82,8 @@ export default class Queue {
     return urls.filter(url => !existingUrls.includes(url));
   }
 
-  updateStatus(id: number | string, status: number):Promise<void> {
-    return this.Constructor.storage.updateStatus(id, status);
+  updateStatus(id: number | string, status: number, error?: string):Promise<void> {
+    return this.Constructor.storage.updateStatus(id, status, error);
   }
 
   count() {
@@ -235,7 +241,7 @@ export interface IQueueStorage {
   add(entries: QueueEntry[]):Promise<void>;
   getAll():Promise<QueueEntry[]>;
   count():Promise<number>;
-  updateStatus(id: number | string, status: number):Promise<void>;
+  updateStatus(id: number | string, status: number, error?: string):Promise<void>;
   getResourcesToScrape(limit:number):Promise<QueueEntry[]>;
   filterExistingEntries(urls: string[]):Promise<Partial<QueueEntry>[]>;
   drop():Promise<void>;

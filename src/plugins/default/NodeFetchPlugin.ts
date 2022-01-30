@@ -129,54 +129,59 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
         this.logger.debug(opts, 'Request Options');
 
         const req = requestFnc(opts, (res: IncomingMessage) => {
-          const { statusCode, headers } = res;
+          try {
+            const { statusCode, headers } = res;
 
-          this.logger.debug(`status code for ${resource.url} : ${statusCode}`);
+            this.logger.debug(`status code for ${resource.url} : ${statusCode}`);
 
-          // don't have access to initial redirect status can't chain back to the original redirect one, always put 301
-          if (this.isRedirectStatus(statusCode)) {
-            reject(new FetchError(statusCode, new URL(headers.location, resource.url).toString()));
-          }
-
-          // don't proceed further unless we have a valid status
-          if (!this.isValidStatus(statusCode)) {
-            reject(new FetchError(statusCode));
-          }
-
-          const contentType = this.getContentType(headers['content-type']);
-
-          const chunks = [];
-          const output = new Writable({
-            write(chunk, encoding, done) {
-              chunks.push(Buffer.from(chunk));
-              done();
-            },
-          });
-
-          const onComplete = err => {
-            if (err) {
-              reject(err);
+            // don't have access to initial redirect status can't chain back to the original redirect one, always put 301
+            if (this.isRedirectStatus(statusCode)) {
+              reject(new FetchError(statusCode, new URL(headers.location, resource.url).toString()));
             }
-            else {
-              const buffer = Buffer.concat(chunks);
-              resolve({ data: buffer, contentType, status: statusCode });
-            }
-          };
-          this.logger.debug(res.headers, `response headers for ${resource.url}`);
 
-          switch (res.headers['content-encoding']) {
-            case 'br':
-              pipeline(res, zlib.createBrotliDecompress(), output, onComplete);
-              break;
-            case 'gzip':
-              pipeline(res, zlib.createGunzip(), output, onComplete);
-              break;
-            case 'deflate':
-              pipeline(res, zlib.createInflate(), output, onComplete);
-              break;
-            default:
-              pipeline(res, output, onComplete);
-              break;
+            // don't proceed further unless we have a valid status
+            if (!this.isValidStatus(statusCode)) {
+              reject(new FetchError(statusCode));
+            }
+
+            const contentType = this.getContentType(headers['content-type']);
+
+            const chunks = [];
+            const output = new Writable({
+              write(chunk, encoding, done) {
+                chunks.push(Buffer.from(chunk));
+                done();
+              },
+            });
+
+            const onComplete = err => {
+              if (err) {
+                reject(err);
+              }
+              else {
+                const buffer = Buffer.concat(chunks);
+                resolve({ data: buffer, contentType, status: statusCode });
+              }
+            };
+            this.logger.debug(res.headers, `response headers for ${resource.url}`);
+
+            switch (res.headers['content-encoding']) {
+              case 'br':
+                pipeline(res, zlib.createBrotliDecompress(), output, onComplete);
+                break;
+              case 'gzip':
+                pipeline(res, zlib.createGunzip(), output, onComplete);
+                break;
+              case 'deflate':
+                pipeline(res, zlib.createInflate(), output, onComplete);
+                break;
+              default:
+                pipeline(res, output, onComplete);
+                break;
+            }
+          }
+          catch (err) {
+            reject(err);
           }
         });
 

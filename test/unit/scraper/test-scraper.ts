@@ -299,7 +299,91 @@ describe('Scraper', () => {
     );
   });
 
-  it('scrape - reach concurrency constraints but dont exceed them', async () => {
+  it('scrape - project error - resume discovery', async () => {
+    queue.getResourcesToScrape.throwsException(new Error('unexpected concurrency error'));
+
+    scraper.connectionMng = <any>sandbox.createStubInstance(
+      ConnectionManager,
+      {
+        getProject: <any>sandbox.stub().returns({
+          getProjectToScrape: sandbox.stub().returns({
+            pluginOpts: [],
+            initPlugins: sandbox.stub().returns([]),
+            queue,
+          }),
+        }),
+      },
+    );
+
+    const eventChain: ScrapeEvent[] = [];
+
+    const discoverAttempts = new Promise<void>(resolve => {
+      let errorNo = 0;
+      scraper.on(ScrapeEvent.ProjectSelected, () => {
+        eventChain.push(ScrapeEvent.ProjectSelected);
+      });
+      scraper.on(ScrapeEvent.ProjectError, () => {
+        errorNo += 1;
+        eventChain.push(ScrapeEvent.ProjectError);
+        if (errorNo === 2) resolve();
+      });
+    });
+
+    scraper.discover({}, {}, { discover: true, retry: 2 });
+
+    await Promise.race([
+      new Promise(resolve => setTimeout(resolve, 25 * 1000)),
+      discoverAttempts,
+    ]);
+
+    clearTimeout(scraper.retryTimeout);
+    scraper.removeAllListeners();
+
+    assert.sameMembers(
+      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectError, ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectError ],
+      eventChain,
+    );
+  });
+
+  it('scrape - project error - stop discovery', async () => {
+    queue.getResourcesToScrape.throwsException(new Error('unexpected concurrency error'));
+
+    scraper.connectionMng = <any>sandbox.createStubInstance(
+      ConnectionManager,
+      {
+        getProject: <any>sandbox.stub().returns({
+          getProjectToScrape: sandbox.stub().returns({
+            pluginOpts: [],
+            initPlugins: sandbox.stub().returns([]),
+            queue,
+          }),
+        }),
+      },
+    );
+
+    const eventChain: ScrapeEvent[] = [];
+
+    await new Promise<void>(resolve => {
+      scraper.on(ScrapeEvent.ProjectSelected, () => {
+        eventChain.push(ScrapeEvent.ProjectSelected);
+      });
+      scraper.on(ScrapeEvent.ProjectError, () => {
+        eventChain.push(ScrapeEvent.ProjectError);
+      });
+      scraper.on(ScrapeEvent.DiscoverComplete, () => {
+        eventChain.push(ScrapeEvent.DiscoverComplete);
+        resolve();
+      });
+      scraper.discover({}, {}, { discover: true });
+    });
+
+    assert.sameMembers(
+      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectError, ScrapeEvent.DiscoverComplete ],
+      eventChain,
+    );
+  });
+
+  xit('scrape - reach concurrency constraints but dont exceed them', async () => {
     const debug = false;
     const maxRequests = 30;
     const delay = 5;

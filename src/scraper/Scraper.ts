@@ -97,6 +97,8 @@ export default class Scraper extends EventEmitter {
   checkTimeout: NodeJS.Timeout;
   retryTimeout: NodeJS.Timeout;
 
+  error: Error;
+
   /**
   * Contains memory and cpu usage metrics
   */
@@ -121,7 +123,9 @@ export default class Scraper extends EventEmitter {
       this.domClientConstruct = client;
     }
 
+    this.scrape = this.scrape.bind(this);
     this.discover = this.discover.bind(this);
+    this.getResourceToScrape = this.getResourceToScrape.bind(this);
     this.stop = this.stop.bind(this);
     this.gracefullStopHandler = this.gracefullStopHandler.bind(this);
 
@@ -223,7 +227,7 @@ export default class Scraper extends EventEmitter {
     if (this.concurrency.status.project.requests === this.concurrency.opts.project.maxRequests - 1) {
       clearInterval(this.checkTimeout);
       this.getResourceToScrape();
-      this.checkTimeout = setInterval(this.getResourceToScrape.bind(this), this.concurrency.getCheckInterval());
+      this.checkTimeout = setInterval(this.getResourceToScrape, this.concurrency.getCheckInterval());
     }
   }
 
@@ -334,6 +338,7 @@ export default class Scraper extends EventEmitter {
 
       // when discover flag is set ignore projectOpts, retrieve first project containing unscraped resources
       if (cliOpts && cliOpts.discover) {
+        this.logger.info('Discovering new project(s)');
         const ExtProject = await this.connectionMng.getProject();
         this.project = await ExtProject.getProjectToScrape();
         if (!this.project) {
@@ -349,8 +354,10 @@ export default class Scraper extends EventEmitter {
       }
 
       this.project.plugins = await this.project.initPlugins(!!this.browserClient);
-
-      this.logger.debug(this.project, 'Scraping project');
+      this.logger.info(
+        (({ id, name, pluginOpts }) => ({ id, name, pluginOpts }))(this.project),
+        'Scraping project',
+      );
       this.emit(ScrapeEvent.ProjectSelected, this.project);
 
       // start identifying resources to be scraped, trigger 1st attempt imediately, subsequent ones at computed check interval
@@ -373,14 +380,21 @@ export default class Scraper extends EventEmitter {
     this.retryTimeout = null;
 
     const projectScrapedHandler = (proj:Project, err) => {
-      this.logger.info('Discovering new project(s)');
-
-      /*
-      in case of proj err don't continue the discovery process
-      we run the risk to encounter the same project error on each scrape attempt in an infinite loop
-      */
+      // project succesfully scraped, move on to the next
       if (!err) {
         this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
+      }
+      /*
+      project scraped in error, only continue the discovery process if retry flag is set
+      we run the risk to encounter the same project error on each scraping attempt in an infinite loop
+      */
+      else {
+        if (cliOpts.retry) {
+          this.retryTimeout = setTimeout(this.scrape, cliOpts.retry * 1000, null, concurrencyOpts, runtimeOpts, cliOpts);
+        }
+        else {
+          this.emit(ScrapeEvent.DiscoverComplete);
+        }
       }
     };
 
@@ -400,7 +414,6 @@ export default class Scraper extends EventEmitter {
     this.on(ScrapeEvent.ProjectError, projectScrapedHandler);
     this.on(ScrapeEvent.DiscoverComplete, discoveryCompleteHandler);
 
-    this.logger.info('Discovering new project(s)');
     this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
   }
 
@@ -442,11 +455,17 @@ export default class Scraper extends EventEmitter {
         this.emit(ScrapeEvent.ResourceSelected, this.project, resource);
         await this.scrapeResource(resource);
       }
-      // no more available resources to be scraped, project scraping complete
+      // no more available resources to be scraped, project scraping completed either normally or due to an error
       else {
         await this.postScrape();
         this.logger.info(`Project ${this.project.name} scraping complete`);
+
+        if (this.error) {
+          this.emit(ScrapeEvent.ProjectError, this.project, this.error);
+        }
+        else {
         this.emit(ScrapeEvent.ProjectScraped, this.project);
+        }
       }
     }
     catch (err) {
@@ -462,11 +481,14 @@ export default class Scraper extends EventEmitter {
         this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
         this.logger.debug(`Concurrency status at ${err.level} : ${JSON.stringify(this.concurrency.status[err.level])}`);
       }
-      // invalid concurrency state, abort the entire scraping process
+      /*
+      invalid concurrency state, abort the entire scraping process
+      only emmit the ProjectError once all in-progress resources have been scraped
+      */
       else {
         this.logger.error(err, 'getResourceToScrape');
         this.stop();
-        this.emit(ScrapeEvent.ProjectError, this.project, err);
+        this.error = err;
       }
     }
 
@@ -530,16 +552,16 @@ export default class Scraper extends EventEmitter {
       in future a possible approach will be just resetting the scrapeInProgress flag
         - next scrape operation will attempt to scrape it again, but atm this will just retry the same resource over and over again
         - there is no mechanism to escape the retry loop
-      resource.scrapeInProgress = false;
-      await resource.update(false);
       */
       if (resource) {
         /*
-        unknown error occured,
-        resource is not yet saved to db, update the corresponding queue entry with an error status
-        so that we don't attempt to scrape the same url again,  possibly ending with the same error in an infinite loop
+        error occured
+        resource is not yet saved to db, update the corresponding queue entry with
+          - non-succesfull http response status code so that we don't attempt to scrape the same url again,
+          possibly ending with the same error in an infinite loop
+          - optional error code when status code is not enough: dns, network, parsing errors ...
         */
-        await this.project.queue.updateStatus(resource.queueEntryId, 500);
+        await this.project.queue.updateStatus(resource.queueEntryId, 500, err.code);
       }
 
       this.emit(ScrapeEvent.ResourceError, this.project, resource, err);

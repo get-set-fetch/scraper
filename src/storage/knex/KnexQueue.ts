@@ -32,6 +32,7 @@ export default class KnexQueue extends KnexStorage implements IQueueStorage {
         else {
           builder.integer('status');
         }
+        builder.string('error', 25);
 
         this.jsonCol(builder, 'parent');
       },
@@ -129,8 +130,9 @@ export default class KnexQueue extends KnexStorage implements IQueueStorage {
     return super.count(this.tableName);
   }
 
-  async updateStatus(id: number, status: number):Promise<void> {
-    await this.builder.where('id', id).update({ status });
+  async updateStatus(id: number, status: number, error?: string):Promise<void> {
+    const partialUpdate = error ? { status, error } : { status };
+    await this.builder.where('id', id).update(partialUpdate);
   }
 
   async add(entries: QueueEntry[]) {
