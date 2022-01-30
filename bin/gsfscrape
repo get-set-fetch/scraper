@@ -1,3 +1,4 @@
 #!/usr/bin/env node
 
-require('../dist/cjs/cli/cli.js');
+const { default: cli } = require('../dist/cjs/cli/cli.js');
+cli(process.argv);

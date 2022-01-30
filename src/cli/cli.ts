@@ -271,7 +271,7 @@ export async function invokeScraper(argObj:ArgObjType) {
   }
 }
 
-export function invoke(argv: string[]) {
+export async function invoke(argv: string[]) {
   const argObj:ArgObjType = {
     ...defaultArgObj,
     ...readArgs(argv.slice(2)),
@@ -286,13 +286,13 @@ export function invoke(argv: string[]) {
   }
 
   if (argObj.config) {
-    invokeScraper(argObj);
+    await invokeScraper(argObj);
   }
 }
 
-function cli(args) {
+export default async function cli(args) {
   try {
-    invoke(args);
+    await invoke(args);
   }
   catch (err) {
     console.error(err.message);
