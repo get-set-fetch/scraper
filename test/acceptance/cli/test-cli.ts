@@ -159,6 +159,25 @@ describe('Command Line Interface', () => {
     assert.isTrue(/Existing project sitea.com will be used/.test(stdout), '"Existing project sitea.com will be used" log entry not found');
   });
 
+  it('existing project --config --loglevel debug --export | standalone export', async () => {
+    const project = new ExtProject({
+      name: 'sitea.com',
+      pluginOpts: mergePluginOpts(pipelines[config.project.pipeline].defaultPluginOpts, config.project.pluginOpts),
+    });
+    await project.save();
+
+    const stdout = await new Promise<string>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.csv',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout) => {
+        resolve(stdout);
+      },
+    ));
+
+    assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
+    assert.isTrue(/No content to export/.test(stdout), '"No content to export" log entry not found');
+  });
+
   it('new project --config --loglevel info --scrape --export', async () => {
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --scrape --export ../test/tmp/export.csv',
@@ -181,7 +200,7 @@ describe('Command Line Interface', () => {
     );
   });
 
-  it('new project with custom plugin --config --loglevel debug --scrape --export', async () => {
+  it('new project with custom plugin --config --loglevel debug --scrape --export | export after scrape', async () => {
     const stdout = await new Promise<string>(resolve => exec(
       './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry-custom-plugin.json --loglevel info --scrape --export ../test/tmp/export.csv',
       { cwd: join(__dirname, '../../../bin') },
@@ -214,6 +233,18 @@ describe('Command Line Interface', () => {
 
     assert.isTrue(/scraped data will be exported to/.test(stdout), '"scraped data will be exported to" log entry not found');
     assert.isTrue(/missing or invalid --exportType/.test(stderr), '"missing or invalid --exportType" log entry not found');
+  });
+
+  it('new project --config --loglevel info --export | project not found ', async () => {
+    const { stderr } = await new Promise<{stdout: string, stderr: string}>(resolve => exec(
+      './gsfscrape --config ../test/acceptance/cli/config/config-single-page-single-content-entry.json --loglevel info --export ../test/tmp/export.csv',
+      { cwd: join(__dirname, '../../../bin') },
+      (err, stdout, stderr) => {
+        resolve({ stdout, stderr });
+      },
+    ));
+
+    assert.isTrue(/could not find project/.test(stderr), '"could not find project" log entry not found');
   });
 
   it('new project --save --discover --retry 1 --loglevel info | SIGTERM', async () => {
@@ -293,6 +324,7 @@ describe('Command Line Interface', () => {
 
     assert.isTrue(/export-projectA.csv .+ done/.test(stdout), '"export-projectA.csv done" log entry not found');
     assert.isTrue(/export-projectB.csv .+ done/.test(stdout), '"export-projectB.csv done" log entry not found');
+    assert.isTrue(/discovery complete/.test(stdout), '"discovery complete" log entry not found');
 
     const csvContentA:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export-projectA.csv')).toString('utf-8').split('\n');
     const csvContentB:string[] = fs.readFileSync(join(__dirname, '..', '..', 'tmp', 'export-projectB.csv')).toString('utf-8').split('\n');

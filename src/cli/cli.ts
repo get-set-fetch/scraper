@@ -144,12 +144,30 @@ function updateConnConfig(fullConfigPath: string, connConfig:ConnectionConfig):C
   return connConfig;
 }
 
+async function exportProject(project, exportType: string, exportOpts) {
+  let exporter:Exporter;
+  switch (exportType) {
+    case 'csv':
+      exporter = new CsvExporter(exportOpts);
+      break;
+    case 'zip':
+      exporter = new ZipExporter(exportOpts);
+      break;
+    default:
+  }
+
+  if (exporter) {
+    await exporter.export(project);
+  }
+}
+
 export async function invokeScraper(argObj:ArgObjType) {
   const { config, overwrite, discover, save, scrape, retry, report } = argObj;
 
   if ((typeof config) !== 'string') throw new Error('invalid config path');
   const fullConfigPath = getFullPath(config);
   if (!fs.existsSync(fullConfigPath)) throw new Error(`config path ${fullConfigPath} does not exist`);
+  console.log(`UV_THREADPOOL_SIZE = ${process.env.UV_THREADPOOL_SIZE}`);
   console.log(`using scrape configuration file ${fullConfigPath}`);
 
   const configFile = fs.readFileSync(fullConfigPath).toString('utf-8');
@@ -215,37 +233,30 @@ export async function invokeScraper(argObj:ArgObjType) {
     console.log(`scraped data will be exported to ${exportPath}`);
 
     const exportType = argObj.exportType || extname(exportPath).slice(1);
+    const exportOpts:ExportOptions = { filepath: exportPath };
 
     // cli only supports builtin exporters
     if (![ 'csv', 'zip' ].includes(exportType)) {
       throw new Error('missing or invalid --exportType');
     }
 
-    scraper.addListener(ScrapeEvent.ProjectScraped, async (project:Project) => {
-      // when discovering and scraping multiple projects inject project.name into exported filename
-      let updatedExportPath = exportPath;
-      if (discover) {
-        const { dir, name, ext } = parse(exportPath);
-        updatedExportPath = join(dir, `${name}-${project.name}${ext}`);
-      }
+    // export is linked with scrape or discover options, wait for project scraping to complete
+    if (scrape || discover) {
+      scraper.addListener(ScrapeEvent.ProjectScraped, async (project:Project) => {
+        // when discovering and scraping multiple projects inject project.name into exported filename
+        if (discover) {
+          const { dir, name, ext } = parse(exportPath);
+          exportOpts.filepath = join(dir, `${name}-${project.name}${ext}`);
+        }
 
-      const exportOpts:ExportOptions = { filepath: updatedExportPath };
-
-      let exporter:Exporter;
-      switch (exportType) {
-        case 'csv':
-          exporter = new CsvExporter(exportOpts);
-          break;
-        case 'zip':
-          exporter = new ZipExporter(exportOpts);
-          break;
-        default:
-      }
-
-      if (exporter) {
-        await exporter.export(project);
-      }
-    });
+        await exportProject(project, exportType, exportOpts);
+      });
+    }
+    // export option is standalone, start exporting
+    else {
+      const project = await scraper.getProject(projectOpts);
+      await exportProject(project, exportType, exportOpts);
+    }
   }
 
   scraper.addListener(ScrapeEvent.ProjectError, err => {
@@ -298,5 +309,3 @@ export default async function cli(args) {
     console.error(err.message);
   }
 }
-
-cli(process.argv);
