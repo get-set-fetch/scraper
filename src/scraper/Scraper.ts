@@ -285,6 +285,32 @@ export default class Scraper extends EventEmitter {
     return project;
   }
 
+  async getProject(projectOpts: ProjectOptions): Promise<Project> {
+    let project:Project;
+
+    try {
+      if (PluginStore.store.size === 0) {
+        await PluginStore.init();
+        this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
+      }
+
+      await this.connectionMng.connect();
+      this.logger.info('Storage connected');
+
+      const ExtProject = await this.connectionMng.getProject();
+      project = await ExtProject.get(projectOpts.name);
+
+      await this.connectionMng.close();
+    }
+    catch (err) {
+      this.logger.error(err);
+    }
+
+    if (!project) throw new Error(`could not find project ${projectOpts.name}`);
+
+    return project;
+  }
+
   /**
    * Cleanup the current completed scraping process before starting a new one.
    * Invoked before ScrapeEvent.ProjectComplete, ScrapeEvent.ProjectError so that consecutive project scraping
@@ -464,7 +490,7 @@ export default class Scraper extends EventEmitter {
           this.emit(ScrapeEvent.ProjectError, this.project, this.error);
         }
         else {
-        this.emit(ScrapeEvent.ProjectScraped, this.project);
+          this.emit(ScrapeEvent.ProjectScraped, this.project);
         }
       }
     }
