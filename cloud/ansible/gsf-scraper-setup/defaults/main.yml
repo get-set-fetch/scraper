@@ -1,0 +1,17 @@
+---
+db:
+    pool:
+        min: 1
+        max: 5
+
+scraper:
+    npm_install: []
+    # 4 (node default) + db.pool.max + files/gsf-config.json->concurrency.maxRequests
+    uv_threadpool_size: 15
+    work_dir: /srv/gsf
+    log:
+        level: info
+        destination: scrape.log
+    files:
+        scrape_urls: ''
+        additional: []

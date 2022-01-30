@@ -1,0 +1,10 @@
+- name: "export results as csv"
+  ansible.builtin.shell: gsfscrape --config gsf-config.json --loglevel {{log_level}} --logdestination {{log_destination}} --export {{ export_file  }}
+  args:
+    chdir: "{{ work_dir }}"
+
+- name: fetch results
+  ansible.builtin.fetch:
+    src: "{{ work_dir }}/{{ export_file }}"
+    dest: "../exports/{{ export_file }}"
+    flat: true

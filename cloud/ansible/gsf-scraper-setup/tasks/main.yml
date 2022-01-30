@@ -1,0 +1,102 @@
+---
+- name: Load defaults
+  include_vars:
+    file: './defaults/main.yml'
+    name: defaults
+
+- name: In-place merge of input dicts (db, scraper) with the default ones
+  set_fact:
+    scraper: "{{ defaults.scraper | combine(scraper, recursive=True) }}"
+    db: "{{ defaults.db | combine(db, recursive=True) }}"
+
+# - debug:
+#     var: scraper
+
+- name: Add the user 'gsf'
+  ansible.builtin.user:
+    name: gsf
+    comment: get-set-fetch
+    create_home: false
+
+- name: Create working directory
+  ansible.builtin.file:
+    path: "{{ scraper.work_dir }}"
+    state: directory
+    owner: gsf
+    mode: u=rwx,g=r,o=r
+
+# community.general.npm is not installing cheerio@rc version for some reason
+- name: "Install dependencies from npm repository"
+  ansible.builtin.shell: npm install -g {{ item }}
+  loop: "{{ scraper.npm_install }}"
+  when: item is not regex("\.tgz$")
+
+- name: "Copy tarball dependencies"
+  ansible.builtin.copy:
+    src: "files/{{ item }}"
+    dest: "{{ scraper.work_dir }}/{{ item }}"
+    owner: gsf
+    mode: u=rwx,g=r,o=r
+  loop: "{{ scraper.npm_install }}"
+  when: item is regex("\.tgz$")
+
+- name: "Install tarball dependencies"
+  ansible.builtin.shell: npm install -g {{ item }}
+  args:
+    chdir: "{{ scraper.work_dir }}"
+  loop: "{{ scraper.npm_install }}"
+  when: item is regex("\.tgz$")
+
+- name: "Copy input csv file(s)"
+  ansible.builtin.copy:
+    src: "files/{{ item }}"
+    dest: "{{ scraper.work_dir }}/{{ item }}"
+    owner: gsf
+    mode: u=rwx,g=r,o=r
+  with_items:
+    - "{{ scraper.files.scrape_urls }}"
+  when: 
+    - scraper_idx == "0"
+    - scraper.files.scrape_urls != ''
+
+- name: Template scrape configuration file
+  ansible.builtin.template:
+    src: "templates/gsf-config.json.j2"
+    dest: "{{ scraper.work_dir }}/gsf-config.json"
+    owner: gsf
+    mode: u=rwx,g=r,o=r
+
+- name: "Copy additional files"
+  ansible.builtin.copy:
+    src: "files/{{ item }}"
+    dest: "{{ scraper.work_dir }}/{{ item }}"
+    owner: gsf
+    mode: u=rwx,g=r,o=r
+  loop: "{{ scraper.files.additional }}"
+
+- name: "Update scrape config external resource path"
+  ansible.builtin.replace:
+    path: "{{ scraper.work_dir }}/gsf-config.json"
+    regexp: "<resource_path>"
+    replace: "{{ scraper.files.scrape_urls }}"
+  when: 
+    - scraper_idx == "0"
+    - scraper.files.scrape_urls != ''
+
+- name: "Remove scrape config external resource path"
+  ansible.builtin.replace:
+    path: "{{ scraper.work_dir }}/gsf-config.json"
+    regexp: ".+resourcePath.+"
+    replace: ""
+  when: scraper_idx != "0" or scraper.files.scrape_urls == ''
+
+- name: Template systemd service file
+  ansible.builtin.template:
+    src: templates/getsetfetch.service.j2
+    dest: /etc/systemd/system/getsetfetch.service
+    owner: gsf
+    mode: u=rwx,g=r,o=r
+  vars:
+    args:  "{{ '--save --discover --retry 30' if scraper_idx == '0' else '--discover --retry 30' }}"
+  notify:
+  - start scraper

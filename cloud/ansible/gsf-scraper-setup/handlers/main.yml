@@ -1,0 +1,8 @@
+---
+- name: start scraper
+  systemd:
+    name: getsetfetch
+    daemon_reload: true
+    state: started
+    enabled: yes
+

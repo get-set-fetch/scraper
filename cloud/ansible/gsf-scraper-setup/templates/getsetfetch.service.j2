@@ -1,0 +1,17 @@
+[Unit]
+Description=get-set-fetch-scraper
+After=network.target
+
+[Service]
+ExecStart=gsfscrape --config gsf-config.json {{args}} --loglevel {{scraper.log.level}} --logdestination {{scraper.log.destination}}
+Restart=always
+User=gsf
+Group=nogroup
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=UV_THREADPOOL_SIZE={{scraper.uv_threadpool_size}}
+WorkingDirectory={{scraper.work_dir}}
+StandardOutput=append:{{scraper.work_dir}}/output.log
+StandardError=append:{{scraper.work_dir}}/error.log
+
+[Install]
+WantedBy=multi-user.target

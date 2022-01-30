@@ -1,0 +1,110 @@
+- name: "sql: project id"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    login_host: "localhost"
+    query: select id from "projects" where name = %(project_name)s;
+    named_args:
+      project_name: "{{ project_name }}"
+  register: sql_project_id
+
+- name: "sql: queue grouped by status"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    login_host: "localhost"
+    query: >
+        select
+            count(1) filter (where status = 1) as in_progress,
+            count(1) filter (where status is null) as not_scraped,
+            count(1) filter (where status is not null and status / 100 = 2) as "2xx",
+            count(1) filter (where status is not null and status / 100 = 3) as "3xx",
+            count(1) filter (where status is not null and status / 100 = 4) as "4xx",
+            count(1) filter (where status is not null and status / 100 = 5) as "5xx",
+            (extract(epoch from now()) :: bigint) as timestamp
+        from "{{ sql_project_id.query_result[0].id }}-queue";
+  register: sql_queue_status
+
+- name: "stats_file: check existence"
+  delegate_to: localhost
+  stat:
+    path: "../exports/{{ export_file }}"
+  register: stats_file
+
+- name: "stats_file: write csv header"
+  delegate_to: localhost
+  ansible.builtin.copy:
+    dest: "../exports/{{ export_file }}"
+    content: "time, 2xx, 3xx, 4xx, 5xx, in_progress, not_scraped, per_second, scraper_instances"
+  when: not stats_file.stat.exists
+
+- name: "stats_file: add first (incomplete) stats entry"
+  delegate_to: localhost
+  ansible.builtin.lineinfile:
+    path: "../exports/{{ export_file }}"
+    insertafter: EOF
+    line: >-
+        {{ sql_queue_status.query_result[0].timestamp }},
+        {{ sql_queue_status.query_result[0]["2xx"] }},
+        {{ sql_queue_status.query_result[0]["3xx"] }},
+        {{ sql_queue_status.query_result[0]["4xx"] }},
+        {{ sql_queue_status.query_result[0]["5xx"] }},
+        {{ sql_queue_status.query_result[0].in_progress }},
+        {{ sql_queue_status.query_result[0].not_scraped }},
+        ,
+        {{ groups['scraper'] | length  }}
+  when: not stats_file.stat.exists
+
+- name: "stats_file: read content"
+  delegate_to: localhost
+  set_fact:
+    last_line_stats: "{{ lookup('file', '../exports/{{ export_file }}').split('\n')[-1] }}"
+  when: stats_file.stat.exists
+
+- name: count newly scraped resources from last playbook execution
+  set_fact:
+    diff_stats:
+      2xx: "{{ sql_queue_status.query_result[0]['2xx'] | int - (last_line_stats.split(', ')[1] | int) }}"
+      3xx: "{{ sql_queue_status.query_result[0]['3xx'] | int - (last_line_stats.split(', ')[2] | int) }}"
+      4xx: "{{ sql_queue_status.query_result[0]['4xx'] | int - (last_line_stats.split(', ')[3] | int) }}"
+      5xx: "{{ sql_queue_status.query_result[0]['5xx'] | int - (last_line_stats.split(', ')[4] | int) }}"
+      timestamp: "{{ sql_queue_status.query_result[0].timestamp | int - (last_line_stats.split(', ')[0] | int) }}"
+  when: stats_file.stat.exists
+
+- name: get scraped resources per second from last playbook execution
+  set_fact:
+    scraped_per_second: "{{ (diff_stats['2xx'] | int + diff_stats['3xx'] | int + diff_stats['4xx'] | int + diff_stats['5xx'] | int) / (diff_stats.timestamp | int) }}"
+  when: stats_file.stat.exists
+
+- name: "stats_file: append with new stats entry"
+  delegate_to: localhost
+  ansible.builtin.lineinfile:
+    path: "../exports/{{ export_file }}"
+    insertafter: EOF
+    line: >-
+        {{ sql_queue_status.query_result[0].timestamp }},
+        {{ sql_queue_status.query_result[0]["2xx"] }},
+        {{ sql_queue_status.query_result[0]["3xx"] }},
+        {{ sql_queue_status.query_result[0]["4xx"] }},
+        {{ sql_queue_status.query_result[0]["5xx"] }},
+        {{ sql_queue_status.query_result[0].in_progress }},
+        {{ sql_queue_status.query_result[0].not_scraped }},
+        {{ scraped_per_second }},
+        {{ groups['scraper'] | length  }}
+  when: stats_file.stat.exists
+
+- name: last invocation stats
+  debug:
+    msg:
+      - "-- Stats from last invocation --"
+      - "Duration: {{ diff_stats.timestamp | default('not available, first run') }}s"
+      - "Scraper instances: {{ groups['scraper'] | length  }}"
+      - "2xx: {{ diff_stats['2xx'] | default(sql_queue_status.query_result[0]['2xx'] ) }}"
+      - "3xx: {{ diff_stats['3xx'] | default(sql_queue_status.query_result[0]['3xx'] ) }}"
+      - "4xx: {{ diff_stats['4xx'] | default(sql_queue_status.query_result[0]['4xx'] ) }}"
+      - "5xx: {{ diff_stats['5xx'] | default(sql_queue_status.query_result[0]['5xx'] ) }}"
+      - "Scrape-in-progress resources: {{ sql_queue_status.query_result[0].in_progress }}"
+      - "Scraped resources per second: {{ scraped_per_second | default('not available, first run') }}"
+      - "Not yet scraped resources: {{ sql_queue_status.query_result[0].not_scraped }}"

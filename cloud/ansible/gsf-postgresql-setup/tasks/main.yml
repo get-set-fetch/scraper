@@ -1,0 +1,55 @@
+---
+- name: "Create database"
+  postgresql_db:
+    state: present
+    name: "{{ db.name }}"
+  become: true
+  become_user: postgres
+
+- name: "Create user"
+  postgresql_user:
+    state: present
+    name: "{{ db.user }}"
+    password: "{{ db.password }}"
+  become: true
+  become_user: postgres
+
+- name: "Grant user access to database"
+  postgresql_privs:
+    type: database
+    database: "{{ db.name }}"
+    roles: "{{ db.user }}"
+    grant_option: false
+    privs: all
+  become: true
+  become_user: postgres
+
+- name: "Allow remote connections on private network"
+  postgresql_set:
+    name: listen_addresses
+    value: 'localhost, {{ private_ip_address }}'
+  become: true
+  become_user: postgres
+  notify: restart postgres
+
+- name: "Allow md5 connection for user"
+  postgresql_pg_hba:
+    dest: /etc/postgresql/14/main/pg_hba.conf
+    contype: host
+    address: all
+    databases: all
+    method: md5
+    users: "{{ db.user }}"
+    create: true
+  become: true
+  become_user: postgres
+  notify: restart postgres
+
+- name: "Tunning server for 8GB RAM"
+  postgresql_set:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+  become: true
+  become_user: postgres
+  notify: restart postgres
+  with_dict: "{{ pg_config }}"
