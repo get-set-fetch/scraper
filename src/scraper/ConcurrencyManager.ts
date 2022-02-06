@@ -292,9 +292,16 @@ export default class ConcurrencyManager {
         throw (this.error);
       }
 
-      // attemp to re-fill buffer
+      // attemp to re-fill buffer before it's completely empty
       if (this.resourceBuffer.length < this.resourceBufferSize / 2) {
-        this.refillBuffer(project);
+        // buffer needs to be refilled now, can't refill it independently, we risk isScrapingComplete condition to pass
+        if (this.resourceBuffer.length === 0) {
+          await this.refillBuffer(project);
+        }
+        // refill buffer independently
+        else {
+          this.refillBuffer(project);
+        }
       }
 
       if (this.isScrapingComplete()) {
