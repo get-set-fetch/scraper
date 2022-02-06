@@ -1,4 +1,13 @@
 ---
+- name: Load defaults
+  include_vars:
+    file: './defaults/main.yml'
+    name: defaults
+
+- name: In-place merge of input dicts (pg_config) with the default ones
+  set_fact:
+    pg_config: "{{ defaults.pg_config | combine(pg_config, recursive=True) }}"
+
 - name: "Create database"
   postgresql_db:
     state: present

@@ -47,6 +47,14 @@
   loop: "{{ scraper.npm_install }}"
   when: item is regex("\.tgz$")
 
+# This step is needed for custom plugins extending abstract Plugin or other builtin plugins
+# 3rd party libraries (like pino) imported by these plugins won't be resolved otherwise
+# since there's no node_modules in work_dir or above
+- name: "Link global node_modules to work_dir"
+  ansible.builtin.shell: ln -s /usr/local/lib/node_modules/@get-set-fetch/scraper/node_modules node_modules
+  args:
+    chdir: "{{ scraper.work_dir }}"
+
 - name: "Copy input csv file(s)"
   ansible.builtin.copy:
     src: "files/{{ item }}"

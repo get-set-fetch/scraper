@@ -1,0 +1,36 @@
+- name: "sql: project id"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    login_host: "localhost"
+    query: select id from "projects" where name = %(project_name)s;
+    named_args:
+      project_name: "{{ project_name }}"
+  register: sql_project_id
+
+- name: "sql: group and sort asc scrapedAt timestamps"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    login_host: "localhost"
+    query: >
+        select count(*), truncated_time from (
+            select date_trunc('minute', "scrapedAt") as truncated_time from "{{ sql_project_id.query_result[0].id }}-resources" order by truncated_time
+        ) as truncated group by truncated_time;
+  register: sql_group_status
+
+- name: "generate csv rows"
+  set_fact:
+    csv_rows: |
+      {% for entry in (sql_group_status.query_result) %}
+      {{ entry.truncated_time }},{{ entry.count }}
+      {% endfor %}
+  delegate_to: localhost
+
+- name: write to file
+  delegate_to: localhost
+  copy:
+    content: "{{ csv_rows }}"
+    dest: "{{ export_file }}"

@@ -30,20 +30,20 @@
 - name: "stats_file: check existence"
   delegate_to: localhost
   stat:
-    path: "../exports/{{ export_file }}"
+    path: "{{ export_file }}"
   register: stats_file
 
 - name: "stats_file: write csv header"
   delegate_to: localhost
   ansible.builtin.copy:
-    dest: "../exports/{{ export_file }}"
+    dest: "{{ export_file }}"
     content: "time, 2xx, 3xx, 4xx, 5xx, in_progress, not_scraped, per_second, scraper_instances"
   when: not stats_file.stat.exists
 
 - name: "stats_file: add first (incomplete) stats entry"
   delegate_to: localhost
   ansible.builtin.lineinfile:
-    path: "../exports/{{ export_file }}"
+    path: "{{ export_file }}"
     insertafter: EOF
     line: >-
         {{ sql_queue_status.query_result[0].timestamp }},
@@ -60,7 +60,7 @@
 - name: "stats_file: read content"
   delegate_to: localhost
   set_fact:
-    last_line_stats: "{{ lookup('file', '../exports/{{ export_file }}').split('\n')[-1] }}"
+    last_line_stats: "{{ lookup('file', '{{ export_file }}').split('\n')[-1] }}"
   when: stats_file.stat.exists
 
 - name: count newly scraped resources from last playbook execution
@@ -81,7 +81,7 @@
 - name: "stats_file: append with new stats entry"
   delegate_to: localhost
   ansible.builtin.lineinfile:
-    path: "../exports/{{ export_file }}"
+    path: "{{ export_file }}"
     insertafter: EOF
     line: >-
         {{ sql_queue_status.query_result[0].timestamp }},
