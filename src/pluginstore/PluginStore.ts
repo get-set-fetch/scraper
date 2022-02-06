@@ -68,6 +68,8 @@ export default class PluginStore {
     try {
       PluginStore.logger.debug('Importing plugin from %s', fullFilepath);
       const pluginModule = await import(fullFilepath);
+      PluginStore.logger.debug(pluginModule, 'Imported plugin');
+
       const Cls = pluginModule.default;
       const instance:Plugin = new Cls();
 
@@ -87,7 +89,8 @@ export default class PluginStore {
       return storeEntry;
     }
     catch (err) {
-      PluginStore.logger.error(err, 'Could not register plugin %s', fullFilepath);
+      // an import error is more verbose when serialized to string, otherwise we only get an IMPORT_NOT_FOUND code
+      PluginStore.logger.error(err.toString(), 'Could not register plugin %s', fullFilepath);
       throw (err);
     }
   }
