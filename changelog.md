@@ -1,6 +1,9 @@
 ## Changelog
 
 ### Unreleased
+- Cloud:
+  - added base terraform module
+  - added ansible roles
 - Concurrency:
   - improved buffering, total number of scrape-in-progress resources deviates less from concurrency maxRequests option
   - improved debugging
