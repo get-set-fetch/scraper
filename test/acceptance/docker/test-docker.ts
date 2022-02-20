@@ -183,7 +183,7 @@ describe('Docker', () => {
     console.log('LOGS');
     console.log(logFileContent);
     assert.isTrue(/scraping complete/.test(logFileContent), '"scraping complete" log entry not found');
-    assert.isTrue(/exporting using csvexporter/i.test(logFileContent), '"exporting using csvexporter" log entry not found');
+    assert.isTrue(/exporting under .+ done/i.test(logFileContent), '"exporting under ... done" log entry not found');
 
     const csvFile = join(__dirname, '../../tmp/export.csv');
     if (!fs.existsSync(csvFile)) assert.fail(`${csvFile} not generated`);
@@ -267,7 +267,7 @@ describe('Docker', () => {
     console.log('LOGS');
     console.log(logFileContent);
     assert.isTrue(/scraping complete/.test(logFileContent), '"scraping complete" log entry not found');
-    assert.isTrue(/exporting using csvexporter/i.test(logFileContent), '"exporting using csvexporter" log entry not found');
+    assert.isTrue(/exporting under .+ done/i.test(logFileContent), '"exporting under ... done" log entry not found');
 
     const csvFile = join(__dirname, '../../tmp/export.csv');
     if (!fs.existsSync(csvFile)) assert.fail(`${csvFile} not generated`);
