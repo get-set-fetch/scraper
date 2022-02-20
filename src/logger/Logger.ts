@@ -103,6 +103,7 @@ export class LogWrapper {
       colorize: true,
       ignore: 'pid,hostname,time,module',
       messageFormat: '{module} - {msg}',
+      sync: true,
     });
 
     this.logger = pino(fullOpts, stream || defaultStream);
