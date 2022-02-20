@@ -57,7 +57,7 @@ export default abstract class Exporter {
             break;
           }
 
-          this.logger.info(`Exporting using ${this.constructor.name} under ${this.opts.filepath} ...`);
+          this.logger.info(`Exporting under ${this.opts.filepath} ...`);
           await this.preParse();
         }
 
@@ -69,7 +69,7 @@ export default abstract class Exporter {
 
       if (offset > 0) {
         await this.postParse();
-        this.logger.info(`Exporting using ${this.constructor.name} under ${this.opts.filepath} ... done`);
+        this.logger.info(`Exporting under ${this.opts.filepath} ... done`);
       }
     }
     catch (err) {

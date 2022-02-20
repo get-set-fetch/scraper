@@ -152,7 +152,7 @@ export default class ConcurrencyManager {
     if (!this.opts.project.maxRequests) {
       this.opts.project.maxRequests = this.opts.proxy.maxRequests * this.opts.proxyPool.length;
     }
-    this.logger.info(`concurrency options: ${JSON.stringify(this.opts)}`);
+    this.logger.info(this.opts, 'concurrency options:');
 
     /*
     compute buffer size based on project.maxRequests, enforce a minimum buffer size

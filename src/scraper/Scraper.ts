@@ -156,19 +156,19 @@ export default class Scraper extends EventEmitter {
    * wait for in-progress scraping to complete before exiting
    */
   gracefullStopHandler(signal: NodeJS.Signals) {
-    this.logger.info(`${signal} signal received`);
+    this.logger.warn(`${signal} signal received`);
 
     // in-between discovery retries, no scraping going on, can exit directly
     if (this.retryTimeout) {
       clearTimeout(this.retryTimeout);
-      this.logger.info('no in-progress scraping detected, exit directly');
+      this.logger.warn('no in-progress scraping detected, exit directly');
       process.exit(0);
     }
     // ongoing scraping, don't scrape new resources, wait for the currently in progress ones to complete
     else {
       this.on(ScrapeEvent.ProjectScraped, () => process.exit(0));
       this.on(ScrapeEvent.DiscoverComplete, () => process.exit(0));
-      this.logger.info('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
+      this.logger.warn('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
       this.stop();
     }
   }
@@ -387,7 +387,7 @@ export default class Scraper extends EventEmitter {
       this.emit(ScrapeEvent.ProjectSelected, this.project);
 
       // start identifying resources to be scraped, trigger 1st attempt imediately, subsequent ones at computed check interval
-      this.logger.info(`Checking for available to-be-scraped resources every ${this.concurrency.getCheckInterval()} miliseconds`);
+      this.logger.info(`Checking for available to-be-scraped resources every ${this.concurrency.getCheckInterval()} ms`);
       this.getResourceToScrape();
       this.checkTimeout = setInterval(this.getResourceToScrape.bind(this), this.concurrency.getCheckInterval());
     }

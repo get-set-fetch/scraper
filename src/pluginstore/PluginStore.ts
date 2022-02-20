@@ -76,8 +76,8 @@ export default class PluginStore {
       // if instance.read/write DOM generate single file bundle to be loaded into the currently scraped browser page
       let bundle = null;
       if (instance.opts && (instance.opts.domRead || instance.opts.domWrite)) {
-        PluginStore.logger.info('Bundling plugin %s', instance.constructor.name);
         bundle = await PluginStore.buildBundle(fullFilepath);
+        PluginStore.logger.info('Bundled plugin %s', instance.constructor.name);
       }
 
       const storeEntry = {
