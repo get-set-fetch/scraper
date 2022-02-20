@@ -10,6 +10,7 @@
 - Logging
   - LogWrapper
     - new level getter for the wrapped logger level
+    - simplify, colorize output on console destination
 
 ### 0.9.0 - 2021-12-05
 - Storage

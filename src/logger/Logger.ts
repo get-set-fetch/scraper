@@ -1,4 +1,5 @@
 import pino, { Logger, Bindings, DestinationStream, LoggerOptions } from 'pino';
+import PinoPretty from 'pino-pretty';
 
 const defaultOpts:LoggerOptions = {
   base: null,
@@ -97,7 +98,14 @@ export class LogWrapper {
       ...opts,
     };
 
-    this.logger = pino(fullOpts, stream);
+    // on process.stdout, pretty-print the logs, no timestamp, no json format
+    const defaultStream = PinoPretty({
+      colorize: true,
+      ignore: 'pid,hostname,time,module',
+      messageFormat: '{module} - {msg}',
+    });
+
+    this.logger = pino(fullOpts, stream || defaultStream);
     Array.from(this.children.keys()).forEach(module => {
       const childWrapper = this.children.get(module);
       childWrapper.logger = this.logger.child(childWrapper.bindings);
