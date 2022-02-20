@@ -5,18 +5,93 @@
 [![Build Status](https://github.com/get-set-fetch/scraper/workflows/test/badge.svg)](https://github.com/get-set-fetch/scraper/actions?query=workflow%3Atest)
 [![Coverage Status](https://coveralls.io/repos/github/get-set-fetch/scraper/badge.svg?branch=main)](https://coveralls.io/github/get-set-fetch/scraper?branch=main)
 
+![](https://get-set-fetch.github.io/documentation/site/assets/img/cli-demo.svg)
+
 # Node.js web scraper
 
-get-set, Fetch! is a plugin based, nodejs web scraper. It scrapes, stores and exports data. At its core, an ordered list of plugins (default or custom defined) is executed against each to be scraped web resource.
+get-set, Fetch! is a plugin based, nodejs web scraper. It scrapes, stores and exports data. \
+At its core, an ordered list of plugins is executed against each to be scraped URL.
 
-Supports multiple storage options: SQLite, MySQL, PostgreSQL.  
-Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom. 
+Supported databases: SQLite, MySQL, PostgreSQL. \
+Supported browser clients: Puppeteer, Playwright. \
+Supported DOM-like clients: Cheerio, JSdom.
 
-For quick, small projects under 10K URLs storing the queue and scraped content under SQLite is fine. For anything larger use PostgreSQL. You will be able to start/stop/resume the scraping process across multiple scraper instances each with its own IP and/or dedicated proxies. Using PostgreSQL it takes 90 minutes to scrape 1 million URLs with a concurrency of 100 parallel scrape actions. That's 5.5ms per scraped URL. See [benchmarks](https://github.com/get-set-fetch/benchmarks) for more info.
+#### Use it in your own javascript/typescript code
+```
+import { Scraper, Project, CsvExporter } from '@get-set-fetch/scraper';
 
-<img src="https://get-set-fetch.github.io/benchmarks/charts/v0.8.0-pg-total-exec-time-1e+6-web.png">
+const scraper = new Scraper(ScrapeConfig.storage, ScrapeConfig.client);
+scraper.on(ScrapeEvent.ProjectScraped, async (project: Project) => {
+  const exporter = new CsvExporter({ filepath: 'languages.csv' });
+  await exporter.export(project);
+});
 
-You can use the scraper from your own javascript/typescript code, via [command line](https://www.getsetfetch.org/node/command-line.html) or [docker container](https://www.getsetfetch.org/node/docker.html).
+scraper.scrape(ScrapeConfig.project, ScrapeConfig.concurrency);
+```
+Note: package is exported both as CommonJS and ES Module.
+
+#### Use it from the command line
+```
+gsfscrape \
+--config scrape-config.json \
+--loglevel info --logdestination scrape.log \
+--save \
+--overwrite \
+--export project.csv
+```
+
+#### Run it with Docker
+```
+docker run \
+-v <host_dir>/scraper/docker/data:/home/gsfuser/scraper/data getsetfetch:latest \
+--version \
+--config data/scrape-config.json \
+--save \
+--overwrite \
+--scrape \
+--loglevel info \
+--logdestination data/scrape.log \
+--export data/export.csv
+```
+Note: you have to build the image manually from './docker' directory.
+
+#### Run it in cloud
+```
+module "benchmark_1000k_1project_multiple_scrapers_csv_urls" {
+  source = "../../node_modules/@get-set-fetch/scraper/cloud/terraform"
+
+  region                 = "fra1"
+  public_key_name        = "get-set-fetch"
+  public_key_file        = var.public_key_file
+  private_key_file       = var.private_key_file
+  ansible_inventory_file = "../ansible/inventory/hosts.cfg"
+
+  pg = {
+    name                  = "pg"
+    image                 = "ubuntu-20-04-x64"
+    size                  = "s-4vcpu-8gb"
+    ansible_playbook_file = "../ansible/pg-setup.yml"
+  }
+
+  scraper = {
+    count                 = 4
+    name                  = "scraper"
+    image                 = "ubuntu-20-04-x64"
+    size                  = "s-1vcpu-1gb"
+    ansible_playbook_file = "../ansible/scraper-setup.yml"
+  }
+}
+```
+Note: only DigitalOcean terraform provider is supported atm.
+
+### Benchmarks
+For quick, small projects under 10K URLs storing the queue and scraped content under SQLite is fine. For anything larger use PostgreSQL. You will be able to start/stop/resume the scraping process across multiple scraper instances each with its own IP and/or dedicated proxies. 
+
+Using a PostgreSQL database and 4 scraper instances it takes 9 minutes to scrape 1 million URLs. That's 0.5ms per scraped URL. Scrapers are using synthetic data, there is no external traffic, results are not influenced by web server response times and upload/download speeds. See [benchmarks](https://github.com/get-set-fetch/benchmarks) for more info.
+
+![](https://get-set-fetch.github.io/benchmarks/charts/v0.10.0-total-exec-time-1e6-saved-entries.svg)
+
+### Getting Started
 
 What follows is a brief "Getting Started" guide using SQLite as storage and Puppeteer as browser client. For an in-depth documentation visit [getsetfetch.org](https://www.getsetfetch.org). See [changelog](changelog.md) for past release notes and [development](development.md) for technical tidbits.
 
