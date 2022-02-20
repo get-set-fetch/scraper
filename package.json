@@ -14,7 +14,8 @@
   "types": "./dist/cjs/index.d.ts",
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "cloud"
   ],
   "bin": {
     "gsfscrape": "bin/gsfscrape"
