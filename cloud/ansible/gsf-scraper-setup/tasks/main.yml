@@ -55,10 +55,23 @@
   args:
     chdir: "{{ scraper.work_dir }}"
 
+- name: Zip input csv file(s)
+  delegate_to: localhost
+  community.general.archive:
+    path: "files/{{ item }}"
+    dest: "files/{{ item }}.tar.gz"
+    format: gz
+    force_archive: true
+  with_items:
+    - "{{ scraper.files.scrape_urls }}"
+  when: 
+    - scraper_idx == "0"
+    - scraper.files.scrape_urls != ''
+
 - name: "Copy input csv file(s)"
-  ansible.builtin.copy:
-    src: "files/{{ item }}"
-    dest: "{{ scraper.work_dir }}/{{ item }}"
+  ansible.builtin.unarchive:
+    src: "files/{{ item }}.tar.gz"
+    dest: "{{ scraper.work_dir }}"
     owner: gsf
     mode: u=rwx,g=r,o=r
   with_items:
@@ -69,7 +82,7 @@
 
 - name: Template scrape configuration file
   ansible.builtin.template:
-    src: "templates/gsf-config.json.j2"
+    src: "{{ scraper.files.gsf_config }}"
     dest: "{{ scraper.work_dir }}/gsf-config.json"
     owner: gsf
     mode: u=rwx,g=r,o=r

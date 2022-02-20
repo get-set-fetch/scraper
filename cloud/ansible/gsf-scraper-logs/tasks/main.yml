@@ -2,7 +2,7 @@
 - name: Fetch scrape log
   ansible.builtin.fetch:
     src: "{{ work_dir }}/{{ log_destination }}"
-    dest: "../exports/{{ ansible_host }}-scrape.log"
+    dest: "{{export_dir}}/{{ ansible_host }}-scrape.log"
     validate_checksum: false # it keeps changing as resources are scraped
     flat: true
 
@@ -13,14 +13,14 @@
 - name: "Copy getsetfetch.service status output to local file"
   delegate_to: localhost
   ansible.builtin.copy:
-    dest: "../exports/{{ inventory_hostname }}-systemd-status.log"
+    dest: "{{export_dir}}/{{ inventory_hostname }}-systemd-status.log"
     # content: "{{ systemctl.stdout }}\n\n{{ journalctl.stdout }}"
     content: "{{ systemctl.stdout }}"
 
 - name: Fetch getsetfetch.service output and error logs
   ansible.builtin.fetch:
     src: "{{ work_dir }}/{{item}}.log"
-    dest: "../exports/{{ ansible_host }}-systemd-{{item}}.log"
+    dest: "{{export_dir}}/{{ ansible_host }}-systemd-{{item}}.log"
     validate_checksum: false # it keeps changing as resources are scraped
     flat: true
   with_items:

@@ -13,5 +13,6 @@ scraper:
         level: info
         destination: scrape.log
     files:
+        gsf_config: templates/gsf-config.json.j2
         scrape_urls: ''
         additional: []

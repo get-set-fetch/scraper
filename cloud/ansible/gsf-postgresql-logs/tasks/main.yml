@@ -10,12 +10,12 @@
 - name: "Copy output to local file"
   delegate_to: localhost
   ansible.builtin.copy:
-    dest: "../exports/pg-{{ inventory_hostname }}-systemd.log"
+    dest: "{{export_dir}}/pg-{{ inventory_hostname }}-systemd.log"
     content: "{{ systemctl.stdout }}\n\n{{ journalctl.stdout }}"
 
 - name: "Copy output to local file"
   ansible.builtin.fetch:
     src: "/var/log/postgresql/postgresql-14-main.log"
-    dest: "../exports/pg-{{ ansible_host }}-main.log"
+    dest: "{{export_dir}}/pg-{{ ansible_host }}-main.log"
     validate_checksum: false # it keeps changing as resources are scraped
     flat: true
