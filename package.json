@@ -37,7 +37,7 @@
     "test:cheerio:single": "mocha --config test/.mocharc.js \"test/acceptance/cheerio.ts\" --grep 'sqlite3.+sequential.+301.+Redirect.+Html'",
     "test:puppeteer": "mocha --config test/.mocharc.js \"test/acceptance/puppeteer_chromium.ts\" --grep 'sqlite3.+sequential'",
     "test:puppeteer:single": "mocha --config test/.mocharc.js \"test/acceptance/puppeteer_chromium.ts\" --grep 'sqlite3.+sequential.+Scroll.+Actions.+2'",
-    "example": "ts-node examples/table-scraping/table-scraping.ts",
+    "example": "ts-node examples/tabular-data/tabular-data.ts",
     "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json"
   },
   "author": "Andrei Sabau",
