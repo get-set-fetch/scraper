@@ -637,8 +637,9 @@ export default class Scraper extends EventEmitter {
    */
   async executePlugin(resource: Resource, plugin: Plugin): Promise<void | Partial<Resource>> {
     this.logger.debug(
-      'Executing plugin %s using options %o , against resource %o',
-      plugin.constructor.name, plugin.opts, resource,
+      resource,
+      'Executing plugin %s using options %o , against resource',
+      plugin.constructor.name, plugin.opts,
     );
 
     if (plugin.opts && (plugin.opts.domRead || plugin.opts.domWrite)) {
