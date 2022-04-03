@@ -23,12 +23,21 @@ export class LogWrapper {
    * @param msg the log message to write
    * @param ...args format string values when `msg` is a format string
    */
-  trace(obj, msg?:string, ...args) {
+
+  traceRaw(obj, msg?:string, ...args) {
     this.logger.trace.call(this.logger, obj, msg, ...args);
   }
 
-  debug(obj, msg?:string, ...args) {
+  trace(obj, msg?:string, ...args) {
+    this.logger.trace.call(this.logger, this.filterArg(obj), msg, ...args);
+  }
+
+  debugRaw(obj, msg?:string, ...args) {
     this.logger.debug.call(this.logger, obj, msg, ...args);
+  }
+
+  debug(obj, msg?:string, ...args) {
+    this.logger.debug.call(this.logger, this.filterArg(obj), msg, ...args);
   }
 
   info(obj, msg?:string, ...args) {
@@ -58,20 +67,29 @@ export class LogWrapper {
     // avoid circular references
     if (visited.has(arg)) return null;
 
+    // can't loop normally through Error non-enumerable properties, return it as it is
+    if (arg instanceof Error) {
+      return arg;
+    }
+
     switch (typeof arg) {
       case 'object':
         visited.set(arg, true);
 
+        // type filter
         if (Buffer.isBuffer(arg)) return '<Buffer> not included';
         if (Array.isArray(arg)) return arg.map(a => this.filterArg(a, visited));
+        if (ArrayBuffer.isView(arg)) return '<ArrayBuffer|DataView> not included';
 
+        // property filter
         return Object.keys(arg).reduce(
           (acc, curr) => {
             /*
-            tls specific cases where we want to filter all sorts of cert info like manifest, content...
-            you can still log them in debug where filterArg is not applied
+            - cert: tls specific cases where we want to filter all sorts of cert info like manifest, content...
+            you can still log them in debugRaw where filterArg is not applied
+            - logger: internal logger attached to various classes
             */
-            acc[curr] = curr === 'cert' ? '<cert> not included' : this.filterArg(arg[curr], visited);
+            acc[curr] = [ 'cert', 'logger' ].includes(curr) ? `<${curr}> not included` : this.filterArg(arg[curr], visited);
             return acc;
           },
           {},
