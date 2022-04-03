@@ -82,50 +82,53 @@ export default class NodeFetchPlugin extends BaseFetchPlugin {
     }
   }
 
+  async getRequestOptions(url:URL, resource: Resource):Promise<RequestOptions & SecureContextOptions> {
+    const { hostname, protocol, pathname } = url;
+    let reqHost = hostname;
+
+    if (this.opts.dnsResolution === DNS_RESOLUTION.RESOLVE) {
+      reqHost = await new Promise((resolve, reject) => {
+        dns.resolve(hostname, (err, records) => {
+          /*
+          just take the 1st return ip address,
+          this plugin doesn't have capabilities to retry multiple urls/ips for a single resource
+          */
+          if (err) {
+            reject(err);
+          }
+          else {
+            this.logger.debug(`${hostname} resolved to ${records[0]}`);
+            resolve(records[0]);
+          }
+        });
+      });
+    }
+
+    const reqHeaders: OutgoingHttpHeaders = {
+      Host: hostname,
+      'Accept-Encoding': 'br,gzip,deflate',
+      ...(<object> this.opts.headers),
+    };
+
+    return {
+      method: 'GET',
+      defaultPort: protocol === Protocol.HTTPS ? 443 : 80,
+      path: pathname,
+      host: reqHost,
+      headers: reqHeaders,
+      timeout: this.opts.connectTimeout,
+      rejectUnauthorized: this.opts.tlsCheck,
+      agent: protocol === Protocol.HTTPS && !this.opts.tlsCheck ? this.agent : undefined,
+      ...resource.proxy,
+    };
+  }
+
   async fetch(resource: Resource): Promise<Partial<Resource>> {
     return new Promise(async (resolve, reject) => {
       try {
-        const { hostname, protocol, pathname } = new URL(resource.url);
-        let reqHost = hostname;
-
-        const reqHeaders: OutgoingHttpHeaders = {
-          Host: hostname,
-          'Accept-Encoding': 'br,gzip,deflate',
-          ...(<object> this.opts.headers),
-        };
-
-        const requestFnc = this.getRequestFnc(protocol);
-
-        if (this.opts.dnsResolution === DNS_RESOLUTION.RESOLVE) {
-          reqHost = await new Promise((resolve, reject) => {
-            dns.resolve(hostname, (err, records) => {
-              /*
-              just take the 1st return ip address,
-              this plugin doesn't have capabilities to retry multiple urls/ips for a single resource
-              */
-              if (err) {
-                reject(err);
-              }
-              else {
-                this.logger.debug(`${hostname} resolved to ${records[0]}`);
-                resolve(records[0]);
-              }
-            });
-          });
-        }
-
-        const opts: RequestOptions & SecureContextOptions = {
-          method: 'GET',
-          defaultPort: protocol === Protocol.HTTPS ? 443 : 80,
-          path: pathname,
-          host: reqHost,
-          headers: reqHeaders,
-          timeout: this.opts.connectTimeout,
-          rejectUnauthorized: this.opts.tlsCheck,
-          agent: protocol === Protocol.HTTPS && !this.opts.tlsCheck ? this.agent : undefined,
-          ...resource.proxy,
-        };
-
+        const url = new URL(resource.url);
+        const requestFnc = this.getRequestFnc(url.protocol);
+        const opts = await this.getRequestOptions(url, resource);
         this.logger.debug(opts, 'Request Options');
 
         const req = requestFnc(opts, (res: IncomingMessage) => {
