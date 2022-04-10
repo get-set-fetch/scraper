@@ -28,16 +28,8 @@ export default class KnexProject extends KnexStorage implements IProjectStorage 
     return this.builder.where({ [colName]: nameOrId }).first();
   }
 
-  async save(project:Project):Promise<number> {
-    // save the project
-    const result:number[] = await (
-      this.capabilities.returning
-        ? this.builder.insert(this.toJSON(project)).returning('id')
-        : this.builder.insert(this.toJSON(project))
-    );
-    const [ id ] = result;
-
-    return id;
+  save(project:Project):Promise<number> {
+    return super.save(project);
   }
 
   update(project: Project):Promise<void> {

@@ -85,6 +85,18 @@ export default abstract class KnexStorage extends Storage {
     return typeof result.count === 'string' ? parseInt(result.count, 10) : result.count;
   }
 
+  async save(entity:Entity):Promise<number> {
+    if (this.capabilities.returning) {
+      const result:{id: number}[] = await this.builder.insert(this.toJSON(entity)).returning('id');
+      const [ { id } ] = result;
+      return id;
+    }
+
+    const result:number[] = await this.builder.insert(this.toJSON(entity));
+    const [ id ] = result;
+    return id;
+  }
+
   del(id:string | number):Promise<void> {
     return this.builder.where('id', id).del();
   }

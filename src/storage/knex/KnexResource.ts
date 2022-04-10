@@ -87,14 +87,7 @@ export default class KnexResource extends KnexStorage implements IResourceStorag
     return super.count(this.tableName);
   }
 
-  async save(resource):Promise<number> {
-    const result:number[] = await (
-      this.capabilities.returning
-        ? this.builder.insert(resource.toJSON()).returning('id')
-        : this.builder.insert(resource.toJSON())
-    );
-    const [ id ] = result;
-
-    return id;
+  save(resource):Promise<number> {
+    return super.save(resource);
   }
 }
