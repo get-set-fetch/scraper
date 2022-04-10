@@ -9,10 +9,14 @@ ARG STORAGE
 ARG BROWSER_CLIENT
 ARG DOM_CLIENT
 ARG VERSION
-ARG BRANCH=master
+ARG BRANCH=main
 
 # core apk packages
 RUN apk add --no-cache nodejs npm git
+
+# node-gyp required for some packages like @vscode/sqlite3,
+# remove the virtual pkg group at the end
+RUN apk add --no-cache --virtual .gyp g++ make py3-pip
 
 # puppeteer apk packages
 # install chromium (91.0.4472.164-r0) package, https://pkgs.alpinelinux.org/packages?name=chromium&branch=v3.14
@@ -68,6 +72,10 @@ RUN case "$VERSION" in \
         esac \
     ;; \
     esac
+
+# remove node-gyp related packages
+USER root
+RUN apk del .gyp
 
 # invoke entrypoint as exec form, gsfscrape will receive signals such as SIGTERM
 ENTRYPOINT ["/home/gsfuser/scraper/bin/gsfscrape"]
