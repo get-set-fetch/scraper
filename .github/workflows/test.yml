@@ -12,7 +12,7 @@ env:
 jobs:
   unit:
     name: unit tests
-    if: ${{ github.event.act }}
+    if: ${{ !github.event.act }}
     runs-on: ubuntu-18.04
 
     steps:
