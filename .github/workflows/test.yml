@@ -38,7 +38,7 @@ jobs:
     - name: Install peer dependencies (to be cached by the remaining jobs)
       # in order to lint all files peerDependencies must be installed
       # if: steps.cache.outputs.cache-hit != 'true'
-      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@1.0.5 @vscode/sqlite3@5.0.8 mysql@2.18.1 pg@8.7.3
+      run: npm install cheerio@1.0.0-rc.10 @types/cheerio@0.22.23 jsdom@16.6.0 @types/jsdom@16.2.6 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@1.0.5 @vscode/sqlite3@5.0.8 mysql@2.18.1 pg@8.7.3
 
     - name: Lint check
       run: npm run lint
@@ -71,18 +71,18 @@ jobs:
             storage: sqlite3
             storage_label: sqlite
             concurrency: parallel
-            client_deps: cheerio@1.0.0-rc.10
+            client_deps: cheerio@1.0.0-rc.10 @types/cheerio@0.22.23
             storage_deps: knex@1.0.5 @vscode/sqlite3@5.0.8
           - client: jsdom
             storage: sqlite3
             storage_label: sqlite
             concurrency: parallel
-            client_deps: jsdom@16.6.0
+            client_deps: jsdom@16.6.0 @types/jsdom@16.2.6
             storage_deps: knex@1.0.5 @vscode/sqlite3@5.0.8
           - client: cheerio
-            client_deps: cheerio@1.0.0-rc.10
+            client_deps: cheerio@1.0.0-rc.10 @types/cheerio@0.22.23
           - client: jsdom
-            client_deps: jsdom@16.6.0
+            client_deps: jsdom@16.6.0 @types/jsdom@16.2.6
           - client: puppeteer_chromium
             client_deps: puppeteer@10.1.0
           - client: playwright_chromium
@@ -190,7 +190,7 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies so that the project can be built
-      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@1.0.5 @vscode/sqlite3@5.0.8 mysql@2.18.1 pg@8.7.3
+      run: npm install cheerio@1.0.0-rc.10 @types/cheerio@0.22.23 jsdom@16.6.0 @types/jsdom@16.2.6 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@1.0.5 @vscode/sqlite3@5.0.8 mysql@2.18.1 pg@8.7.3
 
     - name: Build project as cli uses dist files
       run: npm run build
