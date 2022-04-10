@@ -13,9 +13,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup node 15
-      uses: actions/setup-node@v1
+    - name: Setup node 16
+      uses: actions/setup-node@v3
       with:
-        node-version: 15.x
+        node-version: 16
     - name: NPM Audit
       run: npm audit --audit-level=high

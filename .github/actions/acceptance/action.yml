@@ -42,10 +42,10 @@ runs:
       if: ${{ inputs.docker_file }}
       run: /bin/sh -c 'docker_file="${{ inputs.docker_file }}"; if [ $docker_file ]; then docker-compose -f ${{ inputs.docker_file }} up -d; else echo "ignored, no docker file"; fi'
 
-    - name: Setup node 14
-      uses: actions/setup-node@v1
+    - name: Setup node 16
+      uses: actions/setup-node@v3
       with:
-        node-version: 14.x
+        node-version: 16
 
     - name: Install dependencies
       run: npm ci
