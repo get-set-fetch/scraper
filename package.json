@@ -85,16 +85,10 @@
     "@types/cheerio": {
       "optional": true
     },
-    "@types/jsdom": {
-      "optional": true
-    },
     "@vscode/sqlite3": {
       "optional": true
     },
     "cheerio": {
-      "optional": true
-    },
-    "jsdom": {
       "optional": true
     },
     "knex": {
