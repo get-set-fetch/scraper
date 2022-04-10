@@ -1,4 +1,4 @@
-FROM alpine:3.14
+FROM alpine:3.15
 
 # 1000 is the first UID assigned to a non root user (debian, ubuntu)
 # this can mitigate permissions issues when mapping volumes between host and container
@@ -59,8 +59,8 @@ RUN case "$VERSION" in \
             'mysql') npm install knex@1.0.5 mysql@2.18.1 ;; \
         esac; \
         case "$BROWSER_CLIENT" in \
-            'puppeteer') npm install puppeteer@9.1.1 ;; \
-            'playwright') echo playwright;; \
+            'puppeteer') npm install puppeteer@10.1.0 ;; \
+            'playwright') npm install playwright-core@1.13.1 playwright-chromium@1.13.1 ;; \
         esac; \
         case "$DOM_CLIENT" in \
             'cheerio') npm install cheerio@1.0.0-rc.10 ;; \
