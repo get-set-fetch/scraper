@@ -206,7 +206,7 @@ describe('Scraper', () => {
     );
   });
 
-  it('scrape - emit events - project error', async () => {
+  it('scrape - emit events - getResourcesToScrape non-fatal error', async () => {
     queue.getResourcesToScrape
       .onCall(0)
       .returns(Promise.resolve([ { queueId: 10, url: 'invalid_url' } as any ]))
@@ -225,9 +225,42 @@ describe('Scraper', () => {
         checkEntity(reject, eventProject, project);
         eventChain.push(ScrapeEvent.ProjectSelected);
       });
+
+      scraper.on(ScrapeEvent.ProjectScraped, eventProject => {
+        checkEntity(reject, eventProject, project);
+        eventChain.push(ScrapeEvent.ProjectScraped);
+        resolve();
+      });
+
+      scraper.scrape(project);
+    });
+
+    assert.sameOrderedMembers(
+      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectScraped ],
+      eventChain,
+    );
+  });
+
+  it('scrape - emit events - getResourcesToScrape fatal error', async () => {
+    // all queue.getResourcesToScrape are fatal errors
+    queue.getResourcesToScrape.throwsException(new Error('BufferError'));
+
+    const project = Object.assign(sandbox.createStubInstance(Project), {
+      pluginOpts: [],
+      initPlugins: () => [],
+      queue,
+    });
+
+    const eventChain: ScrapeEvent[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+      scraper.on(ScrapeEvent.ProjectSelected, eventProject => {
+        checkEntity(reject, eventProject, project);
+        eventChain.push(ScrapeEvent.ProjectSelected);
+      });
       scraper.on(ScrapeEvent.ProjectError, (eventProject, err) => {
         checkEntity(reject, eventProject, project);
-        if (!/Invalid URL/.test(err)) reject(new Error('expected Invalid URL error'));
+        if (!/BufferError/.test(err)) reject(new Error('expected BufferError'));
         eventChain.push(ScrapeEvent.ProjectError);
         resolve();
       });

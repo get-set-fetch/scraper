@@ -502,19 +502,27 @@ export default class Scraper extends EventEmitter {
       if (err instanceof RuntimeMetricsError) {
         this.logger.debug(err.snapshot, `Runtime conditions for project ${this.project.name} not met`);
       }
+
       // normal concurrency errors based on the existing concurrency options
       else if (err instanceof ConcurrencyError) {
         this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
         this.logger.debug(`Concurrency status at ${err.level} : ${JSON.stringify(this.concurrency.status[err.level])}`);
       }
+
       /*
-      invalid concurrency state, abort the entire scraping process
+      fatal error, can't recover from it, abort the entire scraping process
       only emmit the ProjectError once all in-progress resources have been scraped
+      ex: attempting to refill the concurrency resource buffer ends in error
       */
-      else {
-        this.logger.error(err, 'getResourceToScrape');
+      else if (err.fatal) {
+        this.logger.fatal(err, 'fatal error');
         this.stop();
         this.error = err;
+      }
+
+      // non-fatal error error, log it and move on to the next resource to be scraped, no need to stop scraping
+      else {
+        this.logger.error(err);
       }
     }
 
@@ -639,7 +647,8 @@ export default class Scraper extends EventEmitter {
     this.logger.debug(
       resource,
       'Executing plugin %s using options %o , against resource',
-      plugin.constructor.name, plugin.opts,
+      plugin.constructor.name,
+      plugin.opts,
     );
 
     if (plugin.opts && (plugin.opts.domRead || plugin.opts.domWrite)) {
@@ -650,7 +659,8 @@ export default class Scraper extends EventEmitter {
     const isApplicable = await plugin.test(this.project, resource);
     this.logger.debug(
       'Plugin %s isApplicable: %s',
-      plugin.constructor.name, isApplicable,
+      plugin.constructor.name,
+      isApplicable,
     );
     if (isApplicable) {
       return plugin.apply(this.project, resource, this.browserClient || this.domClientConstruct);

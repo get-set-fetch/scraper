@@ -212,8 +212,14 @@ export default class ConcurrencyManager {
         any other distributed scraper instances have also finished scraping
         there are no scrape-in-progress resources capable of discovering new to-be-scraped resources
         */
-        const maxResourceScrapeTime = 1 * 1000;
-        if (this.status.project.lastStartTime && (Date.now() - this.status.project.lastStartTime > maxResourceScrapeTime)) {
+        if (this.status.project.lastStartTime) {
+          const maxResourceScrapeTime = 1 * 1000;
+          if (Date.now() - this.status.project.lastStartTime > maxResourceScrapeTime) {
+            return true;
+          }
+        }
+        // scraping hasn't start for any resource, the buffer is empty even after the 1st attempt to fill it
+        else {
           return true;
         }
       }
@@ -233,8 +239,12 @@ export default class ConcurrencyManager {
       this.refillBufferInProgress = false;
     }
     catch (err) {
-      // parent call doesn't wait for this async to finish thus can't catch it, store err separately
-      this.error = err;
+      /*
+      parent call doesn't wait for this async to finish thus can't catch it, store err separately
+      can't recover from not being able to refill the buffer
+      fatal flag will cause scraping to stop AFTER currently scrape-in-progress resources are scraped
+      */
+      this.error = Object.assign(err, { fatal: true });
     }
   }
 
@@ -288,15 +298,16 @@ export default class ConcurrencyManager {
       stop signal was received due to buffer error in an independent async call, throw the error up
       parent scraper will catch any errors and stop the process via concurrency.stop = true
       */
-      if (this.error) {
-        throw (this.error);
-      }
+      if (this.error) throw (this.error);
 
       // attemp to re-fill buffer before it's completely empty
       if (this.resourceBuffer.length < this.resourceBufferSize / 2) {
         // buffer needs to be refilled now, can't refill it independently, we risk isScrapingComplete condition to pass
         if (this.resourceBuffer.length === 0) {
           await this.refillBuffer(project);
+          // take advantage of waiting for refillBuffer, directly thrown the error if one was caught
+          // avoid isScrapingComplete returning true on empty buffer due to refillBuffer error
+          if (this.error) throw (this.error);
         }
         // refill buffer independently
         else {
