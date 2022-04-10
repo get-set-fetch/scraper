@@ -12,7 +12,7 @@ env:
 jobs:
   unit:
     name: unit tests
-    if: ${{ !github.event.act }}
+    if: ${{ github.event.act }}
     runs-on: ubuntu-18.04
 
     steps:
@@ -38,7 +38,7 @@ jobs:
     - name: Install peer dependencies (to be cached by the remaining jobs)
       # in order to lint all files peerDependencies must be installed
       # if: steps.cache.outputs.cache-hit != 'true'
-      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@0.95.8 sqlite3@5.0.2 mysql@2.18.1 pg@8.7.1
+      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@1.0.5 @vscode/sqlite3@5.0.8 mysql@2.18.1 pg@8.7.3
 
     - name: Lint check
       run: npm run lint
@@ -72,13 +72,13 @@ jobs:
             storage_label: sqlite
             concurrency: parallel
             client_deps: cheerio@1.0.0-rc.10
-            storage_deps: knex@0.95.8 sqlite3@5.0.2
+            storage_deps: knex@1.0.5 @vscode/sqlite3@5.0.8
           - client: jsdom
             storage: sqlite3
             storage_label: sqlite
             concurrency: parallel
             client_deps: jsdom@16.6.0
-            storage_deps: knex@0.95.8 sqlite3@5.0.2
+            storage_deps: knex@1.0.5 @vscode/sqlite3@5.0.8
           - client: cheerio
             client_deps: cheerio@1.0.0-rc.10
           - client: jsdom
@@ -89,15 +89,15 @@ jobs:
             client_deps: playwright-core@1.13.1 playwright-chromium@1.13.1
           - storage: sqlite3
             storage_label: sqlite
-            storage_deps: knex@0.95.8 sqlite3@5.0.2
+            storage_deps: knex@1.0.5 @vscode/sqlite3@5.0.8
             docker_file: 
           - storage: mysql
             storage_label: mysql
-            storage_deps: knex@0.95.8 mysql@2.18.1
+            storage_deps: knex@1.0.5 mysql@2.18.1
             docker_file: ./test/config/storage/mysql/mysql.yml
           - storage: pg
             storage_label: postgresql
-            storage_deps: knex@0.95.8 pg@8.7.1
+            storage_deps: knex@1.0.5 pg@8.7.3
             docker_file: ./test/config/storage/pg/pg.yml
 
     steps:
@@ -190,7 +190,7 @@ jobs:
       run: npm ci
 
     - name: Install peer dependencies so that the project can be built
-      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@0.95.8 sqlite3@5.0.2 mysql@2.18.1 pg@8.7.1
+      run: npm install cheerio@1.0.0-rc.10 jsdom@16.6.0 puppeteer@10.1.0 playwright-core@1.13.1 playwright-chromium@1.13.1 knex@1.0.5 @vscode/sqlite3@5.0.8 mysql@2.18.1 pg@8.7.3
 
     - name: Build project as cli uses dist files
       run: npm run build
