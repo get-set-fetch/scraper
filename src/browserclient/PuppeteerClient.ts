@@ -1,3 +1,5 @@
+// @ts-expect-error importing peer dependency
+// eslint-disable-next-line import/no-unresolved
 import { Browser, LaunchOptions, launch as plaunch, Page, WaitForOptions, HTTPResponse, HTTPRequest, BrowserLaunchArgumentOptions, BrowserConnectOptions } from 'puppeteer';
 import { getLogger } from '../logger/Logger';
 import BrowserClient from './BrowserClient';

@@ -1,3 +1,5 @@
+// @ts-expect-error importing peer dependency
+// eslint-disable-next-line import/no-unresolved
 import { BrowserType, Browser, LaunchOptions, Page, ChromiumBrowser, Response, FirefoxBrowser, WebKitBrowser, chromium, firefox, webkit, Request } from 'playwright-core';
 import { getLogger } from '../logger/Logger';
 import BrowserClient from './BrowserClient';

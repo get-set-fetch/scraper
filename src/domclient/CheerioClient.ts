@@ -1,3 +1,5 @@
+// @ts-expect-error importing peer dependency
+// eslint-disable-next-line import/no-unresolved
 import cheerio from 'cheerio';
 import { IDomNode } from './DomClient';
 
