@@ -11,7 +11,7 @@ export default class RandomTlsFingerprintFetch extends NodeFetchPlugin {
     // keep the most important ciphers in the same order
     const fixedCipherList = nodeOrderedCipherList.slice(0, 3);
 
-    // shuffled the rest
+    // shuffle the rest
     const shuffledCipherList = nodeOrderedCipherList.slice(3)
       .map(cipher => ({ cipher, sort: Math.random() }))
       .sort((a, b) => a.sort - b.sort)
@@ -27,7 +27,7 @@ export default class RandomTlsFingerprintFetch extends NodeFetchPlugin {
     const reqOpts = await super.getRequestOptions(url, resource);
 
     if (url.protocol === Protocol.HTTPS) {
-      // one time initialization of custom ordered ciphers
+      // one time initialization of randomly ordered ciphers
       if (!this.shuffledCipherList) {
         this.shuffledCipherList = this.getShuffledCipherList();
         this.logger.info(this.shuffledCipherList, 'using shuffled cipherlist');

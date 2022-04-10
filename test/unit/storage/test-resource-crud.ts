@@ -21,7 +21,6 @@ export default function crudResource(conn: Connection) {
       await project.save();
 
       ExtResource = ExtProject.ExtResource;
-      console.log(`ExtResource.storage: ${ExtResource.storage !== undefined}`);
     });
 
     beforeEach(async () => {

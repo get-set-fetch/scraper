@@ -21,7 +21,7 @@ export default abstract class BrowserClient {
   opts: {
     browser?: string;
     [key: string]:any;
-  }
+  };
 
   constructor(opts) {
     this.opts = opts;

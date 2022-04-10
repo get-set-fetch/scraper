@@ -55,7 +55,7 @@ export default class RuntimeMetrics {
     totalIdle:number;
     totalTick:number;
     processTick: NodeJS.CpuUsage;
-  }
+  };
 
   constructor(opts: Partial<RuntimeOptions> = {}) {
     this.opts = opts;

@@ -53,7 +53,7 @@ export class LogWrapper {
   }
 
   fatal(obj, msg?:string, ...args) {
-    this.logger.error.call(this.logger, this.filterArg(obj), msg, ...args);
+    this.logger.fatal.call(this.logger, this.filterArg(obj), msg, ...args);
   }
 
   /**
