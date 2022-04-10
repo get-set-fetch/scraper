@@ -1,0 +1,29 @@
+- hosts: all
+  vars_files:
+    - vault.yml
+
+  roles:
+    - role: gsf-scraper-setup
+      vars:
+        db:
+          name: getsetfetch
+          user: "{{ vault_db_user }}"
+          password: "{{ vault_db_password }}"
+          pool:
+            min: 10
+            max: 50
+        scraper:
+          uv_threadpool_size: 24 # 4 (default) + 20 (max concurrent dns.lookups)
+          npm_install:
+            - knex@1.0.5
+            - pg@8.7.3
+            - cheerio@1.0.0-rc.10
+            # - "@get-set-fetch/scraper@0.10.0"
+            - get-set-fetch-scraper-0.10.0.tgz
+          log:
+            level: info
+          files:
+              scrape_urls: majestic-million-compact-2022-04-06.csv
+              gsf_config: templates/js-scripts-config.json.j2
+              additional:
+                  - ExtractScriptsPlugin.js

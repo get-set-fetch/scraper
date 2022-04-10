@@ -1,0 +1,13 @@
+- hosts: all
+  vars_files:
+    - vault.yml
+
+  roles:
+    - role: gsf-postgresql-setup
+      vars:
+        db:
+          name: getsetfetch
+          user: "{{ vault_db_user }}"
+          password: "{{ vault_db_password }}"
+        pg_config:
+          max_connections: 100

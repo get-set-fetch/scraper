@@ -1,0 +1,60 @@
+{
+  "storage": {
+    "client": "pg",
+    "useNullAsDefault": true,
+    "connection": {
+      "host": "{{ db_host }}",
+      "port": "5432",
+      "user": "{{ db.user }}",
+      "password": "{{ db.password }}",
+      "database": "{{ db.name }}"
+    },
+    "pool": { 
+      "min": {{ db.pool.min }},
+      "max": {{ db.pool.max }}
+    },
+    "debug": false
+  },
+  "client": {
+    "name": "cheerio"
+  },
+  "project": {
+    "name": "js-scripts1",
+    "resourcePath": "<resource_path>",
+    "pipeline": "dom-static-content",
+    "pluginOpts": [
+      {
+        "name": "ExtractUrlsPlugin",
+        "maxDepth": 0
+      },
+      {
+        "name": "NodeFetchPlugin",
+        "headers": {
+          "Accept-Encoding": "br,gzip,deflate",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0"
+        },
+          "tlsCheck": false,
+          "dnsResolution": "resolve"
+      },
+      {
+        "name": "ExtractScriptsPlugin",
+        "path": "ExtractScriptsPlugin.js",
+        "replace": "ExtractHtmlContentPlugin"
+      }
+    ]
+  },
+  "concurrency": {
+    "domain": {
+      "maxRequests": 20,
+      "delay": 50
+    },
+    "proxy": {
+        "maxRequests": 20,
+        "delay": 50
+    },
+    "session": {
+        "maxRequests": 20,
+        "delay": 50
+    }
+  }
+}

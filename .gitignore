@@ -125,3 +125,11 @@ test/tmp
 
 # act workflows
 workflow
+
+.terraform
+*.tfstate*
+*.hcl
+
+.private
+
+majestic-million*
