@@ -11,7 +11,7 @@
       ansible.builtin.shell: npm install -g {{ item.name }}@{{ item.version }}
       with_items:
         - { name: "@get-set-fetch/scraper", version: "0.9.0" }
-        - { name: "knex", version: "0.95.14" }
+        - { name: "knex", version: "1.0.5" }
         - { name: "pg", version: "8.7.1" }
         - { name: "cheerio", version: "1.0.0-rc.10" }
 
