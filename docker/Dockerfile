@@ -73,9 +73,10 @@ RUN case "$VERSION" in \
     ;; \
     esac
 
-# remove node-gyp related packages
+# remove node-gyp related packages and switch back to gsfuser
 USER root
 RUN apk del .gyp
+USER gsfuser
 
 # invoke entrypoint as exec form, gsfscrape will receive signals such as SIGTERM
 ENTRYPOINT ["/home/gsfuser/scraper/bin/gsfscrape"]
