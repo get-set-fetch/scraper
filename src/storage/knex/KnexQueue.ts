@@ -4,6 +4,8 @@ import KnexStorage from './KnexStorage';
 import { Project } from '../..';
 
 export default class KnexQueue extends KnexStorage implements IQueueStorage {
+  static ERROR_CODE_LEN = 50;
+
   projectId: string | number;
 
   get tableName():string {
@@ -32,7 +34,9 @@ export default class KnexQueue extends KnexStorage implements IQueueStorage {
         else {
           builder.integer('status');
         }
-        builder.string('error', 25);
+
+        // error code from thrown exceptions
+        builder.string('error', KnexQueue.ERROR_CODE_LEN);
 
         this.jsonCol(builder, 'parent');
       },
@@ -131,7 +135,7 @@ export default class KnexQueue extends KnexStorage implements IQueueStorage {
   }
 
   async updateStatus(id: number, status: number, error?: string):Promise<void> {
-    const partialUpdate = error ? { status, error } : { status };
+    const partialUpdate = error ? { status, error: error.substring(0, KnexQueue.ERROR_CODE_LEN) } : { status };
     await this.builder.where('id', id).update(partialUpdate);
   }
 
