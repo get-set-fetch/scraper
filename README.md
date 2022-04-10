@@ -102,7 +102,7 @@ $ npm install @get-set-fetch/scraper
 
 #### Install peer dependencies
 ```
-$ npm install knex sqlite3 puppeteer
+$ npm install knex @vscode/sqlite3 puppeteer
 ```
 Supported storage options and browser clients are defined as peer dependencies. Manually install your selected choices.
 

@@ -130,6 +130,7 @@
     "no-lonely-if": "off",
     "no-underscore-dangle": "off",
     "no-async-promise-executor": "off",
+    "no-promise-executor-return": "off",
     "@typescript-eslint/no-inferrable-types": "off",
     "@typescript-eslint/indent": [
       "error",
