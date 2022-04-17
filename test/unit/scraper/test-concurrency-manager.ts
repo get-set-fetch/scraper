@@ -1,20 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { assert } from 'chai';
-import { SinonSandbox, createSandbox, SinonStubbedInstance } from 'sinon';
+import { SinonSandbox, createSandbox } from 'sinon';
 import Resource, { Proxy } from '../../../src/storage/base/Resource';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyLevel } from '../../../src/scraper/ConcurrencyManager';
-import Queue from '../../../src/storage/base/Queue';
+
 
 describe('ConcurrencyManager', () => {
   let sandbox:SinonSandbox;
   let concurrency:ConcurrencyManager;
-  let queue:SinonStubbedInstance<Queue>;
-  const queueEntryId = 10;
 
   beforeEach(() => {
     sandbox = createSandbox();
-    queue = sandbox.stub<Queue>(<any>{ getResourcesToScrape: () => null, updateStatus: () => null });
-    queue.getResourcesToScrape.returns(Promise.resolve([]));
   });
 
   afterEach(() => {
@@ -299,76 +295,11 @@ describe('ConcurrencyManager', () => {
     assert.isUndefined(concurrency.getNextAvailableSessionProxy('hostA'));
   });
 
-  it('add/remove resource', () => {
-    sandbox.stub(Date, 'now').returns(100);
-
-    concurrency = new ConcurrencyManager();
-    concurrency.addResource({ host: 'proxyA', port: 80 }, 'hostA');
-
-    assert.deepEqual(
-      concurrency.status,
-      {
-        project: {
-          lastStartTime: 100,
-          requests: 1,
-        },
-        proxy: {
-          'proxyA-80': {
-            lastStartTime: 100,
-            requests: 1,
-          },
-        },
-        domain: {
-          hostA: {
-            lastStartTime: 100,
-            requests: 1,
-          },
-        },
-        session: {
-          'proxyA-80-hostA': {
-            lastStartTime: 100,
-            requests: 1,
-          },
-        },
-      },
-    );
-
-    concurrency.removeResource({ host: 'proxyA', port: 80 }, 'hostA');
-
-    assert.deepEqual(
-      concurrency.status,
-      {
-        project: {
-          lastStartTime: 100,
-          requests: 0,
-        },
-        proxy: {
-          'proxyA-80': {
-            lastStartTime: 100,
-            requests: 0,
-          },
-        },
-        domain: {
-          hostA: {
-            lastStartTime: 100,
-            requests: 0,
-          },
-        },
-        session: {
-          'proxyA-80-hostA': {
-            lastStartTime: 100,
-            requests: 0,
-          },
-        },
-      },
-    );
-  });
-
   it('conditionsMet', async () => {
     concurrency = new ConcurrencyManager({ project: { delay: 300, maxRequests: 1 } });
     // 1st resource request
     assert.isTrue(concurrency.conditionsMet(concurrency.status.project, concurrency.opts.project));
-    concurrency.addResource(null, 'hostA');
+    concurrency.addResource({ proxy: null, hostname: 'hostA' } as Resource);
 
     // 2nd resource request, attempt to scrape in parallel
     assert.isFalse(concurrency.conditionsMet(concurrency.status.project, concurrency.opts.project));
@@ -382,94 +313,13 @@ describe('ConcurrencyManager', () => {
     assert.isTrue(concurrency.conditionsMet(concurrency.status.project, concurrency.opts.project));
   });
 
-  it('resourceScraped', async () => {
-    sandbox.stub(Date, 'now').returns(100);
-    const proxy:Proxy = { host: 'proxyA', port: 80 };
-
-    concurrency = new ConcurrencyManager();
-    concurrency.addResource(proxy, 'hosta.com');
-    concurrency.resourceScraped(
-      null,
-      <Resource>{ url: 'http://hostA.com/resource.html', proxy },
-    );
-
-    assert.deepEqual(
-      concurrency.status,
-      {
-        project: {
-          lastStartTime: 100,
-          requests: 0,
-        },
-        proxy: {
-          'proxyA-80': {
-            lastStartTime: 100,
-            requests: 0,
-          },
-        },
-        domain: {
-          'hosta.com': {
-            lastStartTime: 100,
-            requests: 0,
-          },
-        },
-        session: {
-          'proxyA-80-hosta.com': {
-            lastStartTime: 100,
-            requests: 0,
-          },
-        },
-      },
-    );
-  });
-
-  it('resourceError', async () => {
-    sandbox.stub(Date, 'now').returns(100);
-    const proxy:Proxy = { host: 'proxyA', port: 80 };
-
-    concurrency = new ConcurrencyManager();
-    concurrency.addResource(proxy, 'hosta.com');
-    concurrency.addResource(proxy, 'hosta.com');
-    concurrency.resourceError(
-      null,
-      <Resource>{ url: 'http://hostA.com/resource.html', proxy },
-    );
-
-    assert.deepEqual(
-      concurrency.status,
-      {
-        project: {
-          lastStartTime: 100,
-          requests: 1,
-        },
-        proxy: {
-          'proxyA-80': {
-            lastStartTime: 100,
-            requests: 1,
-          },
-        },
-        domain: {
-          'hosta.com': {
-            lastStartTime: 100,
-            requests: 1,
-          },
-        },
-        session: {
-          'proxyA-80-hosta.com': {
-            lastStartTime: 100,
-            requests: 1,
-          },
-        },
-      },
-    );
-  });
-
-  it('getResourceToScrape, ConcurrencyError at Project level', async () => {
+  it('check, ConcurrencyError at Project level', () => {
     concurrency = new ConcurrencyManager({ project: { maxRequests: 2, delay: 100 } });
     concurrency.status.project.requests = 2;
 
     let err;
     try {
-      await concurrency.getResourceToScrape(null);
+      concurrency.check(null);
     }
     catch (e) {
       err = e;
@@ -478,7 +328,7 @@ describe('ConcurrencyManager', () => {
     assert.strictEqual(err.level, ConcurrencyLevel.Project);
   });
 
-  it('getResourceToScrape, ConcurrencyError at Proxy level', async () => {
+  it('check, ConcurrencyError at Proxy level', () => {
     concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
     concurrency.status.proxy.none = {
       requests: 2,
@@ -487,7 +337,7 @@ describe('ConcurrencyManager', () => {
 
     let err;
     try {
-      await concurrency.getResourceToScrape(null);
+      concurrency.check(null);
     }
     catch (e) {
       err = e;
@@ -496,7 +346,7 @@ describe('ConcurrencyManager', () => {
     assert.strictEqual(err.level, ConcurrencyLevel.Proxy);
   });
 
-  it('getResourceToScrape, scraping complete', async () => {
+  it('isScrapingComplete, scraping complete', async () => {
     concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
     concurrency.status.project.requests = 0;
     /*
@@ -505,115 +355,91 @@ describe('ConcurrencyManager', () => {
     */
     concurrency.status.project.lastStartTime = Date.now() - 1100;
 
-    const resource = await concurrency.getResourceToScrape(<any>{ queue });
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-    assert.isNull(resource);
+    assert.isTrue(concurrency.isScrapingComplete());
   });
 
-  it('getResourceToScrape, no available to-be-scraped resources atm, may be more in the future', async () => {
+  it('isScrapingComplete, no available to-be-scraped resources atm, ongoing scraping', async () => {
     concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
     concurrency.status.project.requests = 1;
-    concurrency.status.project.lastStartTime = Date.now() - 0.5 * 1000;
-
-    queue.getResourcesToScrape.returns(Promise.resolve([]));
-
-    let err;
-    try {
-      await concurrency.getResourceToScrape(<any>{ queue });
-    }
-    catch (e) {
-      err = e;
-    }
-    assert.isTrue(err instanceof ConcurrencyError);
-    assert.strictEqual(err.level, ConcurrencyLevel.Project);
-
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-  });
-
-  it('getResourceToScrape, no available to-be-scraped resources', async () => {
-    concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
-    concurrency.status.project.requests = 0;
     concurrency.status.project.lastStartTime = Date.now() - 2 * 1000;
 
-    queue.getResourcesToScrape.returns(Promise.resolve([]));
-
-    const resource = await concurrency.getResourceToScrape(<any>{ queue });
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-    assert.isNull(resource);
+    assert.isFalse(concurrency.isScrapingComplete());
   });
 
-  it('getResourceToScrape, ConcurrencyError at Domain level', async () => {
+  it('isScrapingComplete, no available to-be-scraped resources atm, valid lastStartTime', async () => {
+    concurrency = new ConcurrencyManager({ proxy: { maxRequests: 2, delay: 100 } });
+    concurrency.status.project.requests = 0;
+    concurrency.status.project.lastStartTime = Date.now() - 500;
+
+    assert.isFalse(concurrency.isScrapingComplete());
+  });
+
+  it('check, ConcurrencyError at Domain level', async () => {
     concurrency = new ConcurrencyManager({ domain: { maxRequests: 2, delay: 100 } });
     concurrency.status.domain['sitea.com'] = {
       requests: 2,
       lastStartTime: 0,
     };
 
-    // to-be-scraped resources are retrieved from resourceBuffer
-    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
-    concurrency.resourceBuffer = [ resourceToScrape ];
-
     let err;
     try {
-      await concurrency.getResourceToScrape(<any>{ queue });
+      concurrency.check(<Resource>{ url: 'http://siteA.com/resource.html' });
     }
     catch (e) {
       err = e;
     }
     assert.isTrue(err instanceof ConcurrencyError);
     assert.strictEqual(err.level, ConcurrencyLevel.Domain);
-
-    /*
-    concurrency conditions at domain level prevent the newly found resource via queue.getResourceToScrape to be scraped
-    found resource becomes the next resource to be scraped once concurrency conditions are met
-    */
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-    assert.sameDeepMembers(concurrency.resourceBuffer, [ resourceToScrape ]);
   });
 
-  it('getResourceToScrape, ConcurrencyError at Session level', async () => {
+  it('check, ConcurrencyError at Session level', async () => {
     concurrency = new ConcurrencyManager({ session: { maxRequests: 2, delay: 100 } });
     concurrency.status.session['none-sitea.com'] = {
       requests: 2,
       lastStartTime: 0,
     };
 
-    // to-be-scraped resources are retrieved from resourceBuffer
-    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
-    concurrency.resourceBuffer = [ resourceToScrape ];
-
     let err;
     try {
-      await concurrency.getResourceToScrape(<any>{ queue });
+      concurrency.check(<Resource>{ url: 'http://siteA.com/resource.html' });
     }
     catch (e) {
       err = e;
     }
     assert.isTrue(err instanceof ConcurrencyError);
     assert.strictEqual(err.level, ConcurrencyLevel.Session);
-
-    /*
-    concurrency conditions at session level prevent the newly found resource via queue.getResourceToScrape to be scraped
-    found resource becomes the next resource to be scraped once concurrency conditions are met
-    */
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-    assert.sameDeepMembers(concurrency.resourceBuffer, [ resourceToScrape ]);
   });
 
-  it('getResourceToScrape, resource found using no proxy', async () => {
+  it('check, meta info added using no proxy', async () => {
     sandbox.stub(Date, 'now').returns(100);
+    const resource = { url: 'http://siteA.com/resource.html' } as Resource;
 
     concurrency = new ConcurrencyManager();
+    concurrency.check(resource);
 
-    // to-be-scraped resources are retrieved from resourceBuffer
-    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
-    concurrency.resourceBuffer = [ resourceToScrape ];
-
-    const resource = await concurrency.getResourceToScrape(<any>{ queue });
     assert.isNull(resource.proxy);
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-    assert.isTrue(queue.updateStatus.notCalled);
-    assert.include(resource, { queueEntryId, url: 'http://siteA.com/resource.html' });
+    assert.strictEqual(resource.hostname, 'sitea.com');
+  });
+
+  it('check, meta info added using proxyPool', async () => {
+    sandbox.stub(Date, 'now').returns(100);
+    const resource = { url: 'http://siteA.com/resource.html' } as Resource;
+
+    const proxy: Proxy = { host: 'proxyA', port: 80 };
+    concurrency = new ConcurrencyManager({ proxyPool: [ proxy ] });
+    concurrency.check(resource);
+
+    assert.deepEqual(resource.proxy, proxy);
+    assert.strictEqual(resource.hostname, 'sitea.com');
+  });
+
+  it('addResource using no proxy', async () => {
+    sandbox.stub(Date, 'now').returns(100);
+    const resource = { url: 'http://siteA.com/resource.html' } as Resource;
+
+    concurrency = new ConcurrencyManager();
+    concurrency.check(resource);
+    concurrency.addResource(resource);
 
     assert.deepEqual(
       concurrency.status,
@@ -644,21 +470,14 @@ describe('ConcurrencyManager', () => {
     );
   });
 
-  it('getResourceToScrape, resource found using proxyPool', async () => {
+  it('addResource using proxyPool', async () => {
     sandbox.stub(Date, 'now').returns(100);
+    const resource = { url: 'http://siteA.com/resource.html' } as Resource;
 
     const proxy: Proxy = { host: 'proxyA', port: 80 };
     concurrency = new ConcurrencyManager({ proxyPool: [ proxy ] });
-
-    // to-be-scraped resources are retrieved from resourceBuffer
-    const resourceToScrape = <any>{ queueEntryId, url: 'http://siteA.com/resource.html' };
-    concurrency.resourceBuffer = [ resourceToScrape ];
-
-    const resource = await concurrency.getResourceToScrape(<any>{ queue });
-    assert.deepEqual(resource.proxy, proxy);
-    assert.isTrue(queue.getResourcesToScrape.calledOnce);
-    assert.isTrue(queue.updateStatus.notCalled);
-    assert.include(resource, { queueEntryId, url: 'http://siteA.com/resource.html' });
+    concurrency.check(resource);
+    concurrency.addResource(resource);
 
     assert.deepEqual(
       concurrency.status,
@@ -686,6 +505,105 @@ describe('ConcurrencyManager', () => {
           },
         },
       },
+    );
+  });
+
+  it('removeResource using proxyPool', () => {
+    sandbox.stub(Date, 'now').returns(100);
+
+    concurrency = new ConcurrencyManager();
+    concurrency.status = {
+      project: {
+        lastStartTime: 100,
+        requests: 1,
+      },
+      proxy: {
+        'proxyA-80': {
+          lastStartTime: 100,
+          requests: 1,
+        },
+      },
+      domain: {
+        'sitea.com': {
+          lastStartTime: 100,
+          requests: 1,
+        },
+      },
+      session: {
+        'proxyA-80-sitea.com': {
+          lastStartTime: 100,
+          requests: 1,
+        },
+      },
+    };
+
+    concurrency.removeResource({ host: 'proxyA', port: 80 }, 'sitea.com');
+
+    assert.deepEqual(
+      concurrency.status,
+      {
+        project: {
+          lastStartTime: 100,
+          requests: 0,
+        },
+        proxy: {
+          'proxyA-80': {
+            lastStartTime: 100,
+            requests: 0,
+          },
+        },
+        domain: {
+          'sitea.com': {
+            lastStartTime: 100,
+            requests: 0,
+          },
+        },
+        session: {
+          'proxyA-80-sitea.com': {
+            lastStartTime: 100,
+            requests: 0,
+          },
+        },
+      },
+    );
+  });
+
+  it('resourceScraped', async () => {
+    sandbox.stub(Date, 'now').returns(100);
+    const proxy:Proxy = { host: 'proxyA', port: 80 };
+
+    concurrency = new ConcurrencyManager();
+    const removeResourceSpy = sandbox.spy(concurrency, 'removeResource');
+    sandbox.stub(concurrency, 'removeResourceFromStatus');
+    concurrency.resourceScraped(
+      null,
+      <Resource>{ url: 'http://hostA.com/resource.html', proxy, hostname: 'hosta.com' },
+    );
+
+    assert.isTrue(removeResourceSpy.calledOnce);
+    assert.sameDeepOrderedMembers(
+      removeResourceSpy.getCall(0).args,
+      [ { host: 'proxyA', port: 80 }, 'hosta.com' ],
+    );
+  });
+
+  it('resourceError', async () => {
+    sandbox.stub(Date, 'now').returns(100);
+    const proxy:Proxy = { host: 'proxyA', port: 80 };
+
+    concurrency = new ConcurrencyManager();
+    const removeResourceSpy = sandbox.spy(concurrency, 'removeResource');
+    sandbox.stub(concurrency, 'removeResourceFromStatus');
+
+    concurrency.resourceError(
+      null,
+      <Resource>{ url: 'http://hostA.com/resource.html', proxy, hostname: 'hosta.com' },
+    );
+
+    assert.isTrue(removeResourceSpy.calledOnce);
+    assert.sameDeepOrderedMembers(
+      removeResourceSpy.getCall(0).args,
+      [ { host: 'proxyA', port: 80 }, 'hosta.com' ],
     );
   });
 });

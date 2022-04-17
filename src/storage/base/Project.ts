@@ -152,21 +152,19 @@ export default class Project extends Entity {
     }));
   }
 
-  static async getProjectToScrape() {
-    let project: Project;
+  static async getProjectToScrape():Promise<{project: Project, resources: Resource[]}> {
     const projects:Project[] = await this.storage.getAll();
 
     for (let i = 0; i < projects.length; i += 1) {
-      const candidateProject = await this.get(projects[i].id);
-      const [ resource ] = await candidateProject.queue.getResourcesToScrape(1);
-      if (resource) {
-        await candidateProject.queue.updateStatus(resource.queueEntryId, null);
-        project = candidateProject;
-        break;
+      const project = await this.get(projects[i].id);
+      const resources = await project.queue.getResourcesToScrape(1);
+
+      if (resources.length > 0) {
+        return { project, resources };
       }
     }
 
-    return project;
+    return { project: null, resources: [] };
   }
 
   get dbCols() {

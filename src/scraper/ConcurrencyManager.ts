@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable consistent-return */
 import Project from '../storage/base/Project';
@@ -105,29 +106,6 @@ export default class ConcurrencyManager {
   proxyIdx: number;
 
   /**
-   * If set no new resources are selected to be scraped.
-   * Once all in-progress scraping completes, a "project-stopped" event is dispathed.
-   */
-  stop: boolean;
-
-  /**
-   * Serves two purposes
-   * - to-be-scraped resources are retrieved in bulk with queue entry status set to 1 (scrape in progress)
-   * - non-eligible buffered resources (due to concurrency conditions) don't have the in-progress status reverted,
-   *  they remain in buffer surely to become eligible in the future
-   */
-  resourceBuffer: Resource[];
-
-  resourceBufferSize: number;
-
-  error: Error;
-
-  /**
-   * Prevents parallel project.queue.getResourcesToScrape calls
-   */
-  refillBufferInProgress: boolean;
-
-  /**
    * Only used when logging is set to trace mode.
    * Keeps a map of scrape-in-progress resources: key: url, value: start time (ms).
    */
@@ -152,15 +130,7 @@ export default class ConcurrencyManager {
     if (!this.opts.project.maxRequests) {
       this.opts.project.maxRequests = this.opts.proxy.maxRequests * this.opts.proxyPool.length;
     }
-    this.logger.info(this.opts, 'concurrency options:');
-
-    /*
-    compute buffer size based on project.maxRequests, enforce a minimum buffer size
-    multiplier value of 2 is kind of arbitrary:
-      - too little and scraping may briefly pause due to an empty buffer
-      - too large and we needlessly mark to-be-scraped resources as in progress so that other scraper instances can't touch them
-    */
-    this.resourceBufferSize = Math.max(this.opts.project.maxRequests * 2, 10);
+    this.logger.info(this.opts, 'concurrency options');
 
     this.status = {
       project: {
@@ -172,14 +142,22 @@ export default class ConcurrencyManager {
       session: {},
     };
 
-    this.resourceBuffer = [];
-
     this.resourceScraped = this.resourceScraped.bind(this);
     this.resourceError = this.resourceError.bind(this);
 
     if (this.logger.level === 'trace') {
       this.inProgressUrls = new Map();
     }
+  }
+
+  /*
+    compute buffer size based on project.maxRequests, enforce a minimum buffer size
+    multiplier value of 2 is kind of arbitrary:
+      - too little and scraping may briefly pause due to an empty buffer
+      - too large and we needlessly mark to-be-scraped resources as in progress so that other scraper instances can't touch them
+    */
+  getBufferSize():number {
+    return Math.max(this.opts.project.maxRequests * 2, 10);
   }
 
   /**
@@ -203,58 +181,29 @@ export default class ConcurrencyManager {
    *  mean resource scrape time is not computed atm, a hardcoded value is presently used
    */
   isScrapingComplete(): boolean {
-    // no results found, check if scraping is complete
-    if (this.resourceBuffer.length === 0) {
-      // no more scrape-in-progress resources
-      if (this.status.project.requests === 0) {
-        /*
+    // no more scrape-in-progress resources
+    if (this.status.project.requests === 0) {
+      /*
         buffer was empty for more than it takes to scrape a resource in a worst case scenario
         any other distributed scraper instances have also finished scraping
         there are no scrape-in-progress resources capable of discovering new to-be-scraped resources
         */
-        if (this.status.project.lastStartTime) {
-          const maxResourceScrapeTime = 1 * 1000;
-          if (Date.now() - this.status.project.lastStartTime > maxResourceScrapeTime) {
-            return true;
-          }
-        }
-        // scraping hasn't start for any resource, the buffer is empty even after the 1st attempt to fill it
-        else {
+      if (this.status.project.lastStartTime) {
+        const maxResourceScrapeTime = 1 * 1000;
+        if (Date.now() - this.status.project.lastStartTime > maxResourceScrapeTime) {
           return true;
         }
+      }
+      // scraping hasn't start for any resource, the buffer is empty even after the 1st attempt to fill it
+      else {
+        return true;
       }
     }
 
     return false;
   }
 
-  async refillBuffer(project:Project):Promise<void> {
-    // buffer is only filled sequentially
-    if (this.refillBufferInProgress) return;
-
-    try {
-      this.refillBufferInProgress = true;
-      const toBeScrapedResources = await project.queue.getResourcesToScrape(this.resourceBufferSize - this.resourceBuffer.length);
-      this.resourceBuffer.push(...toBeScrapedResources);
-      this.refillBufferInProgress = false;
-    }
-    catch (err) {
-      /*
-      parent call doesn't wait for this async to finish thus can't catch it, store err separately
-      can't recover from not being able to refill the buffer
-      fatal flag will cause scraping to stop AFTER currently scrape-in-progress resources are scraped
-      */
-      this.error = Object.assign(err, { fatal: true });
-    }
-  }
-
-  /**
-   * Under existing concurrency conditions:
-   * return a resource if one is available
-   * return null if there are no more resources to be scraped
-   * return ConcurrencyError when concurrency conditions are not met
-   */
-  async getResourceToScrape(project: Project): Promise<Resource> {
+  check(resource: Resource) {
     // project conditions don't allow it
     if (!this.conditionsMet(this.status.project, this.opts.project)) throw new ConcurrencyError(ConcurrencyLevel.Project);
 
@@ -262,82 +211,9 @@ export default class ConcurrencyManager {
     let proxy = this.getNextAvailableProxy();
     if (proxy === undefined) throw new ConcurrencyError(ConcurrencyLevel.Proxy);
 
-    /*
-    get a to-be-scraped resource
-
-    in a worst case scenario scraping will not proceed at full capacity
-    since we have available proxies but are throttled by domain/session concurrency conditions
-    this is possible when we scrape from multiple domains and getResourcesToScrape keeps retrieving resources from a single domain
-
-    this won't be a problem when:
-    - scraping a single domain
-    - scraping lots of domains with few resources per domain
-
-    can be partially mitigated by keeping an in-memory resource buffer allowing to test all entries for met concurrency conditions
-    */
-    let resource;
-
-    // stop signal has been received, gracefully stop scraping, allow all scrape-in-progress resources to be scraped
-    if (this.stop) {
-      resource = null;
-
-      if (this.resourceBuffer.length > 0) {
-        // re-make to-be-scraped buffered resources eligible for scraping by reseting their status flag
-        await Promise.all(this.resourceBuffer.map(resource => project.queue.updateStatus(resource.queueEntryId, null)));
-        this.resourceBuffer = [];
-      }
-
-      // all scrape-in-progress resources have been scraped
-      if (this.status.project.requests === 0) {
-        return null;
-      }
-    }
-    // normal scraping
-    else {
-      /*
-      stop signal was received due to buffer error in an independent async call, throw the error up
-      parent scraper will catch any errors and stop the process via concurrency.stop = true
-      */
-      if (this.error) throw (this.error);
-
-      // attemp to re-fill buffer before it's completely empty
-      if (this.resourceBuffer.length < this.resourceBufferSize / 2) {
-        // buffer needs to be refilled now, can't refill it independently, we risk isScrapingComplete condition to pass
-        if (this.resourceBuffer.length === 0) {
-          await this.refillBuffer(project);
-          // take advantage of waiting for refillBuffer, directly thrown the error if one was caught
-          // avoid isScrapingComplete returning true on empty buffer due to refillBuffer error
-          if (this.error) throw (this.error);
-        }
-        // refill buffer independently
-        else {
-          this.refillBuffer(project);
-        }
-      }
-
-      if (this.isScrapingComplete()) {
-        return null;
-      }
-
-      // in the future, don't just retrieve the 1st resource, attempt to search for one meeting the concurrency conditions
-      resource = this.resourceBuffer.length > 0 ? this.resourceBuffer.shift() : null;
-    }
-
-    /*
-    either:
-    - no resource available right now, but there may be more as in-progress scraping completes
-    - project was stopped, only wait for in-progress scraping to complete
-    */
-    if (!resource) {
-      throw new ConcurrencyError(ConcurrencyLevel.Project);
-    }
-
     // domain thresholds don't allow it
     const { hostname } = new URL(resource.url);
     if (!this.conditionsMet(this.status.domain[hostname], this.opts.domain)) {
-      // new resource is not meeting concurrency conditions, postpone its scraping, re-add it to the buffer
-      this.resourceBuffer.push(resource);
-
       throw new ConcurrencyError(ConcurrencyLevel.Domain);
     }
 
@@ -347,25 +223,15 @@ export default class ConcurrencyManager {
     }
     // abort if no proxy is available based on session thresholds
     if (proxy === undefined) {
-      // new resource is not meeting concurrency conditions, postpone its scraping, re-add it to the buffer
-      this.resourceBuffer.push(resource);
-
       throw new ConcurrencyError(ConcurrencyLevel.Session);
     }
 
-    // proxy meeting the concurrency conditions found
+    /*
+    proxy meeting the concurrency conditions found
+    link proxy and hostname to the resource to avoid computing them again
+    */
     resource.proxy = proxy;
-
-    // update status
-    this.addResource(proxy, hostname);
-    this.logger.debug({ proxy, url: resource.url }, 'resource added to concurrency status');
-
-    if (this.logger.level === 'trace') {
-      this.inProgressUrls.set(resource.url, Date.now());
-      this.logger.trace(`In-Progress URLs: ${Array.from(this.inProgressUrls.entries()).join(';')}`);
-    }
-
-    return resource;
+    resource.hostname = hostname;
   }
 
   sessionId(proxy: Proxy, hostname: string): string {
@@ -436,11 +302,19 @@ export default class ConcurrencyManager {
     return true;
   }
 
-  addResource(proxy: Proxy, hostname: string) {
+  addResource(resource: Resource) {
+    const { proxy, hostname } = resource;
     this.status.project = this.addResourceToStatus(this.status.project);
     this.status.proxy[this.proxyId(proxy)] = this.addResourceToStatus(this.status.proxy[this.proxyId(proxy)]);
     this.status.domain[hostname] = this.addResourceToStatus(this.status.domain[hostname]);
     this.status.session[this.sessionId(proxy, hostname)] = this.addResourceToStatus(this.status.session[this.sessionId(proxy, hostname)]);
+
+    this.logger.debug({ proxy, url: resource.url }, 'resource added to concurrency status');
+
+    if (this.logger.level === 'trace') {
+      this.inProgressUrls.set(resource.url, Date.now());
+      this.logger.trace(`In-Progress URLs: ${Array.from(this.inProgressUrls.entries()).join(';')}`);
+    }
   }
 
   addResourceToStatus(status: StatusEntry) {
@@ -477,8 +351,7 @@ export default class ConcurrencyManager {
    * @param resource
    */
   resourceScraped(project: Project, resource: Resource) {
-    const { hostname } = new URL(resource.url);
-    this.removeResource(resource.proxy, hostname);
+    this.removeResource(resource.proxy, resource.hostname);
 
     this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped and removed from concurrency status');
     if (this.logger.level === 'trace') {
@@ -494,10 +367,10 @@ export default class ConcurrencyManager {
    * @param resource
    */
   resourceError(project: Project, resource: Resource) {
-    const { hostname } = new URL(resource.url);
-    this.removeResource(resource.proxy, hostname);
+    const { proxy, hostname } = resource;
+    this.removeResource(proxy, hostname);
 
-    this.logger.debug({ proxy: resource.proxy, url: resource.url }, 'resource scraped in error and removed from concurrency status');
+    this.logger.debug({ proxy, url: resource.url }, 'resource scraped in error and removed from concurrency status');
     if (this.logger.level === 'trace') {
       this.inProgressUrls.delete(resource.url);
     }
