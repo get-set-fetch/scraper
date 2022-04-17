@@ -84,7 +84,7 @@ export default abstract class Exporter {
 
   getDefaultOptions(): Partial<ExportOptions> {
     return {
-      pageLimit: 100,
+      pageLimit: 10000,
     };
   }
 

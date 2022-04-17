@@ -87,7 +87,7 @@ export default class CsvExporter extends Exporter {
     return {
       fieldSeparator: ',',
       lineSeparator: '\n',
-      pageLimit: 100,
+      pageLimit: 10000,
     };
   }
 }
