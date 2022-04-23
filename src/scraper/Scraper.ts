@@ -574,10 +574,10 @@ export default class Scraper extends EventEmitter {
     ) {
       const dynamicResource: Resource = (
         (
-          { url, queueEntryId, status, depth, contentType, parent, actions, proxy },
+          { url, queueEntryId, status, depth, contentType, parent, actions, proxy, hostname },
         ) => project.createResource(
           {
-            url, queueEntryId, status, depth, contentType, parent, actions, proxy,
+            url, queueEntryId, status, depth, contentType, parent, actions, proxy, hostname,
           },
         )
       )(resource);
