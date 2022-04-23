@@ -6,7 +6,6 @@ import BrowserClient from '../../../src/browserclient/BrowserClient';
 import Queue from '../../../src/storage/base/Queue';
 import Resource from '../../../src/storage/base/Resource';
 import Connection from '../../../src/storage/base/Connection';
-import ConnectionManager from '../../../src/storage/ConnectionManager';
 
 describe('Scraper - Concurrency Constraints', () => {
   let sandbox:SinonSandbox;
@@ -145,7 +144,7 @@ describe('Scraper - Concurrency Constraints', () => {
 
         if (debug) console.log(`ResourceScraped bufferLen: ${scraper.queueBuffer.resources.length} | scrapeInProgressResourceNo: ${lastScrapeInProgress} | + ${Date.now() - startTime}`);
       });
-      scraper.on(ScrapeEvent.ResourceError, (eventProject, eventResource) => {
+      scraper.on(ScrapeEvent.ResourceScrapeError, (eventProject, eventResource) => {
         /*
         only now can new resources be scraped, till now maxRequests was at maximum, and new resource scraping was halted
         update lastStartTime to count for it, since the gap between start times can be larger than {delay}

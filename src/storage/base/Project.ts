@@ -159,6 +159,7 @@ export default class Project extends Entity {
       const project = await this.get(projects[i].id);
       const resources = await project.queue.getResourcesToScrape(1);
 
+      // valid project containing not-yet-scraped resources currently marked as scrape-in-progress by the above queue.getResourcesToScrape
       if (resources.length > 0) {
         return { project, resources };
       }

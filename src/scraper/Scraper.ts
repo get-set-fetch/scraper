@@ -19,33 +19,29 @@ import Connection, { ConnectionConfig } from '../storage/base/Connection';
 import QueueBuffer from './QueueBuffer';
 
 export const enum ScrapeEvent {
+  ResourceSelectError = 'resource-select-error',
   ResourceSelected = 'resource-selected',
+  ResourceScrapeError = 'resource-scrape-error',
   ResourceScraped = 'resource-scraped',
-  ResourceError = 'resource-error',
 
   ProjectSelected = 'project-selected',
   ProjectScraped = 'project-scraped',
   ProjectError = 'project-error',
 
-  DiscoverComplete = 'discover-complete'
+  DiscoveryCompleted = 'discovery-completed'
 }
 
-export type CliOptions = {
+export type DiscoverOptions = {
   /**
-   * Overwrite project if already exists.
-   */
-  overwrite: boolean;
-
-  /**
-    * Don't restrict scraping to a particular project.
-    * Once scraping a project completes, find other existing projects to scrape from.
-    */
+  * Don't restrict scraping to a particular project.
+  * Once scraping a project completes, find other existing projects to scrape from.
+  */
   discover: boolean;
 
   /**
-    * After a discover operation completes and all projects are scraped,
-    * keep issueing discover commands at the specified interval (seconds).
-    */
+  * After a discover operation completes and all projects are scraped,
+  * keep issueing discover commands at the specified interval (seconds).
+  */
   retry: number;
 }
 
@@ -68,7 +64,10 @@ export type ProjectOptions = {
   pipeline: string;
   pluginOpts: PluginOpts[];
 
-  overwrite?: boolean
+  /**
+   * Overwrite project if already exists.
+   */
+  overwrite?: boolean;
 }
 
 export type ScrapeConfig = {
@@ -96,7 +95,7 @@ export default class Scraper extends EventEmitter {
 
   concurrency: ConcurrencyManager;
   checkTimeout: NodeJS.Timeout;
-  retryTimeout: NodeJS.Timeout;
+  discoverTimeout: NodeJS.Timeout;
 
   /**
    * If set no new resources are selected to be scraped.
@@ -106,7 +105,7 @@ export default class Scraper extends EventEmitter {
 
   concurrencyOpts: Partial<ConcurrencyOptions>;
   runtimeOpts: Partial<RuntimeOptions>;
-  discoveryOpts: Partial<CliOptions>;
+  discoveryOpts: Partial<DiscoverOptions>;
 
   /**
    * Serves two purposes
@@ -141,8 +140,23 @@ export default class Scraper extends EventEmitter {
 
     this.discover = this.discover.bind(this);
     this.getResourceToScrape = this.getResourceToScrape.bind(this);
+    this.scrapeProject = this.scrapeProject.bind(this);
     this.scrapeResource = this.scrapeResource.bind(this);
     this.gracefullStopHandler = this.gracefullStopHandler.bind(this);
+
+    // gracefully stop scraping
+    process.on('SIGTERM', this.gracefullStopHandler);
+    process.on('SIGINT', this.gracefullStopHandler);
+
+    // scrape workflow is (mostly) controlled via events
+    this.on(ScrapeEvent.ResourceSelected, this.scrapeResource);
+
+    this.on(ScrapeEvent.ProjectSelected, this.scrapeProject);
+    this.on(ScrapeEvent.ProjectError, this.postScrapeProject);
+    this.on(ScrapeEvent.ProjectScraped, this.postScrapeProject);
+
+    this.on(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
+    this.on(ScrapeEvent.ResourceScrapeError, this.fastForwardGetResourceToScrape);
   }
 
   /**
@@ -193,31 +207,6 @@ export default class Scraper extends EventEmitter {
       await this.browserClient.launch();
       this.logger.info('Browser launched');
     }
-
-    // concurrencyManager needs to update its status based on resource error/complete
-    this.concurrency = new ConcurrencyManager(this.concurrencyOpts);
-    this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
-    this.on(ScrapeEvent.ResourceError, this.concurrency.resourceError);
-
-    this.metrics = new RuntimeMetrics(this.runtimeOpts);
-
-    this.queueBuffer = new QueueBuffer(this.concurrency.getBufferSize());
-
-    // scrape workflow is controlled via events
-    this.on(ScrapeEvent.ResourceSelected, this.scrapeResource);
-
-    this.on(ScrapeEvent.ProjectSelected, this.scrapeProject);
-    this.on(ScrapeEvent.ProjectError, this.postScrapeProject);
-    this.on(ScrapeEvent.ProjectScraped, this.postScrapeProject);
-
-    this.on(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
-    this.on(ScrapeEvent.ResourceError, this.fastForwardGetResourceToScrape);
-
-    this.on(ScrapeEvent.DiscoverComplete, this.postDiscover);
-
-    // gracefully stop scraping
-    process.on('SIGTERM', this.gracefullStopHandler);
-    process.on('SIGINT', this.gracefullStopHandler);
   }
 
   fastForwardGetResourceToScrape() {
@@ -293,11 +282,6 @@ export default class Scraper extends EventEmitter {
     try {
       await this.init();
       const project = await this.initProject(projectOpts);
-      project.plugins = await project.initPlugins(!!this.browserClient);
-      this.logger.info(
-        (({ id, name, pluginOpts }) => ({ id, name, pluginOpts }))(project),
-        'Scraping project',
-      );
       this.emit(ScrapeEvent.ProjectSelected, project, []);
     }
     catch (err) {
@@ -306,9 +290,28 @@ export default class Scraper extends EventEmitter {
     }
   }
 
-  scrapeProject(project, resources) {
-    this.project = project;
+  async preScrapeProject(project: Project, resources: Resource[]) {
+    // concurrencyManager needs to update its status based on resource error/complete
+    this.concurrency = new ConcurrencyManager(this.concurrencyOpts);
+    this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
+    this.on(ScrapeEvent.ResourceScrapeError, this.concurrency.resourceError);
+
+    this.queueBuffer = new QueueBuffer(this.concurrency.getBufferSize());
     this.queueBuffer.init(project, resources);
+
+    this.metrics = new RuntimeMetrics(this.runtimeOpts);
+
+    // create plugin instances based on plugin options
+    project.plugins = await project.initPlugins(!!this.browserClient);
+    this.logger.info(
+      (({ id, name, pluginOpts }) => ({ id, name, pluginOpts }))(project),
+      'Scraping project',
+    );
+  }
+
+  async scrapeProject(project: Project, resources: Resource[]) {
+    this.project = project;
+    await this.preScrapeProject(project, resources);
 
     clearInterval(this.checkTimeout);
     this.getResourceToScrape();
@@ -357,23 +360,30 @@ export default class Scraper extends EventEmitter {
 
         if (resource) {
           await this.project.queue.updateStatus(resource.queueEntryId, 500, err.code || 'GET_RESOURCE_TO_SCRAPE_ERROR');
+          this.emit(ScrapeEvent.ResourceSelectError, this.project, resource, err);
         }
       }
     }
     finally {
       if (!resource && this.concurrency.isScrapingComplete()) {
+        this.logger.info(`Project ${this.project.name} scraping complete`);
         this.emit(ScrapeEvent.ProjectScraped, this.project);
       }
     }
   }
 
-  async postScrapeProject() {
+  /**
+   * After each project scraped/in-error and discovery complete do some cleanup.
+   * Remove event listners, close db connections.
+   */
+  async cleanup() {
     try {
       // scraping stopped, if resumed new concurrency, metrics instances will be created
       if (this.concurrency) {
         clearInterval(this.checkTimeout);
+        delete this.checkTimeout;
         this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
-        this.off(ScrapeEvent.ResourceError, this.concurrency.resourceError);
+        this.off(ScrapeEvent.ResourceScrapeError, this.concurrency.resourceError);
       }
       delete this.concurrency;
       delete this.metrics;
@@ -386,36 +396,27 @@ export default class Scraper extends EventEmitter {
       if (this.connectionMng) {
         await this.connectionMng.close();
       }
-
-      // scrape workflow is controlled via events
-      this.off(ScrapeEvent.ResourceSelected, this.scrapeResource);
-
-      this.off(ScrapeEvent.ProjectSelected, this.scrapeProject);
-      this.off(ScrapeEvent.ProjectError, this.postScrapeProject);
-      this.off(ScrapeEvent.ProjectScraped, this.postScrapeProject);
-
-      this.off(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
-      this.off(ScrapeEvent.ResourceError, this.fastForwardGetResourceToScrape);
-
-      this.off(ScrapeEvent.DiscoverComplete, this.postDiscover);
-
-      // gracefully stop scraping
-      process.off('SIGTERM', this.gracefullStopHandler);
-      process.off('SIGINT', this.gracefullStopHandler);
     }
     catch (err) {
       this.logger.error(err);
     }
+  }
 
-    if (this.discoveryOpts?.discover) {
+  async postScrapeProject() {
+    await this.cleanup();
+
+    if (!this.stop && this.discoveryOpts?.discover) {
       this.discover();
     }
   }
 
-  async discover(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>, discoveryOpts?: Partial<CliOptions>) {
+  async discover(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>, discoveryOpts?: Partial<DiscoverOptions>) {
     if (concurrencyOpts) this.concurrencyOpts = concurrencyOpts;
     if (runtimeOpts) this.runtimeOpts = runtimeOpts;
     if (discoveryOpts) this.discoveryOpts = discoveryOpts;
+
+    delete this.discoverTimeout;
+    this.logger.info('Discovering new project(s)');
 
     try {
       await this.init();
@@ -424,14 +425,9 @@ export default class Scraper extends EventEmitter {
       const { project, resources } = await ExtProject.getProjectToScrape();
 
       if (!project) {
-        this.emit(ScrapeEvent.DiscoverComplete);
+        this.postDiscover();
       }
       else {
-        project.plugins = await project.initPlugins(!!this.browserClient);
-        this.logger.info(
-          (({ id, name, pluginOpts }) => ({ id, name, pluginOpts }))(project),
-          'Scraping project',
-        );
         this.emit(ScrapeEvent.ProjectSelected, project, resources);
       }
     }
@@ -440,31 +436,55 @@ export default class Scraper extends EventEmitter {
     }
   }
 
-  postDiscover() {
-    if (!this.discoveryOpts?.retry) return;
+  async save(projectOpts: ProjectOptions) {
+    try {
+      await this.connectionMng.connect();
+      this.logger.info('Storage connected');
 
-    this.logger.info(`Resume project discovery after ${this.discoveryOpts.retry} seconds`);
-    this.retryTimeout = setTimeout(this.discover, this.discoveryOpts.retry * 1000);
+      this.project = await this.initProject(projectOpts);
+      if (!this.project) throw new Error('could not find project');
+
+      await this.connectionMng.close();
+    }
+    catch (err) {
+      this.logger.error(err);
+      this.emit(ScrapeEvent.ProjectError, undefined, err);
+    }
+  }
+
+  async postDiscover() {
+    await this.cleanup();
+
+    this.logger.info('All existing project have been scraped, discovery complete');
+    this.emit(ScrapeEvent.DiscoveryCompleted);
+
+    if (this.discoveryOpts?.retry) {
+      this.logger.info(`Resume project discovery after ${this.discoveryOpts.retry} seconds`);
+      this.discoverTimeout = setTimeout(this.discover, this.discoveryOpts.retry * 1000);
+    }
   }
 
   /**
    * wait for in-progress scraping to complete before exiting
    */
-  gracefullStopHandler(signal: NodeJS.Signals) {
+  async gracefullStopHandler(signal: NodeJS.Signals) {
     this.logger.warn(`${signal} signal received`);
 
     // in-between discovery retries, no scraping going on, can exit directly
-    if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout);
+    if (this.discoverTimeout) {
+      clearTimeout(this.discoverTimeout);
       this.logger.warn('no in-progress scraping detected, exit directly');
-      process.exit(0);
+      await this.cleanup();
     }
     // ongoing scraping, don't scrape new resources, wait for the currently in progress ones to complete
-    else {
-      this.on(ScrapeEvent.ProjectScraped, () => process.exit(0));
-      this.on(ScrapeEvent.DiscoverComplete, () => process.exit(0));
+    else if (this.checkTimeout) {
       this.logger.warn('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
       this.stop = true;
+    }
+    // scraping has not yet started
+    else {
+      this.logger.warn('scraping has not yet started, exit directly');
+      process.exit(0);
     }
   }
 
@@ -533,10 +553,10 @@ export default class Scraper extends EventEmitter {
             possibly ending with the same error in an infinite loop
             - optional error code when status code is not enough: dns, network, parsing errors ...
           */
-        await project.queue.updateStatus(resource.queueEntryId, 500, err.code);
+        await project.queue.updateStatus(resource.queueEntryId, 500, err.code || 'SCRAPE_RESOURCE_ERROR');
       }
 
-      this.emit(ScrapeEvent.ResourceError, project, resource, err);
+      this.emit(ScrapeEvent.ResourceScrapeError, project, resource, err);
       return;
     }
 
@@ -664,5 +684,31 @@ export default class Scraper extends EventEmitter {
     }
 
     return result;
+  }
+
+  async getProject(projectOpts: ProjectOptions): Promise<Project> {
+    let project:Project;
+
+    try {
+      if (PluginStore.store.size === 0) {
+        await PluginStore.init();
+        this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
+      }
+
+      await this.connectionMng.connect();
+      this.logger.info('Storage connected');
+
+      const ExtProject = await this.connectionMng.getProject();
+      project = await ExtProject.get(projectOpts.name);
+
+      await this.connectionMng.close();
+    }
+    catch (err) {
+      this.logger.error(err);
+    }
+
+    if (!project) throw new Error(`could not find project ${projectOpts.name}`);
+
+    return project;
   }
 }

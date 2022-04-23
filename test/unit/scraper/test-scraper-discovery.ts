@@ -7,22 +7,14 @@ import Queue from '../../../src/storage/base/Queue';
 import Resource from '../../../src/storage/base/Resource';
 import Connection from '../../../src/storage/base/Connection';
 import ConnectionManager from '../../../src/storage/ConnectionManager';
+import { PluginStore } from '../../../src';
 
-xdescribe('Scraper - Discovery', () => {
+describe('Scraper - Discovery', () => {
   let sandbox:SinonSandbox;
   let conn:SinonStubbedInstance<Connection>;
   let browserClient;
   let scraper:Scraper;
   let queue: SinonStubbedInstance<Queue>;
-
-  const checkEntity = (reject : (err) => void, actual, expected) => {
-    try {
-      assert.include(actual, expected);
-    }
-    catch (err) {
-      reject(err);
-    }
-  };
 
   beforeEach(() => {
     sandbox = createSandbox();
@@ -38,213 +30,359 @@ xdescribe('Scraper - Discovery', () => {
     browserClient.launch = sandbox.stub();
     scraper = new Scraper(conn, browserClient);
     scraper.browserClient = browserClient;
+
+    sandbox.stub(PluginStore, 'init');
+
+    // don't pollute output with expected errors
+    sandbox.stub(scraper.logger);
   });
 
   afterEach(() => {
     sandbox.restore();
   });
 
-  /*
-  Scraper - one project scrape at a time
-  Concurrency, Discovery are complicated
-
-  scrape(project)
-  discover()
-    - scrape project
-    - ProjectScraped, ProjectError, DiscoveryComplete - call discover again
-
-  */
-
-  /*
-  PROBLEMS:
-  1) Project.getProjectToScrape
-    - scraperA marks resourceA as in progress, resets it afterwards
-    - scraperB marks resourceA as in progress, resets it afterwards
-    - there's a single to-be-scraped resource available
-        scraperA can succefully scrape it, only for scraperB to reset its status and try to re-scrape it by any available scrapers
-    Sollution: getProjectToScrape does a single SQL, does
-  2) After succesfully scraping a project in discovery mode
-    - ProjectScraped is not invoked
-    - we get multiple "discovering new projects"
-  */
-
-  // discover multiple projects 1 by one
-  // no projects to discover, resume discovering
-  // stop with discovery
-
-  it('project success - resume discovery', async () => {
-    const emptyProject:Project = sandbox.createStubInstance(Project);
-    emptyProject.queue = queue;
-
-    const getProjectToScrape = sandbox.stub()
-      .onCall(0)
-      .returns(emptyProject)
-      .onCall(1)
-      .returns(emptyProject)
-      .onCall(2)
-      .returns(null)
-      .onCall(3)
-      .returns(emptyProject);
-
+  it('retry discovery - no valid projects found', async () => {
     const connMng = sandbox.createStubInstance<ConnectionManager>(ConnectionManager);
-    connMng.getProject.returns(<any>{ getProjectToScrape });
-    // connMng.getProject.onCall(0).returns(<any>{ getProjectToScrape: sandbox.stub().returns(emptyProject) });
-    // connMng.getProject.onCall(1).returns(<any>{ getProjectToScrape: sandbox.stub().returns(emptyProject) });
-    // connMng.getProject.onCall(2).returns(<any>{ getProjectToScrape: sandbox.stub().returns(null) });
-    // connMng.getProject.onCall(3).returns(<any>{ getProjectToScrape: sandbox.stub().returns(emptyProject) });
+    connMng.getProject.returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: null }) });
 
-    // connMng.getProject.onCall(1).returns(null);
-    // console.log('getProject');
-    // console.log((await connMng.getProject()).getProjectToScrape());
-    // console.log((await connMng.getProject()).getProjectToScrape());
-    // console.log((await connMng.getProject()).getProjectToScrape());
-
-    scraper.connectionMng = <any>connMng;
-    // sandbox.stub(connMng, 'getProject').returns();
-
-    //   Promise.resolve(null),
-    // ]);
-    // connMng.getProject.returns(Promise.resolve(emptyProject));
-
-    // scraper.connectionMng = <any>sandbox.createStubInstance(
-    //   ConnectionManager,
-    //   {
-    //     getProject: <any>sandbox.stub().returns({
-    //       getProjectToScrape: sandbox.stub().returns({
-    //         pluginOpts: [],
-    //         initPlugins: sandbox.stub().returns([]),
-    //         queue,
-    //       }),
-    //     }),
-    //   },
-    // );
+    scraper.connectionMng = connMng as any;
 
     const eventChain: ScrapeEvent[] = [];
-
-    const discoverAttempts = new Promise<void>(resolve => {
-      let successNo = 0;
-      scraper.on(ScrapeEvent.ProjectSelected, () => {
-        eventChain.push(ScrapeEvent.ProjectSelected);
-      });
-      scraper.on(ScrapeEvent.ProjectScraped, () => {
-        successNo += 1;
-        eventChain.push(ScrapeEvent.ProjectScraped);
-        if (successNo === 3) resolve();
-      });
-      scraper.on(ScrapeEvent.DiscoverComplete, () => {
-        console.log('discovery complete');
-        scraper.stop = true;
-        eventChain.push(ScrapeEvent.DiscoverComplete);
-      });
+    scraper.on(ScrapeEvent.ProjectSelected, () => {
+      eventChain.push(ScrapeEvent.ProjectSelected);
+    });
+    scraper.on(ScrapeEvent.ProjectScraped, () => {
+      eventChain.push(ScrapeEvent.ProjectScraped);
+    });
+    scraper.on(ScrapeEvent.DiscoveryCompleted, () => {
+      eventChain.push(ScrapeEvent.DiscoveryCompleted);
     });
 
+    // three DiscoverComplete events are triggered in a 5s interval at 0, 2, 4 seconds
     scraper.discover({}, {}, { discover: true, retry: 2 });
+    await new Promise(resolve => setTimeout(resolve, 5 * 1000));
 
-    await Promise.race([
-      new Promise(resolve => setTimeout(resolve, 25 * 1000)),
-      discoverAttempts,
-    ]);
-
-    console.log('DONE');
-
-    clearTimeout(scraper.retryTimeout);
-    // scraper.postScrape();
-    // scraper.off();
-    // scraper.removeAllListeners();
-
-    console.log(eventChain);
+    // stop re-discovery
+    clearTimeout(scraper.discoverTimeout);
 
     assert.sameMembers(
       [
-        ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectScraped,
-        ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectScraped,
-        ScrapeEvent.DiscoverComplete,
-        ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.DiscoveryCompleted,
+        ScrapeEvent.DiscoveryCompleted,
+        ScrapeEvent.DiscoveryCompleted,
       ],
       eventChain,
     );
   });
 
-  it('project error - resume discovery', async () => {
-    queue.getResourcesToScrape.throwsException(new Error('unexpected concurrency error'));
+  it('resume discovery - multiple projects scraped succesfully', async () => {
+    const resource = <Resource>{ url: 'https://sitea.com' };
 
-    scraper.connectionMng = <any>sandbox.createStubInstance(
-      ConnectionManager,
+    const validProject:Project = Object.assign(
+      sandbox.createStubInstance(Project, {
+        /*
+        add a mock plugin with a bit of delay execution
+        to make sure ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScraped are received in the correct order
+        */
+        initPlugins: Promise.resolve([ { test: () => new Promise(resolve => setTimeout(resolve, 100, false)) } as any ]),
+      }),
       {
-        getProject: <any>sandbox.stub().returns({
-          getProjectToScrape: sandbox.stub().returns({
-            pluginOpts: [],
-            initPlugins: sandbox.stub().returns([]),
-            queue,
-          }),
-        }),
+        name: 'projA',
+        queue,
       },
     );
 
+    const connMng = sandbox.createStubInstance<ConnectionManager>(ConnectionManager);
+    connMng.getProject.onCall(0).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: validProject, resources: [ resource ] }) });
+    connMng.getProject.onCall(1).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: validProject, resources: [ resource ] }) });
+    connMng.getProject.onCall(2).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: null }) });
+
+    scraper.connectionMng = <any>connMng;
+
     const eventChain: ScrapeEvent[] = [];
 
-    const discoverAttempts = new Promise<void>(resolve => {
-      let errorNo = 0;
+    const discoveryComplete = new Promise<void>(resolve => {
       scraper.on(ScrapeEvent.ProjectSelected, () => {
         eventChain.push(ScrapeEvent.ProjectSelected);
       });
+      scraper.on(ScrapeEvent.ResourceSelected, () => {
+        eventChain.push(ScrapeEvent.ResourceSelected);
+      });
+      scraper.on(ScrapeEvent.ResourceScraped, () => {
+        eventChain.push(ScrapeEvent.ResourceScraped);
+      });
+      scraper.on(ScrapeEvent.ProjectScraped, () => {
+        eventChain.push(ScrapeEvent.ProjectScraped);
+      });
       scraper.on(ScrapeEvent.ProjectError, () => {
-        errorNo += 1;
         eventChain.push(ScrapeEvent.ProjectError);
-        if (errorNo === 2) resolve();
+      });
+      scraper.on(ScrapeEvent.DiscoveryCompleted, () => {
+        eventChain.push(ScrapeEvent.DiscoveryCompleted);
+        resolve();
       });
     });
 
-    scraper.discover({}, {}, { discover: true, retry: 2 });
-
-    await Promise.race([
-      new Promise(resolve => setTimeout(resolve, 25 * 1000)),
-      discoverAttempts,
-    ]);
-
-    clearTimeout(scraper.retryTimeout);
-    scraper.removeAllListeners();
+    scraper.discover({}, {}, { discover: true });
+    await discoveryComplete;
 
     assert.sameMembers(
-      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectError, ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectError ],
+      [
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScraped, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScraped, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.DiscoveryCompleted,
+      ],
       eventChain,
     );
   });
 
-  it('project error - stop discovery', async () => {
-    queue.getResourcesToScrape.throwsException(new Error('unexpected concurrency error'));
+  it('resume discovery - multiple projects scraped succesfully with ResourceSelectError events', async () => {
+    const resource = <Resource>{ url: 'invalid_url' };
 
-    scraper.connectionMng = <any>sandbox.createStubInstance(
-      ConnectionManager,
+    const validProject:Project = Object.assign(
+      sandbox.createStubInstance(Project, {
+        /*
+        add a mock plugin with a bit of delay execution
+        to make sure ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScraped are received in the correct order
+        */
+        initPlugins: Promise.resolve([ { test: () => new Promise(resolve => setTimeout(resolve, 100, false)) } as any ]),
+      }),
       {
-        getProject: <any>sandbox.stub().returns({
-          getProjectToScrape: sandbox.stub().returns({
-            pluginOpts: [],
-            initPlugins: sandbox.stub().returns([]),
-            queue,
-          }),
-        }),
+        name: 'projA',
+        queue,
       },
     );
 
+    const connMng = sandbox.createStubInstance<ConnectionManager>(ConnectionManager);
+    connMng.getProject.onCall(0).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: validProject, resources: [ resource ] }) });
+    connMng.getProject.onCall(1).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: validProject, resources: [ resource ] }) });
+    connMng.getProject.onCall(2).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: null }) });
+
+    scraper.connectionMng = <any>connMng;
+
     const eventChain: ScrapeEvent[] = [];
 
-    await new Promise<void>(resolve => {
+    const discoveryComplete = new Promise<void>(resolve => {
       scraper.on(ScrapeEvent.ProjectSelected, () => {
         eventChain.push(ScrapeEvent.ProjectSelected);
       });
-      scraper.on(ScrapeEvent.ProjectError, () => {
-        eventChain.push(ScrapeEvent.ProjectError);
+      scraper.on(ScrapeEvent.ResourceSelected, () => {
+        eventChain.push(ScrapeEvent.ResourceSelected);
       });
-      scraper.on(ScrapeEvent.DiscoverComplete, () => {
-        eventChain.push(ScrapeEvent.DiscoverComplete);
+      scraper.on(ScrapeEvent.ResourceScraped, () => {
+        eventChain.push(ScrapeEvent.ResourceScraped);
+      });
+      scraper.on(ScrapeEvent.ResourceScrapeError, () => {
+        eventChain.push(ScrapeEvent.ResourceScrapeError);
+      });
+      scraper.on(ScrapeEvent.ResourceSelectError, () => {
+        eventChain.push(ScrapeEvent.ResourceSelectError);
+      });
+      scraper.on(ScrapeEvent.ProjectScraped, () => {
+        eventChain.push(ScrapeEvent.ProjectScraped);
+      });
+      scraper.on(ScrapeEvent.DiscoveryCompleted, () => {
+        eventChain.push(ScrapeEvent.DiscoveryCompleted);
         resolve();
       });
-      scraper.discover({}, {}, { discover: true });
     });
 
+    scraper.discover({}, {}, { discover: true });
+    await discoveryComplete;
+
     assert.sameMembers(
-      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ProjectError, ScrapeEvent.DiscoverComplete ],
+      [
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelectError, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelectError, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.DiscoveryCompleted,
+      ],
+      eventChain,
+    );
+  });
+
+  it('resume discovery - multiple projects scraped succesfully with ResourceScrapeError events', async () => {
+    const resource = <Resource>{ url: 'https://sitea.com' };
+
+    const validProject:Project = Object.assign(
+      sandbox.createStubInstance(Project, {
+        /*
+        add a mock plugin with a bit of delay execution
+        to make sure ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScraped are received in the correct order
+        */
+        initPlugins: Promise.resolve([
+          {
+            test: () => new Promise(resolve => setTimeout(resolve, 100, true)),
+            apply: () => {
+              throw new Error('PluginError');
+            },
+          } as any,
+        ]),
+      }),
+      {
+        name: 'projA',
+        queue,
+      },
+    );
+
+    const connMng = sandbox.createStubInstance<ConnectionManager>(ConnectionManager);
+    connMng.getProject.onCall(0).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: validProject, resources: [ resource ] }) });
+    connMng.getProject.onCall(1).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: validProject, resources: [ resource ] }) });
+    connMng.getProject.onCall(2).returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: null }) });
+
+    scraper.connectionMng = <any>connMng;
+
+    const eventChain: ScrapeEvent[] = [];
+
+    const discoveryComplete = new Promise<void>(resolve => {
+      scraper.on(ScrapeEvent.ProjectSelected, () => {
+        eventChain.push(ScrapeEvent.ProjectSelected);
+      });
+      scraper.on(ScrapeEvent.ResourceSelected, () => {
+        eventChain.push(ScrapeEvent.ResourceSelected);
+      });
+      scraper.on(ScrapeEvent.ResourceScraped, () => {
+        eventChain.push(ScrapeEvent.ResourceScraped);
+      });
+      scraper.on(ScrapeEvent.ResourceScrapeError, () => {
+        eventChain.push(ScrapeEvent.ResourceScrapeError);
+      });
+      scraper.on(ScrapeEvent.ResourceSelectError, () => {
+        eventChain.push(ScrapeEvent.ResourceSelectError);
+      });
+      scraper.on(ScrapeEvent.ProjectScraped, () => {
+        eventChain.push(ScrapeEvent.ProjectScraped);
+      });
+      scraper.on(ScrapeEvent.DiscoveryCompleted, () => {
+        eventChain.push(ScrapeEvent.DiscoveryCompleted);
+        resolve();
+      });
+    });
+
+    scraper.discover({}, {}, { discover: true });
+    await discoveryComplete;
+
+    assert.sameMembers(
+      [
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScrapeError, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScrapeError, ScrapeEvent.ProjectScraped,
+        ScrapeEvent.DiscoveryCompleted,
+      ],
+      eventChain,
+    );
+  });
+
+  it('stop discovery - outside discovery workflow', async () => {
+    const connMng = sandbox.createStubInstance<ConnectionManager>(ConnectionManager);
+    connMng.getProject.returns(<any>{ getProjectToScrape: sandbox.stub().returns({ project: null, resources: [] }) });
+
+    scraper.connectionMng = <any>connMng;
+    const cleanupSpy = sandbox.spy(scraper, 'cleanup');
+
+    const eventChain: ScrapeEvent[] = [];
+
+    const discoverIntrerrupted = new Promise(resolve => {
+      scraper.on(ScrapeEvent.ProjectSelected, () => {
+        eventChain.push(ScrapeEvent.ProjectSelected);
+      });
+      scraper.on(ScrapeEvent.ResourceSelected, () => {
+        eventChain.push(ScrapeEvent.ResourceSelected);
+      });
+      scraper.on(ScrapeEvent.ResourceScraped, () => {
+        eventChain.push(ScrapeEvent.ResourceScraped);
+      });
+      scraper.on(ScrapeEvent.ResourceScrapeError, () => {
+        eventChain.push(ScrapeEvent.ResourceScrapeError);
+      });
+      scraper.on(ScrapeEvent.ResourceSelectError, () => {
+        eventChain.push(ScrapeEvent.ResourceSelectError);
+      });
+      scraper.on(ScrapeEvent.ProjectScraped, () => {
+        eventChain.push(ScrapeEvent.ProjectScraped);
+      });
+      scraper.on(ScrapeEvent.DiscoveryCompleted, () => {
+        eventChain.push(ScrapeEvent.DiscoveryCompleted);
+        setImmediate(scraper.gracefullStopHandler.bind(scraper), 0, 'SIGINT');
+        setTimeout(resolve, 1500);
+      });
+    });
+
+    scraper.discover({}, {}, { discover: true, retry: 10 });
+    await discoverIntrerrupted;
+
+    // one from postDiscover, wait, one from gracefullStopHandler
+    assert.strictEqual(cleanupSpy.callCount, 2);
+    assert.sameMembers(
+      [
+        ScrapeEvent.DiscoveryCompleted,
+      ],
+      eventChain,
+    );
+  });
+
+  it('stop discovery - inside discovery workflow', async () => {
+    const resource = <Resource>{ url: 'https://sitea.com' };
+
+    const validProject:Project = Object.assign(
+      sandbox.createStubInstance(Project, {
+        initPlugins: Promise.resolve([
+          {
+            test: () => new Promise(resolve => setTimeout(resolve, 200, true)),
+            apply: () => ({}),
+          } as any,
+        ]),
+      }),
+      {
+        name: 'projA',
+        queue,
+      },
+    );
+
+    const connMng = sandbox.createStubInstance<ConnectionManager>(ConnectionManager);
+    connMng.getProject.returns(<any>{
+      getProjectToScrape: sandbox.stub().returns(
+        { project: validProject, resources: [ resource ] },
+      ),
+    });
+
+    scraper.connectionMng = <any>connMng;
+    const cleanupSpy = sandbox.spy(scraper, 'cleanup');
+
+    const eventChain: ScrapeEvent[] = [];
+
+    const discoverIntrerrupted = new Promise(resolve => {
+      scraper.on(ScrapeEvent.ProjectSelected, () => {
+        eventChain.push(ScrapeEvent.ProjectSelected);
+      });
+      scraper.on(ScrapeEvent.ResourceSelected, () => {
+        eventChain.push(ScrapeEvent.ResourceSelected);
+        setImmediate(scraper.gracefullStopHandler.bind(scraper), 0, 'SIGINT');
+        setTimeout(resolve, 1500);
+      });
+      scraper.on(ScrapeEvent.ResourceScraped, () => {
+        eventChain.push(ScrapeEvent.ResourceScraped);
+      });
+      scraper.on(ScrapeEvent.ResourceScrapeError, () => {
+        eventChain.push(ScrapeEvent.ResourceScrapeError);
+      });
+      scraper.on(ScrapeEvent.ResourceSelectError, () => {
+        eventChain.push(ScrapeEvent.ResourceSelectError);
+      });
+      scraper.on(ScrapeEvent.ProjectScraped, () => {
+        eventChain.push(ScrapeEvent.ProjectScraped);
+      });
+      scraper.on(ScrapeEvent.DiscoveryCompleted, () => {
+        eventChain.push(ScrapeEvent.DiscoveryCompleted);
+      });
+    });
+
+    scraper.discover({}, {}, { discover: true, retry: 10 });
+    await discoverIntrerrupted;
+
+    assert.isTrue(cleanupSpy.calledOnce);
+    assert.sameMembers(
+      [
+        ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScraped, ScrapeEvent.ProjectScraped,
+      ],
       eventChain,
     );
   });

@@ -4,7 +4,6 @@ import { SinonSandbox, createSandbox } from 'sinon';
 import Resource, { Proxy } from '../../../src/storage/base/Resource';
 import ConcurrencyManager, { ConcurrencyError, ConcurrencyLevel } from '../../../src/scraper/ConcurrencyManager';
 
-
 describe('ConcurrencyManager', () => {
   let sandbox:SinonSandbox;
   let concurrency:ConcurrencyManager;

@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import Sinon, { SinonSandbox, createSandbox, SinonStubbedInstance } from 'sinon';
+import Sinon, { SinonSandbox, createSandbox, SinonStubbedInstance, SinonStub } from 'sinon';
 import Scraper, { ScrapeEvent } from '../../../src/scraper/Scraper';
 import Project from '../../../src/storage/base/Project';
 import BrowserClient from '../../../src/browserclient/BrowserClient';
@@ -7,7 +7,8 @@ import Queue from '../../../src/storage/base/Queue';
 import Connection from '../../../src/storage/base/Connection';
 import ConnectionManager from '../../../src/storage/ConnectionManager';
 import { Resource } from '../../../src';
-import { ConcurrencyError, ConcurrencyLevel } from '../../../src/scraper/ConcurrencyManager';
+import ConcurrencyManager, { ConcurrencyError, ConcurrencyLevel } from '../../../src/scraper/ConcurrencyManager';
+import QueueBuffer from '../../../src/scraper/QueueBuffer';
 
 describe('Scraper - Single Project', () => {
   let sandbox:SinonSandbox;
@@ -15,6 +16,7 @@ describe('Scraper - Single Project', () => {
   let browserClient;
   let scraper:Scraper;
   let queue: SinonStubbedInstance<Queue>;
+  let logErrorStub: SinonStub;
 
   const checkEntity = (reject : (err) => void, haystack, needle) => {
     try {
@@ -40,10 +42,20 @@ describe('Scraper - Single Project', () => {
     browserClient.close = sandbox.stub();
     scraper = new Scraper(conn, browserClient);
     scraper.browserClient = browserClient;
+
+    logErrorStub = sandbox.stub(scraper.logger, 'error');
   });
 
   afterEach(async () => {
-    await scraper.postScrapeProject();
+    /*
+    SIGTERM, SIGINT listners are added in scraper constructor and never removed
+    this is fine in production but it test they keep accumlating
+    remove them after each test so nodejs won't emit
+    MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGTERM listeners added to [process].
+    */
+    process.off('SIGTERM', scraper.gracefullStopHandler);
+    process.off('SIGINT', scraper.gracefullStopHandler);
+
     sandbox.restore();
   });
 
@@ -268,9 +280,10 @@ describe('Scraper - Single Project', () => {
         eventChain.push(ScrapeEvent.ProjectSelected);
 
         // stub concurrency.check to throw ConcurrencyError
-        sandbox.stub(scraper.concurrency, 'check').onCall(0).throwsException(new ConcurrencyError(ConcurrencyLevel.Project));
+        sandbox.stub(ConcurrencyManager.prototype, 'check').onCall(0).throwsException(new ConcurrencyError(ConcurrencyLevel.Project));
+
         // monitor QueueBuffer.addResources
-        addResourcesSpy = sandbox.spy(scraper.queueBuffer, 'addResources');
+        addResourcesSpy = sandbox.spy(QueueBuffer.prototype, 'addResources');
       });
 
       scraper.on(ScrapeEvent.ProjectScraped, eventProject => {
@@ -298,8 +311,6 @@ describe('Scraper - Single Project', () => {
   });
 
   it('scrape - emit events - queueBuffer getResource error', async () => {
-    const logErrorSpy = sandbox.spy(scraper.logger, 'error');
-
     queue.getResourcesToScrape.throwsException(new Error('BufferError'));
 
     const project = Object.assign(sandbox.createStubInstance(Project), {
@@ -339,8 +350,8 @@ describe('Scraper - Single Project', () => {
     only a single queueBuffer.getResource call,
     concurrency.isScrapingComplete will return positive since buffer is empty and not a single resource has started scraping
     */
-    assert.strictEqual(logErrorSpy.getCalls().length, 1);
-    logErrorSpy.getCalls().every(call => /BufferError/.test(call.args[0].message));
+    assert.strictEqual(logErrorStub.getCalls().length, 1);
+    logErrorStub.getCalls().every(call => /BufferError/.test(call.args[0].message));
   });
 
   it('scrape - emit events - resource error', async () => {
@@ -382,18 +393,18 @@ describe('Scraper - Single Project', () => {
         checkEntity(reject, eventResource, resource);
         eventChain.push(ScrapeEvent.ResourceSelected);
       });
-      scraper.on(ScrapeEvent.ResourceError, (eventProject, eventResource, err) => {
+      scraper.on(ScrapeEvent.ResourceScrapeError, (eventProject, eventResource, err) => {
         checkEntity(reject, eventProject, project);
         checkEntity(reject, eventResource, resource);
         if (!/CustomPluginError/.test(err)) reject(new Error('expected CustomPluginError'));
-        eventChain.push(ScrapeEvent.ResourceError);
+        eventChain.push(ScrapeEvent.ResourceScrapeError);
       });
 
       scraper.scrape(project);
     });
 
     assert.sameOrderedMembers(
-      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceError, ScrapeEvent.ProjectScraped ],
+      [ ScrapeEvent.ProjectSelected, ScrapeEvent.ResourceSelected, ScrapeEvent.ResourceScrapeError, ScrapeEvent.ProjectScraped ],
       eventChain,
     );
   });
