@@ -137,6 +137,15 @@ export default function acceptanceSuite(
       await scrapeComplete;
 
       /*
+      SIGTERM, SIGINT listners are added in scraper constructor and never removed
+      this is fine in production but in tests they keep accumlating
+      remove them after each test so nodejs won't emit
+      MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGTERM listeners added to [process].
+      */
+      process.off('SIGTERM', scraper.gracefullStopHandler);
+      process.off('SIGINT', scraper.gracefullStopHandler);
+
+      /*
       compare results
       - expected results contain all scraped urls regardless of status
       - actual results is a combination of project queue entries and resources

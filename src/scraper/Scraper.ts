@@ -144,6 +144,10 @@ export default class Scraper extends EventEmitter {
     this.scrapeResource = this.scrapeResource.bind(this);
     this.gracefullStopHandler = this.gracefullStopHandler.bind(this);
 
+    // gracefully stop scraping
+    process.on('SIGTERM', this.gracefullStopHandler);
+    process.on('SIGINT', this.gracefullStopHandler);
+
     // scrape workflow is (mostly) controlled via events
     this.on(ScrapeEvent.ResourceSelected, this.scrapeResource);
 
@@ -191,10 +195,6 @@ export default class Scraper extends EventEmitter {
 
   async init() {
     this.preChecks();
-
-    // gracefully stop scraping
-    process.on('SIGTERM', this.gracefullStopHandler);
-    process.on('SIGINT', this.gracefullStopHandler);
 
     if (PluginStore.store.size === 0) {
       await PluginStore.init();
@@ -380,9 +380,6 @@ export default class Scraper extends EventEmitter {
    * Remove event listners, close db connections.
    */
   async cleanup() {
-    process.off('SIGTERM', this.gracefullStopHandler);
-    process.off('SIGINT', this.gracefullStopHandler);
-
     try {
       // scraping stopped, if resumed new concurrency, metrics instances will be created
       if (this.concurrency) {
