@@ -1,0 +1,3 @@
+# exports holds lots of csv data for each scraper node, only interested in final, exported scraped-content.csv
+**/exports/**
+!scraped-content.csv
