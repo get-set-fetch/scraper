@@ -10,4 +10,4 @@
           user: "{{ vault_db_user }}"
           password: "{{ vault_db_password }}"
         pg_config:
-          max_connections: 310 # 30 scrapers * 10 max connection pool + 10
+          max_connections: 210 # 20 scrapers * 10 max connection pool + 10

@@ -23,7 +23,7 @@
           log:
             level: info
           files:
-              scrape_urls: majestic-million-compact-2022-04-06.csv
+              scrape_urls: majestic-million-compact.csv
               gsf_config: templates/js-scripts-config.json.j2
               additional:
                   - ExtractScriptsPlugin.js
