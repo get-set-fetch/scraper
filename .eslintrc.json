@@ -17,7 +17,8 @@
     "project": [
       "./tsconfig.json", 
       "./test/tsconfig.test.json", 
-      "./examples/tsconfig.examples.json"
+      "./examples/tsconfig.examples.json",
+      "./datasets/tsconfig.datasets.json"
     ]
   },
   "settings": {
