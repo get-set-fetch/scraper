@@ -1,0 +1,4 @@
+url,status,error
+{% for item in sql_queue.query_result %}
+{{ item.url }},{{ item.status }},{{ item.error }}
+{% endfor %}

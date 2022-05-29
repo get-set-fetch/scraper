@@ -1,0 +1,31 @@
+- name: "sql: project id"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    login_host: "localhost"
+    query: select id from "projects" where name = %(project_name)s;
+    named_args:
+      project_name: "{{ project_name }}"
+  register: sql_project_id
+
+- name: "sql: queue filtered by status"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    login_host: "localhost"
+    query: >
+        select url, status, error 
+        from "{{ sql_project_id.query_result[0].id }}-queue"
+        where status is not null and status / 100 = %(status)s;
+    named_args:
+      status: "{{ status }}"
+  register: sql_queue
+  no_log: true
+
+- name: "stats_file: write csv header"
+  delegate_to: localhost
+  template:
+    src: templates/queue.j2
+    dest: "{{ export_file }}"
