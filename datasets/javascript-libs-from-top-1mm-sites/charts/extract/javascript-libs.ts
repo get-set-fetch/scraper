@@ -3,15 +3,6 @@ import CategoryExtractor from './CategoryExtractor';
 import ScriptParser from './ScriptParser';
 import { getTotals } from '../../../utils/map';
 
-/*
-cd charts/extract
-npx ts-node top-js-scripts.ts
-
-cd charts
-npx ts-node ../../utils/serve-static.ts
-http://localhost:9000/top-scripts-per-category.html
-*/
-
 (async () => {
   // get script data as Map<hostname, Map<pathname, count>>
   const scriptParser = new ScriptParser();

@@ -1,4 +1,4 @@
-module "top_1000k_js_scripts" {
+module "js_libs" {
   source = "../../../cloud/terraform"
 
   region                 = "fra1"

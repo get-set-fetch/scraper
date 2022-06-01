@@ -18,8 +18,8 @@
             - knex@1.0.5
             - pg@8.7.3
             - cheerio@1.0.0-rc.10
-            # - "@get-set-fetch/scraper@0.10.0"
-            - get-set-fetch-scraper-0.10.0.tgz
+            - "@get-set-fetch/scraper@0.11.0"
+            # - get-set-fetch-scraper-0.10.0.tgz
           log:
             level: info
           files:

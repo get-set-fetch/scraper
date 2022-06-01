@@ -6,7 +6,7 @@
   <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 
   <script type="module">
-    const urlNo = 712270;
+    const urlNo = 714894;
 
     // row ex: {category: 'analytics', " script": 'gtag', " count": '179849'}
     let data = await d3.csv(
@@ -167,7 +167,7 @@
       var content = new Blob([document.getElementById('chart-container').innerHTML], { type: 'image/svg+xml' });
 
       document.getElementById('export').href = window.URL.createObjectURL(content);
-      document.getElementById('export').download = 'top-js-scripts.svg';
+      document.getElementById('export').download = 'top-javascript-libraries.svg';
     }
   </script>
 </head>
