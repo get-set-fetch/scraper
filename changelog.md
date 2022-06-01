@@ -1,15 +1,25 @@
 ## Changelog
 
 ### Unreleased
+- Scraper
+  - new events replacing the generic ResourceError event: ResourceSelectError, ResourceScrapeError
+- Cloud
+  - Ansible role updates
+  - Terraform module updates
+  - new Ansible role: gsf-scraper-queue
+- Datasets
+  - completed 1st dataset project - javascript-libs-from-top-1mm-sites - to serve as blueprint for future ones
+
+### 0.10.0 - 2022-02-20
 - Cloud:
-  - added base terraform module
-  - added ansible roles
+  - added base Terraform module
+  - added Ansible roles
 - Concurrency:
   - improved buffering, total number of scrape-in-progress resources deviates less from concurrency maxRequests option
   - improved debugging
 - Plugins
   - NodeFetchPlugin:
-    - new connectTimeout, readTimeout options
+    - new tlsCheck, dnsResolution, connectTimeout, readTimeout options
 - Logging
   - LogWrapper
     - new level getter for the wrapped logger level
