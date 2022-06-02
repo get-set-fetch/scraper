@@ -83,6 +83,7 @@ module "benchmark_1000k_1project_multiple_scrapers_csv_urls" {
 }
 ```
 Note: only DigitalOcean terraform provider is supported atm.
+See [datasets](datasets/) for some examples.
 
 ### Benchmarks
 For quick, small projects under 10K URLs storing the queue and scraped content under SQLite is fine. For anything larger use PostgreSQL. You will be able to start/stop/resume the scraping process across multiple scraper instances each with its own IP and/or dedicated proxies. 
