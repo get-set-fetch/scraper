@@ -1,0 +1,6 @@
+# exports holds lots of csv, log data for each scraper node
+**/exports/*.log
+**/exports/*.csv
+
+# ignore ansible csv files like majestic-million
+**/ansible/files/*.csv

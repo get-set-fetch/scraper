@@ -130,7 +130,7 @@ export default class Queue {
    * @param resourcePath - input filepath
    * @param chunkSize - number of resources within a transaction
    */
-  async addFromFile(resourcePath: string, chunkSize:number = 1000):Promise<void> {
+  async addFromFile(resourcePath: string, chunkSize:number = 10000):Promise<void> {
     let urlCount:number = 0;
 
     let urls: {url: string}[] = [];

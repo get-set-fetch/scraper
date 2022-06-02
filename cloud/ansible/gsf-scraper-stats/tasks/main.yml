@@ -17,6 +17,7 @@
     login_host: "localhost"
     query: >
         select
+            count(1) as total,
             count(1) filter (where status = 1) as in_progress,
             count(1) filter (where status is null) as not_scraped,
             count(1) filter (where status is not null and status / 100 = 2) as "2xx",
@@ -37,7 +38,7 @@
   delegate_to: localhost
   ansible.builtin.copy:
     dest: "{{ export_file }}"
-    content: "time, 2xx, 3xx, 4xx, 5xx, in_progress, not_scraped, per_second, scraper_instances"
+    content: "time, 2xx, 3xx, 4xx, 5xx, in_progress, not_scraped, total, per_second, scraper_instances"
   when: not stats_file.stat.exists
 
 - name: "stats_file: add first (incomplete) stats entry"
@@ -53,6 +54,7 @@
         {{ sql_queue_status.query_result[0]["5xx"] }},
         {{ sql_queue_status.query_result[0].in_progress }},
         {{ sql_queue_status.query_result[0].not_scraped }},
+        {{ sql_queue_status.query_result[0].total }},
         ,
         {{ groups['scraper'] | length  }}
   when: not stats_file.stat.exists
@@ -91,6 +93,7 @@
         {{ sql_queue_status.query_result[0]["5xx"] }},
         {{ sql_queue_status.query_result[0].in_progress }},
         {{ sql_queue_status.query_result[0].not_scraped }},
+        {{ sql_queue_status.query_result[0].total }},
         {{ scraped_per_second }},
         {{ groups['scraper'] | length  }}
   when: stats_file.stat.exists
@@ -108,3 +111,4 @@
       - "Scrape-in-progress resources: {{ sql_queue_status.query_result[0].in_progress }}"
       - "Scraped resources per second: {{ scraped_per_second | default('not available, first run') }}"
       - "Not yet scraped resources: {{ sql_queue_status.query_result[0].not_scraped }}"
+      - "Total resources: {{ sql_queue_status.query_result[0].total }}"

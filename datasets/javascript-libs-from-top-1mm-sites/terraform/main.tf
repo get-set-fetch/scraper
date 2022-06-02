@@ -1,4 +1,4 @@
-module "top_1000k_js_scripts" {
+module "js_libs" {
   source = "../../../cloud/terraform"
 
   region                 = "fra1"
@@ -15,7 +15,7 @@ module "top_1000k_js_scripts" {
   }
 
   scraper = {
-    count                 = 1
+    count                 = 20
     name                  = "scraper"
     image                 = "ubuntu-20-04-x64"
     size                  = "s-1vcpu-1gb"

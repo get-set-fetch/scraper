@@ -11,19 +11,19 @@
           password: "{{ vault_db_password }}"
           pool:
             min: 10
-            max: 50
+            max: 10
         scraper:
-          uv_threadpool_size: 24 # 4 (default) + 20 (max concurrent dns.lookups)
+          uv_threadpool_size: 34 # 4 (default) + 30 (max concurrent dns.lookups)
           npm_install:
             - knex@1.0.5
             - pg@8.7.3
             - cheerio@1.0.0-rc.10
-            # - "@get-set-fetch/scraper@0.10.0"
-            - get-set-fetch-scraper-0.10.0.tgz
+            - "@get-set-fetch/scraper@0.11.0"
+            # - get-set-fetch-scraper-0.10.0.tgz
           log:
             level: info
           files:
-              scrape_urls: majestic-million-compact-2022-04-06.csv
+              scrape_urls: majestic-million-compact.csv
               gsf_config: templates/js-scripts-config.json.j2
               additional:
                   - ExtractScriptsPlugin.js

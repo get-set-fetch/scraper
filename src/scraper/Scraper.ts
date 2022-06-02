@@ -16,35 +16,32 @@ import RuntimeMetrics, { RuntimeMetricsError, RuntimeOptions } from './RuntimeMe
 import initClient from '../domclient/client-utils';
 import ConnectionManager, { PerModelConfig } from '../storage/ConnectionManager';
 import Connection, { ConnectionConfig } from '../storage/base/Connection';
+import QueueBuffer from './QueueBuffer';
 
 export const enum ScrapeEvent {
+  ResourceSelectError = 'resource-select-error',
   ResourceSelected = 'resource-selected',
+  ResourceScrapeError = 'resource-scrape-error',
   ResourceScraped = 'resource-scraped',
-  ResourceError = 'resource-error',
 
   ProjectSelected = 'project-selected',
   ProjectScraped = 'project-scraped',
   ProjectError = 'project-error',
 
-  DiscoverComplete = 'discover-complete'
+  DiscoveryCompleted = 'discovery-completed'
 }
 
-export type CliOptions = {
+export type DiscoverOptions = {
   /**
-   * Overwrite project if already exists.
-   */
-  overwrite: boolean;
-
-  /**
-    * Don't restrict scraping to a particular project.
-    * Once scraping a project completes, find other existing projects to scrape from.
-    */
+  * Don't restrict scraping to a particular project.
+  * Once scraping a project completes, find other existing projects to scrape from.
+  */
   discover: boolean;
 
   /**
-    * After a discover operation completes and all projects are scraped,
-    * keep issueing discover commands at the specified interval (seconds).
-    */
+  * After a discover operation completes and all projects are scraped,
+  * keep issueing discover commands at the specified interval (seconds).
+  */
   retry: number;
 }
 
@@ -59,13 +56,18 @@ export type ProjectOptions = {
   /**
    * Project name
    */
-  name: string
+  name: string;
 
   resources?: { url: string, depth?: number }[];
   resourcePath?: string;
 
-  pipeline: string,
-  pluginOpts: PluginOpts[]
+  pipeline: string;
+  pluginOpts: PluginOpts[];
+
+  /**
+   * Overwrite project if already exists.
+   */
+  overwrite?: boolean;
 }
 
 export type ScrapeConfig = {
@@ -91,18 +93,31 @@ export default class Scraper extends EventEmitter {
   browserClient: BrowserClient;
   domClientConstruct: IDomClientConstructor;
 
-  project: Project;
-
   concurrency: ConcurrencyManager;
   checkTimeout: NodeJS.Timeout;
-  retryTimeout: NodeJS.Timeout;
-
-  error: Error;
+  discoverTimeout: NodeJS.Timeout;
 
   /**
-  * Contains memory and cpu usage metrics
-  */
-  metrics: RuntimeMetrics;
+   * If set no new resources are selected to be scraped.
+   * Once all in-progress scraping completes, a "project-stopped" event is dispathed.
+   */
+  stop: boolean;
+
+  concurrencyOpts: Partial<ConcurrencyOptions>;
+  runtimeOpts: Partial<RuntimeOptions>;
+  discoveryOpts: Partial<DiscoverOptions>;
+
+  /**
+   * Serves two purposes
+   * - to-be-scraped resources are retrieved in bulk with queue entry status set to 1 (scrape in progress)
+   * - non-eligible buffered resources (due to concurrency conditions) don't have the in-progress status reverted,
+   *  they remain in buffer surely to become eligible in the future
+   */
+  queueBuffer: QueueBuffer;
+
+  metrics;
+
+  project: Project;
 
   constructor(storageOpts: ConnectionConfig | Connection | PerModelConfig, clientOpts: ClientOptions | BrowserClient | IDomClientConstructor) {
     super();
@@ -123,15 +138,27 @@ export default class Scraper extends EventEmitter {
       this.domClientConstruct = client;
     }
 
-    this.scrape = this.scrape.bind(this);
     this.discover = this.discover.bind(this);
     this.getResourceToScrape = this.getResourceToScrape.bind(this);
-    this.stop = this.stop.bind(this);
+    this.scrapeProject = this.scrapeProject.bind(this);
+    this.scrapeResource = this.scrapeResource.bind(this);
     this.gracefullStopHandler = this.gracefullStopHandler.bind(this);
 
     // gracefully stop scraping
     process.on('SIGTERM', this.gracefullStopHandler);
     process.on('SIGINT', this.gracefullStopHandler);
+
+    // scrape workflow is (mostly) controlled via events
+    this.on(ScrapeEvent.ResourceSelected, this.scrapeResource);
+
+    this.on(ScrapeEvent.ProjectSelected, this.scrapeProject);
+    this.on(ScrapeEvent.ProjectError, this.postScrapeProject);
+    this.on(ScrapeEvent.ProjectScraped, this.postScrapeProject);
+
+    this.on(ScrapeEvent.DiscoveryCompleted, this.postDiscover);
+
+    this.on(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
+    this.on(ScrapeEvent.ResourceScrapeError, this.fastForwardGetResourceToScrape);
   }
 
   /**
@@ -152,36 +179,23 @@ export default class Scraper extends EventEmitter {
     return this.isJSONConfig(client);
   }
 
-  /**
-   * wait for in-progress scraping to complete before exiting
-   */
-  gracefullStopHandler(signal: NodeJS.Signals) {
-    this.logger.warn(`${signal} signal received`);
-
-    // in-between discovery retries, no scraping going on, can exit directly
-    if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout);
-      this.logger.warn('no in-progress scraping detected, exit directly');
-      process.exit(0);
+  preChecks() {
+    if (this.checkTimeout) {
+      throw new Error('scraping already in progress');
     }
-    // ongoing scraping, don't scrape new resources, wait for the currently in progress ones to complete
-    else {
-      this.on(ScrapeEvent.ProjectScraped, () => process.exit(0));
-      this.on(ScrapeEvent.DiscoverComplete, () => process.exit(0));
-      this.logger.warn('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
-      this.stop();
+
+    // only sequential scraping is supported for browser clients like Puppeteer, Playwright
+    const { concurrencyOpts } = this;
+    if (this.browserClient && concurrencyOpts && Object.keys(concurrencyOpts).find(
+      level => concurrencyOpts[level] && concurrencyOpts[level].maxRequests && concurrencyOpts[level].maxRequests !== 1,
+    )) {
+      throw new Error('concurrency condition maxRequests is not supported on browser clients');
     }
   }
 
-  initConcurrencyManager(concurrencyOpts?: Partial<ConcurrencyOptions>): ConcurrencyManager {
-    return new ConcurrencyManager(concurrencyOpts);
-  }
+  async init() {
+    this.preChecks();
 
-  /**
-   * Pre-scrape preparations regarding PluginStore, storage and browser client.
-   * Making sure default plugins are registered, a connection to a database is opened, a browser (if apllicable) is launched.
-   */
-  async preScrape(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>): Promise<void> {
     if (PluginStore.store.size === 0) {
       await PluginStore.init();
       this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
@@ -189,33 +203,6 @@ export default class Scraper extends EventEmitter {
 
     await this.connectionMng.connect();
     this.logger.info('Storage connected');
-
-    if (this.concurrency) {
-      throw new Error('scraping already in progress');
-    }
-    else {
-      // only sequential scraping is supported for browser clients like Puppeteer, Playwright
-      if (this.browserClient && concurrencyOpts && Object.keys(concurrencyOpts).find(
-        level => concurrencyOpts[level] && concurrencyOpts[level].maxRequests && concurrencyOpts[level].maxRequests !== 1,
-      )) {
-        throw new Error('concurrency condition maxRequests is not supported on browser clients');
-      }
-
-      this.concurrency = this.initConcurrencyManager(concurrencyOpts);
-      // concurrencyManager needs to update its status based on resource error/complete
-      this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
-      this.on(ScrapeEvent.ResourceError, this.concurrency.resourceError);
-
-      this.on(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
-      this.on(ScrapeEvent.ResourceError, this.fastForwardGetResourceToScrape);
-    }
-
-    if (this.metrics) {
-      throw new Error('scraping already in progress');
-    }
-    else {
-      this.metrics = new RuntimeMetrics(runtimeOpts);
-    }
 
     if (this.browserClient && !this.browserClient.isLaunched) {
       await this.browserClient.launch();
@@ -237,7 +224,7 @@ export default class Scraper extends EventEmitter {
    * @param projectOpts - project instance or configuration
    * @param cliOpts - cli related flags like overwrite
    */
-  async initProject(projectOpts: Project | ProjectOptions, cliOpts: Partial<CliOptions> = {}): Promise<Project> {
+  async initProject(projectOpts: Project | ProjectOptions): Promise<Project> {
     if (projectOpts instanceof Project) {
       return <Project>projectOpts;
     }
@@ -250,7 +237,7 @@ export default class Scraper extends EventEmitter {
     let project = await ExtProject.get(projectOpts.name);
 
     if (project) {
-      if (cliOpts.overwrite) {
+      if (projectOpts.overwrite) {
         this.logger.info(`Overwriting project ${project.name}`);
         await project.del();
       }
@@ -285,213 +272,69 @@ export default class Scraper extends EventEmitter {
     return project;
   }
 
-  async getProject(projectOpts: ProjectOptions): Promise<Project> {
-    let project:Project;
-
-    try {
-      if (PluginStore.store.size === 0) {
-        await PluginStore.init();
-        this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
-      }
-
-      await this.connectionMng.connect();
-      this.logger.info('Storage connected');
-
-      const ExtProject = await this.connectionMng.getProject();
-      project = await ExtProject.get(projectOpts.name);
-
-      await this.connectionMng.close();
-    }
-    catch (err) {
-      this.logger.error(err);
-    }
-
-    if (!project) throw new Error(`could not find project ${projectOpts.name}`);
-
-    return project;
-  }
-
-  /**
-   * Cleanup the current completed scraping process before starting a new one.
-   * Invoked before ScrapeEvent.ProjectComplete, ScrapeEvent.ProjectError so that consecutive project scraping
-   * (triggered on ProjectComplete, ProjectError) have no overlap.
-   */
-  async postScrape() {
-    try {
-      // remove process listners
-      process.off('SIGTERM', this.gracefullStopHandler);
-      process.off('SIGINT', this.gracefullStopHandler);
-
-      // scraping stopped, if resumed new concurrency, metrics instances will be created
-      if (this.concurrency) {
-        clearInterval(this.checkTimeout);
-        this.off(ScrapeEvent.ResourceScraped, this.fastForwardGetResourceToScrape);
-        this.off(ScrapeEvent.ResourceError, this.fastForwardGetResourceToScrape);
-        this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
-        this.off(ScrapeEvent.ResourceError, this.concurrency.resourceError);
-      }
-      delete this.concurrency;
-      delete this.metrics;
-
-      if (this.browserClient && this.browserClient.isLaunched) {
-        await this.browserClient.close();
-      }
-
-      if (this.connectionMng) {
-        await this.connectionMng.close();
-      }
-    }
-    catch (err) {
-      this.logger.error(err);
-    }
-  }
-
-  /**
-   * Scrapes available resources from the provided project. If project options are provided create the project first.
-   * @param projectOpts - project instance or project options
-   * @param concurrencyOpts - concurrency options
-   * @param runtimeOpts - runtime options
-   * @param cliOpts - command line options
-   */
   async scrape(
     projectOpts: ProjectOptions | Project,
     concurrencyOpts?: Partial<ConcurrencyOptions>,
     runtimeOpts?: Partial<RuntimeOptions>,
-    cliOpts?: Partial<CliOptions>,
-  ): Promise<void> {
+  ) {
+    if (concurrencyOpts) this.concurrencyOpts = concurrencyOpts;
+    if (runtimeOpts) this.runtimeOpts = runtimeOpts;
+
     try {
-      await this.preScrape(concurrencyOpts, runtimeOpts);
-
-      // when discover flag is set ignore projectOpts, retrieve first project containing unscraped resources
-      if (cliOpts && cliOpts.discover) {
-        this.logger.info('Discovering new project(s)');
-        const ExtProject = await this.connectionMng.getProject();
-        this.project = await ExtProject.getProjectToScrape();
-        if (!this.project) {
-          this.logger.info('All existing project have been scraped, discovery complete');
-          this.postScrape();
-          this.emit(ScrapeEvent.DiscoverComplete);
-          return;
-        }
-      }
-      else {
-        this.project = await this.initProject(projectOpts, cliOpts);
-        if (!this.project) throw new Error('could not find project');
-      }
-
-      this.project.plugins = await this.project.initPlugins(!!this.browserClient);
-      this.logger.info(
-        (({ id, name, pluginOpts }) => ({ id, name, pluginOpts }))(this.project),
-        'Scraping project',
-      );
-      this.emit(ScrapeEvent.ProjectSelected, this.project);
-
-      // start identifying resources to be scraped, trigger 1st attempt imediately, subsequent ones at computed check interval
-      this.logger.info(`Checking for available to-be-scraped resources every ${this.concurrency.getCheckInterval()} ms`);
-      this.getResourceToScrape();
-      this.checkTimeout = setInterval(this.getResourceToScrape.bind(this), this.concurrency.getCheckInterval());
+      await this.init();
+      const project = await this.initProject(projectOpts);
+      this.emit(ScrapeEvent.ProjectSelected, project, []);
     }
     catch (err) {
       this.logger.error(err);
-      // no project > no scrape process > abort
-      await this.postScrape();
-      this.emit(ScrapeEvent.ProjectError, this.project, err);
+      await this.cleanup();
+      this.emit(ScrapeEvent.ProjectError, undefined, err);
     }
   }
 
-  /**
-   * Keep discovering new projects to scrape. Once a project scraping completes, start scraping a new one.
-   */
-  async discover(concurrencyOpts: Partial<ConcurrencyOptions>, runtimeOpts: Partial<RuntimeOptions>, cliOpts: Partial<CliOptions>) {
-    this.retryTimeout = null;
+  async preScrapeProject(project: Project, resources: Resource[]) {
+    // concurrencyManager needs to update its status based on resource error/complete
+    this.concurrency = new ConcurrencyManager(this.concurrencyOpts);
+    this.on(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
+    this.on(ScrapeEvent.ResourceScrapeError, this.concurrency.resourceError);
 
-    const projectScrapedHandler = (proj:Project, err) => {
-      // project succesfully scraped, move on to the next
-      if (!err) {
-        this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
-      }
-      /*
-      project scraped in error, only continue the discovery process if retry flag is set
-      we run the risk to encounter the same project error on each scraping attempt in an infinite loop
-      */
-      else {
-        if (cliOpts.retry) {
-          this.retryTimeout = setTimeout(this.scrape, cliOpts.retry * 1000, null, concurrencyOpts, runtimeOpts, cliOpts);
-        }
-        else {
-          this.emit(ScrapeEvent.DiscoverComplete);
-        }
-      }
-    };
+    this.queueBuffer = new QueueBuffer(this.concurrency.getBufferSize());
+    this.queueBuffer.init(project, resources);
 
-    const discoveryCompleteHandler = () => {
-      this.off(ScrapeEvent.ProjectScraped, projectScrapedHandler);
-      this.off(ScrapeEvent.ProjectError, projectScrapedHandler);
-      this.off(ScrapeEvent.DiscoverComplete, discoveryCompleteHandler);
+    this.metrics = new RuntimeMetrics(this.runtimeOpts);
 
-      if (cliOpts.retry) {
-        process.on('SIGTERM', this.gracefullStopHandler);
-        process.on('SIGINT', this.gracefullStopHandler);
-        this.retryTimeout = setTimeout(this.discover, cliOpts.retry * 1000, concurrencyOpts, runtimeOpts, cliOpts);
-      }
-    };
-
-    this.on(ScrapeEvent.ProjectScraped, projectScrapedHandler);
-    this.on(ScrapeEvent.ProjectError, projectScrapedHandler);
-    this.on(ScrapeEvent.DiscoverComplete, discoveryCompleteHandler);
-
-    this.scrape(null, concurrencyOpts, runtimeOpts, cliOpts);
+    // create plugin instances based on plugin options
+    project.plugins = await project.initPlugins(!!this.browserClient);
+    this.logger.info(
+      (({ id, name, pluginOpts }) => ({ id, name, pluginOpts }))(project),
+      'Scraping project',
+    );
   }
 
-  async save(projectOpts: ProjectOptions | Project, cliOpts: Partial<CliOptions>) {
-    try {
-      await this.connectionMng.connect();
-      this.logger.info('Storage connected');
+  async scrapeProject(project: Project, resources: Resource[]) {
+    this.project = project;
+    await this.preScrapeProject(project, resources);
 
-      this.project = await this.initProject(projectOpts, cliOpts);
-      if (!this.project) throw new Error('could not find project');
-
-      await this.connectionMng.close();
-    }
-    catch (err) {
-      this.logger.error(err);
-    }
+    clearInterval(this.checkTimeout);
+    this.getResourceToScrape();
+    this.checkTimeout = setInterval(this.getResourceToScrape, this.concurrency.getCheckInterval());
   }
 
-  /**
-   * Stop the current scraping process. This will not happen instantly.
-   * After all in-progress scraping completes, a "project-stopped" event is emitted.
-   */
-  stop() {
-    if (this.concurrency) {
-      this.concurrency.stop = true;
-    }
-  }
-
-  async getResourceToScrape(): Promise<Resource> {
-    let resource: Resource;
+  async getResourceToScrape():Promise<void> {
+    let resource:Resource;
 
     try {
       // check if scraper cpu and memory usage are within the defined limits
       this.metrics.check();
 
-      resource = await this.concurrency.getResourceToScrape(this.project);
+      resource = await this.queueBuffer.getResource(this.stop);
 
       if (resource) {
-        this.emit(ScrapeEvent.ResourceSelected, this.project, resource);
-        await this.scrapeResource(resource);
-      }
-      // no more available resources to be scraped, project scraping completed either normally or due to an error
-      else {
-        await this.postScrape();
-        this.logger.info(`Project ${this.project.name} scraping complete`);
+        // possible improvement: scan the entire buffer, pick 1st valid entry, don't limit the scan to the 1st entry queueBuffer returns
+        this.concurrency.check(resource);
+        this.concurrency.addResource(resource);
 
-        if (this.error) {
-          this.emit(ScrapeEvent.ProjectError, this.project, this.error);
-        }
-        else {
-          this.emit(ScrapeEvent.ProjectScraped, this.project);
-        }
+        this.emit(ScrapeEvent.ResourceSelected, this.project, resource);
       }
     }
     catch (err) {
@@ -502,53 +345,173 @@ export default class Scraper extends EventEmitter {
       if (err instanceof RuntimeMetricsError) {
         this.logger.debug(err.snapshot, `Runtime conditions for project ${this.project.name} not met`);
       }
-
       // normal concurrency errors based on the existing concurrency options
       else if (err instanceof ConcurrencyError) {
         this.logger.debug(`Concurrency conditions for project ${this.project.name} not met at ${err.level} level`);
         this.logger.debug(`Concurrency status at ${err.level} : ${JSON.stringify(this.concurrency.status[err.level])}`);
-      }
 
+        // new resource is not meeting concurrency conditions, postpone its scraping, re-add it to the buffer
+        this.queueBuffer.addResources([ resource ]);
+      }
       /*
-      fatal error, can't recover from it, abort the entire scraping process
-      only emmit the ProjectError once all in-progress resources have been scraped
-      ex: attempting to refill the concurrency resource buffer ends in error
+      unknown error
+      even if it gets thrown on each invocation, eventually the isScrapingComplete check will stop the scraping
       */
-      else if (err.fatal) {
-        this.logger.fatal(err, 'fatal error');
-        this.stop();
-        this.error = err;
-      }
-
-      // non-fatal error error, log it and move on to the next resource to be scraped, no need to stop scraping
       else {
         this.logger.error(err);
+
+        if (resource) {
+          await this.project.queue.updateStatus(resource.queueEntryId, 500, err.code || 'GET_RESOURCE_TO_SCRAPE_ERROR');
+          this.emit(ScrapeEvent.ResourceSelectError, this.project, resource, err);
+        }
       }
     }
-
-    return resource;
+    finally {
+      if (!resource && this.concurrency.isScrapingComplete()) {
+        this.logger.info(`Project ${this.project.name} scraping complete`);
+        await this.cleanup();
+        this.emit(ScrapeEvent.ProjectScraped, this.project);
+      }
+    }
   }
 
   /**
-   * Sequentially executes the project plugins against the current resource.
-   * It usually starts with an available resource being selected from db and ends with the resource being updated with the scraped content.
-   * @param resource - current scrape resource
+   * After each project scraped/in-error and discovery complete do some cleanup.
+   * Remove event listners, close db connections.
    */
-  async scrapeResource(resource: Resource) {
+  async cleanup() {
+    try {
+      // scraping stopped, if resumed new concurrency, metrics instances will be created
+      if (this.concurrency) {
+        this.off(ScrapeEvent.ResourceScraped, this.concurrency.resourceScraped);
+        this.off(ScrapeEvent.ResourceScrapeError, this.concurrency.resourceError);
+      }
+      delete this.concurrency;
+      delete this.metrics;
+      delete this.queueBuffer;
+
+      clearInterval(this.checkTimeout);
+      delete this.checkTimeout;
+
+      // do all async cleanup operations in parallel
+      const cleanupOps: Promise<void>[] = [];
+
+      if (this.browserClient && this.browserClient.isLaunched) {
+        cleanupOps.push(this.browserClient.close());
+      }
+
+      if (this.connectionMng) {
+        cleanupOps.push(this.connectionMng.close());
+      }
+
+      await Promise.all(cleanupOps);
+    }
+    catch (err) {
+      this.logger.error(err);
+    }
+  }
+
+  async postScrapeProject() {
+    if (!this.stop && this.discoveryOpts?.discover) {
+      this.discover();
+    }
+  }
+
+  async discover(concurrencyOpts?: Partial<ConcurrencyOptions>, runtimeOpts?: Partial<RuntimeOptions>, discoveryOpts?: Partial<DiscoverOptions>) {
+    if (concurrencyOpts) this.concurrencyOpts = concurrencyOpts;
+    if (runtimeOpts) this.runtimeOpts = runtimeOpts;
+    if (discoveryOpts) this.discoveryOpts = discoveryOpts;
+
+    delete this.discoverTimeout;
+    this.logger.info('Discovering new project(s)');
+
+    try {
+      await this.init();
+
+      const ExtProject = await this.connectionMng.getProject();
+      const { project, resources } = await ExtProject.getProjectToScrape();
+
+      if (!project) {
+        this.logger.info('All existing project have been scraped, discovery complete');
+        await this.cleanup();
+        this.emit(ScrapeEvent.DiscoveryCompleted);
+      }
+      else {
+        this.emit(ScrapeEvent.ProjectSelected, project, resources);
+      }
+    }
+    catch (err) {
+      await this.cleanup();
+      this.emit(ScrapeEvent.ProjectError, undefined, err);
+    }
+  }
+
+  async save(projectOpts: ProjectOptions) {
+    try {
+      await this.connectionMng.connect();
+      this.logger.info('Storage connected');
+
+      this.project = await this.initProject(projectOpts);
+      if (!this.project) throw new Error('could not find project');
+
+      await this.connectionMng.close();
+    }
+    catch (err) {
+      this.logger.error(err);
+      this.emit(ScrapeEvent.ProjectError, undefined, err);
+    }
+  }
+
+  async postDiscover() {
+    if (this.discoveryOpts?.retry) {
+      this.logger.info(`Resume project discovery after ${this.discoveryOpts.retry} seconds`);
+      this.discoverTimeout = setTimeout(this.discover, this.discoveryOpts.retry * 1000);
+    }
+  }
+
+  /**
+   * wait for in-progress scraping to complete before exiting
+   */
+  async gracefullStopHandler(signal: NodeJS.Signals) {
+    this.logger.warn(`${signal} signal received`);
+
+    // in-between discovery retries, no scraping going on, can exit directly
+    if (this.discoverTimeout) {
+      clearTimeout(this.discoverTimeout);
+      this.logger.warn('no in-progress scraping detected, exit directly');
+      await this.cleanup();
+    }
+    // ongoing scraping, don't scrape new resources, wait for the currently in progress ones to complete
+    else if (this.checkTimeout) {
+      this.logger.warn('in-progress scraping detected, stop scraping new resources, exit after current ones complete');
+      this.stop = true;
+    }
+    // scraping has not yet started
+    else {
+      this.logger.warn('scraping has not yet started, exit directly');
+      process.exit(0);
+    }
+  }
+
+  /**
+   * Sequentially executes the project plugins against the incoming resource.
+   * It usually starts with an available resource being selected from db and ends with the resource being updated with the scraped content.
+   */
+  async scrapeResource(project: Project, resource: Resource) {
     // dynamic resource, a resource that was modified by a dynamic action: scroll, click, ..
     if (resource && resource.actions) {
-      this.logger.info('Started re-scraping a dynamic resource from project %s, url %s, dynamic action %s', this.project.name, resource.url, resource.actions);
+      this.logger.info('Started re-scraping a dynamic resource from project %s, url %s, dynamic action %s', project.name, resource.url, resource.actions);
     }
     else {
-      this.logger.info('Started scraping a new resource from project %s', this.project.name);
+      this.logger.info('Started scraping a new resource from project %s', project.name);
     }
 
     let pluginIdx: number;
     let plugin: Plugin;
     try {
       // sequentially execute project plugins in the defined order
-      for (pluginIdx = 0; pluginIdx < this.project.plugins.length; pluginIdx += 1) {
-        plugin = this.project.plugins[pluginIdx];
+      for (pluginIdx = 0; pluginIdx < project.plugins.length; pluginIdx += 1) {
+        plugin = project.plugins[pluginIdx];
         // a plugin result represents additional data/content to be merged with the current resource
         const result = await this.executePlugin(resource, plugin);
         this.logger.debug(result || {}, 'Plugin result');
@@ -569,71 +532,70 @@ export default class Scraper extends EventEmitter {
       }
     }
     catch (err) {
-      // optional chaining not available till node v14, check all chains are valid, we may be in an invalid state
       this.logger.error(
-        { error: err, pluginOpts: plugin ? plugin.opts : null },
-        'Scrape error for project %s , Plugin %s against resource %s',
-        this.project ? this.project.name : 'undefined project',
-        plugin && plugin.constructor ? plugin.constructor.name : 'unknown plugin',
-        resource ? resource.url : '',
+        err,
+        'Scrape error for project %s , Plugin %s against resource %s, PluginOpts: %s',
+        project?.name,
+        plugin?.constructor?.name,
+        resource?.url,
+        JSON.stringify(plugin?.opts),
       );
 
       /*
-      manually update the resource, this resets the scrapeInProgress flag and adds scrapedAt date
-      selecting new resources for scraping takes scrapedAt in consideration (right now only resources with scrapedAt undefined qualify)
-      because of the above behavior, we don't attempt to scrape a resource that throws an error over and over again
+        manually update the resource, this resets the scrapeInProgress flag and adds scrapedAt date
+        selecting new resources for scraping takes scrapedAt in consideration (right now only resources with scrapedAt undefined qualify)
+        because of the above behavior, we don't attempt to scrape a resource that throws an error over and over again
 
-      in future a possible approach will be just resetting the scrapeInProgress flag
-        - next scrape operation will attempt to scrape it again, but atm this will just retry the same resource over and over again
-        - there is no mechanism to escape the retry loop
-      */
+        in future a possible approach will be just resetting the scrapeInProgress flag
+          - next scrape operation will attempt to scrape it again, but atm this will just retry the same resource over and over again
+          - there is no mechanism to escape the retry loop
+        */
       if (resource) {
         /*
-        error occured
-        resource is not yet saved to db, update the corresponding queue entry with
-          - non-succesfull http response status code so that we don't attempt to scrape the same url again,
-          possibly ending with the same error in an infinite loop
-          - optional error code when status code is not enough: dns, network, parsing errors ...
-        */
-        await this.project.queue.updateStatus(resource.queueEntryId, 500, err.code);
+          error occured
+          resource is not yet saved to db, update the corresponding queue entry with
+            - non-succesfull http response status code so that we don't attempt to scrape the same url again,
+            possibly ending with the same error in an infinite loop
+            - optional error code when status code is not enough: dns, network, parsing errors ...
+          */
+        await project.queue.updateStatus(resource.queueEntryId, 500, err.code || 'SCRAPE_RESOURCE_ERROR');
       }
 
-      this.emit(ScrapeEvent.ResourceError, this.project, resource, err);
+      this.emit(ScrapeEvent.ResourceScrapeError, project, resource, err);
       return;
     }
 
     /*
-    resource is a dynamic one, successfully modified by a dynamic action: scroll, click, ..
-    scrape the newly generated content by re-triggering the scrape plugins
-    keep the same proxy as chained dynamic actions only make sense within the same session
-    only do it if scraper is not about to stop
-    */
+      resource is a dynamic one, successfully modified by a dynamic action: scroll, click, ..
+      scrape the newly generated content by re-triggering the scrape plugins
+      keep the same proxy as chained dynamic actions only make sense within the same session
+      only do it if scraper is not about to stop
+      */
     if (
       resource
-      && resource.actions
-      && resource.actions.length > 0
-      && this.concurrency
-      && !this.concurrency.stop
+        && resource.actions
+        && resource.actions.length > 0
+        && !this.stop
     ) {
       const dynamicResource: Resource = (
         (
-          { url, queueEntryId, status, depth, contentType, parent, actions, proxy },
-        ) => this.project.createResource(
+          { url, queueEntryId, status, depth, contentType, parent, actions, proxy, hostname },
+        ) => project.createResource(
           {
-            url, queueEntryId, status, depth, contentType, parent, actions, proxy,
+            url, queueEntryId, status, depth, contentType, parent, actions, proxy, hostname,
           },
         )
       )(resource);
-      this.scrapeResource(dynamicResource);
+      this.scrapeResource(project, dynamicResource);
     }
     /*
-    scraping of the current resource is complete
-    resource can be:
-    - static
-    - dynamic with no more dynamic actions available
-    */
+      scraping of the current resource is complete
+      resource can be:
+      - static
+      - dynamic with no more dynamic actions available
+      */
     else {
-      this.emit(ScrapeEvent.ResourceScraped, this.project, resource);
+      this.emit(ScrapeEvent.ResourceScraped, project, resource);
     }
   }
 
@@ -727,5 +689,31 @@ export default class Scraper extends EventEmitter {
     }
 
     return result;
+  }
+
+  async getProject(projectOpts: ProjectOptions): Promise<Project> {
+    let project:Project;
+
+    try {
+      if (PluginStore.store.size === 0) {
+        await PluginStore.init();
+        this.logger.info(`PluginStore initialized, ${PluginStore.store.size} plugins found`);
+      }
+
+      await this.connectionMng.connect();
+      this.logger.info('Storage connected');
+
+      const ExtProject = await this.connectionMng.getProject();
+      project = await ExtProject.get(projectOpts.name);
+
+      await this.connectionMng.close();
+    }
+    catch (err) {
+      this.logger.error(err);
+    }
+
+    if (!project) throw new Error(`could not find project ${projectOpts.name}`);
+
+    return project;
   }
 }

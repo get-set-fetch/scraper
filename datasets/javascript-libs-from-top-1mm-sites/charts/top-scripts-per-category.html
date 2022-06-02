@@ -1,0 +1,180 @@
+<html>
+
+<head>
+  <!-- load the d3.js library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+
+  <script type="module">
+    const urlNo = 714894;
+
+    // row ex: {category: 'analytics', " script": 'gtag', " count": '179849'}
+    let data = await d3.csv(
+      "top-scripts-per-category.csv",
+      (d) => {
+        d.value = parseInt(d.value);
+        return d;
+      }
+    );
+    data = data.filter(d => {
+      const perc = (d.value / urlNo) * 100;
+      return perc >= 1
+    });
+
+    const sortedCtgs = ["Utils", "Analytics", "UI Widgets", "Advertising", "CMS", "Optimization", "Cookies"]
+    data.sort((a, b) => sortedCtgs.indexOf(a.category) - sortedCtgs.indexOf(b.category))
+
+    const categories = [...new Set(data.map(d => d.category))];
+    const ctgCount = categories.map(ctg => data.filter(d => d.category === ctg).length);
+    const leftGroups = 4;
+    const leftEntries = ctgCount.slice(0, leftGroups).reduce((total, count) => total + count, 0)
+
+    // set the dimensions and margins of the graph
+    const margin = { top: 20, right: 50, bottom: 20, left: 150 },
+      width = 1060 - margin.left - margin.right,
+      height = 700 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    const svg = d3.select("#chart-container")
+      .append("svg")
+      .attr("id", "chart")
+      .attr("xmlns", "http://www.w3.org/2000/svg")
+      .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    // plot title
+    svg.append("text")
+      .attr("transform", `translate(${width / 2}, ${(margin.top / 2)})`)
+      .attr("text-anchor", "middle")
+      .attr('fill', d3.schemeAccent[4])
+      .style("font-size", "24px")
+      .style("font-weight", "bold")
+      .style("font-family", "sans-serif")
+      .text("Top Individual Scripts % From Top 1 Mil Sites")
+
+    // plot github link
+    svg.append("a")
+      .attr("transform", `translate(${width / 2}, ${height + (margin.bottom / 2) + 5})`)
+      .attr("xlink:href", "http://github.com/get-set-fetch/scraper/datasets")
+      .append("text")
+      .attr('fill', "#0f0f0f")
+      .style("font-size", "14px")
+      .style("font-weight", "bold")
+      .style("font-family", "sans-serif")
+      .text("Dataset and source code available at: http://github.com/get-set-fetch/scraper/datasets")
+      .attr("text-anchor", "middle")
+
+    const scriptMaxVal = d3.max(data, (d) => d.value)
+    const titleHeight = 30;
+
+    const totalBarHeight = height - titleHeight * leftGroups;
+    const subchartHeights = ctgCount.map(count => Math.floor(totalBarHeight * count / leftEntries))
+
+    // share the x scale with all subcharts
+    var x = d3
+      .scaleLinear()
+      .range([0, width])
+      .domain([0, scriptMaxVal]);
+
+    // different color scheme for each subchart
+    const colorSchemes = [
+      d3.schemeBlues,
+      d3.schemeGreens, d3.schemeOranges, d3.schemePurples,
+      d3.schemeGreys, d3.schemeReds, d3.schemeBuGn,
+    ]
+
+    let posX = 0;
+    let posY = 0;
+    const colWidth = 550;
+
+    const subchartPos = [];
+    for (let idx = 0; idx < ctgCount.length; idx += 1) {
+      const ctg = categories[idx];
+      const ctgData = data.filter(d => d.category === ctg);
+      ctgData.sort((d1, d2) => d1.value - d2.value);
+
+      // move to second column
+      if (idx === leftGroups) {
+        posX = colWidth
+        posY = subchartPos[idx - leftGroups + 1][1]
+      }
+
+      // record current subchart position, to be used by subcharts from 2nd column
+      subchartPos.push([posX, posY]);
+
+      // plot title
+      svg.append("text")
+        .attr("transform", `translate(${posX + 5}, ${posY + titleHeight / 1.2})`)
+        .attr('fill', colorSchemes[idx][Math.max(3, ctgData.length)][Math.max(3, ctgData.length) - 1])
+        .style("font-size", "16px")
+        .style("font-weight", "bold")
+        .style("font-family", "sans-serif")
+        .text(ctg)
+      posY += titleHeight
+
+      // plot subchart
+      const subchart = svg.append("g")
+        .attr("transform", `translate(${posX}, ${posY})`);
+      posY += subchartHeights[idx];
+
+      var y = d3.scaleBand()
+        .domain(ctgData.map((d) => d.script))
+        .rangeRound([subchartHeights[idx], 0])
+        .padding(0.1);
+
+      var yAxis = d3.axisLeft()
+        .scale(y)
+        .tickSize(0)
+
+      var gy = subchart.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+
+      var bars = subchart.selectAll(".bar")
+        .data(ctgData)
+        .enter()
+        .append("g")
+
+      bars.append("rect")
+        .attr("class", "bar")
+        .attr("y", (d) => y(d.script))
+        .attr("height", y.bandwidth())
+        .attr("x", 0)
+        .attr("width", (d) => x(d.value))
+        .attr("fill", (d, i) => {
+          return colorSchemes[idx][Math.max(3, ctgData.length)][i]
+        })
+
+      bars.append("text")
+        .attr("class", "label")
+        .attr("y", function (d) {
+          return y(d.script) + y.bandwidth() / 2 + 4;
+        })
+        .attr("x", (d) => x(d.value) + 7)
+        .text((d) => {
+          const perc = (d.value / urlNo) * 100;
+          const roundedPerc = Math.round(perc * 100) / 100;
+          return roundedPerc;
+        })
+    }
+  </script>
+
+  <script>
+    function export2Svg() {
+      var content = new Blob([document.getElementById('chart-container').innerHTML], { type: 'image/svg+xml' });
+
+      document.getElementById('export').href = window.URL.createObjectURL(content);
+      document.getElementById('export').download = 'top-javascript-libraries.svg';
+    }
+  </script>
+</head>
+
+<body>
+  <div id="chart-container"></div>
+  <a id="export" href="javascript:export2Svg()">export</a>
+</body>
+
+</html>

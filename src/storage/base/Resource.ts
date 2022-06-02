@@ -93,6 +93,9 @@ export default class Resource extends Entity {
   /** not stored, provides a link to the corresponding scrape queue entry */
   queueEntryId: number | string;
 
+  /** not stored, url hostname */
+  hostname: string;
+
   get Constructor():typeof Resource {
     return (<typeof Resource> this.constructor);
   }

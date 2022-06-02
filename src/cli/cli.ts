@@ -12,7 +12,7 @@ import { Scraper, ScrapeEvent, ProjectOptions,
 import { getPackageDir } from '../plugins/file-utils';
 import { ConcurrencyOptions } from '../scraper/ConcurrencyManager';
 import { RuntimeOptions } from '../scraper/RuntimeMetrics';
-import { ClientOptions, CliOptions } from '../scraper/Scraper';
+import { ClientOptions, DiscoverOptions } from '../scraper/Scraper';
 import { ConnectionConfig } from '../storage/base/Connection';
 
 const defaultArgObj = {
@@ -189,6 +189,8 @@ export async function invokeScraper(argObj:ArgObjType) {
     throw new Error('missing scrape.name');
   }
 
+  projectOpts.overwrite = overwrite;
+
   // get an absolute resource path based on the relative path from the configuration file path
   if (projectOpts.resourcePath) {
     projectOpts.resourcePath = join(dirname(fullConfigPath), projectOpts.resourcePath);
@@ -263,22 +265,25 @@ export async function invokeScraper(argObj:ArgObjType) {
     console.error(err);
   });
 
-  const cliOpts:CliOptions = {
-    overwrite,
+  const discoverOpts:DiscoverOptions = {
     discover,
     retry,
   };
 
-  if (save) {
-    await scraper.save(projectOpts, cliOpts);
-  }
-
   // scrape and discover options are mutually exclusive
   if (scrape) {
-    scraper.scrape(projectOpts, concurrencyOpts, runtimeOpts, cliOpts);
+    // scrape also saves the project, no need to check for --save
+    scraper.scrape(projectOpts, concurrencyOpts, runtimeOpts);
   }
-  else if (discover) {
-    scraper.discover(concurrencyOpts, runtimeOpts, cliOpts);
+  else {
+    // --save is independent of --discovery
+    if (save) {
+      await scraper.save(projectOpts);
+    }
+
+    if (discover) {
+      scraper.discover(concurrencyOpts, runtimeOpts, discoverOpts);
+    }
   }
 }
 

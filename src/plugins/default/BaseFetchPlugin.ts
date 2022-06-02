@@ -74,7 +74,7 @@ export default abstract class BaseFetchPlugin extends Plugin {
 
       /*
       all other fetch errors
-      don't return contentType as many plugin use it as testing condition and we don't want the original redirect url to be scraped
+      don't return contentType as many plugins use it as testing condition and we don't want the original redirect url to be scraped
       */
       return {
         status,
