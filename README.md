@@ -55,7 +55,7 @@ docker run \
 ```
 Note: you have to build the image manually from './docker' directory.
 
-#### Run it in cloud
+#### Run it in cloud with Terraform and Ansible
 ```
 module "benchmark_1000k_1project_multiple_scrapers_csv_urls" {
   source = "../../node_modules/@get-set-fetch/scraper/cloud/terraform"
