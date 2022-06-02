@@ -1,6 +1,6 @@
 {
   "name": "@get-set-fetch/scraper",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Plugin based node.js web scraper. It scrapes, stores and exports data. Supports multiple storage options: SQLite, MySQL, PostgreSQL. Supports multiple browser or dom-like clients: Puppeteer, Playwright, Cheerio, Jsdom.",
   "keywords": [ "scraper", "scraping", "node", "nodejs", "web", "cloud" ],
   "main": "./dist/cjs/index.js",
