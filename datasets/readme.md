@@ -7,4 +7,4 @@ Check [getsetfetch.org/node/cloud.html](https://getsetfetch.org/node/cloud.html)
 Check [getsetfetch.org/blog/cloud-scraping-running-existing-projects.html](https://getsetfetch.org/blog/cloud-scraping-running-existing-projects.html) for detailed info on how to run the projects.
 
 Available datasets:
-- [Javascript Libraries From Top 1 Million Sites](javascript-libs-from-top-1mm-sites/readme.md)
+- [Javascript Libraries From Top 1 Million Sites](javascript-libs-from-top-1mm-sites/)
