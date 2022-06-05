@@ -1,0 +1,48 @@
+category,script,value
+Utils,jQuery,419366
+Utils,jQuery Migrate,207334
+Utils,Google reCAPTCHA,54779
+Utils,slick,43628
+Utils,Modernizr,35714
+Utils,Owl Carousel,35043
+Utils,i18n,34633
+Utils,Underscore,34011
+Utils,Cloudflare Email Decode,29961
+Analytics,Google Analytics,191205
+Analytics,WordPress Stats and Insights,30127
+Analytics,Cloudflare Insights,11924
+Analytics,gtm4wp-form-move-tracker,395
+Analytics,Google Analytics For Wordpress,331
+CMS,WordPress Core,150323
+CMS,WordPress Contact Form 7,68478
+CMS,WordPress Elementor,45632
+CMS,WordPress WooCommerce,26727
+CMS,WordPress Slider Revolution,23339
+CMS,WordPress Utilities,16101
+CMS,Gravity Forms,487
+CMS,WordPress Visual Composer,25
+UI Widgets,Bootstrap,97579
+UI Widgets,jQuery UI,98659
+UI Widgets,imagesLoaded,44877
+UI Widgets,jQuery FitVids,19770
+UI Widgets,Popper,19495
+UI Widgets,Google Maps,19283
+UI Widgets,jQuery FlexSlider,18303
+UI Widgets,jQuery Magnific Popup,16463
+UI Widgets,jQuery Fancybox,15192
+UI Widgets,Animate on Scroll,4947
+Advertising,Google Adsense,52970
+Advertising,Google Publisher Tags,15515
+Cookies,jQuery Cookie,16461
+Cookies,Cookie Consent,10335
+Cookies,JavaScript Cookie,9972
+Cookies,OneTrust Cookies Consent,9493
+Cookies,consent.cookiebot.com/uc,6692
+Cookies,Cookie Law Info,307
+Cookies,Cookie Notice,248
+Optimization,Cloudflare Rocket Loader,13218
+Optimization,WordPress Autoptimize,13151
+Optimization,LazySizes,11695
+Optimization,optimize,6584
+Optimization,LazyLoad,5669
+Optimization,smush-lazy-load,127

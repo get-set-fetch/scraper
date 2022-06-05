@@ -119,7 +119,7 @@ export default class ScriptParser {
     if (wpPluginMatch && wpPluginMatch[1]) return `wordpress-${wpPluginMatch[1]}`;
 
     // detect wordpress core
-    if (/\/wp-includes\/.*(wp-polyfill|wp-embed|regenerator-runtime)/.test(pathname)) return 'wordpress-core';
+    if (/\/wp-includes\/.*(wp-polyfill|wp-embed|regenerator-runtime|hooks|comment-reply)/.test(pathname)) return 'wordpress-core';
 
     return scriptFrags.reverse().join('/');
   }
@@ -164,7 +164,7 @@ export default class ScriptParser {
       'polyfill', 'polyfills', 'theme', 'menu', 'all', 'vendor', 'sdk', 'public', 'site', 'init', 'admin', 'platform',
       'wow', 'ajax', 'select', 'select2', 'chunk', 'chunks', 'element', 'global', 'analytics', 'page', 'loader', 'bundle', 'legacy',
       'min', 'embed', 'px', 'modern', 'uc', 'form', 'javascript', 'static', 'file', 'files', 'feature', 'features', 'cache',
-      'storefront', 'dist', 'framework', 'button', 'buttons', 'base', 'home',
+      'storefront', 'dist', 'framework', 'button', 'buttons', 'base', 'home', 'datepicker',
     ]);
   }
 

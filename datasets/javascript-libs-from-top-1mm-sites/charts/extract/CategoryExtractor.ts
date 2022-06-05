@@ -15,11 +15,17 @@ const labels = new Map([
   [ 'wordpress-stats', 'WordPress Stats and Insights' ],
   [ 'frontend-gtag', 'Google Analytics For Wordpress' ],
   [ 'cloudflare-insights', 'Cloudflare Insights' ],
-  [ 'www.google-analytics.com/analytics', 'Google Analytics Old Version' ],
+  [ 'www.google-analytics.com/analytics', 'Google Analytics' ], // google analytics old version
 
   [ 'wordpress-core', 'WordPress Core' ],
+  [ 'wordpress-contact-form-7', 'WordPress Contact Form 7' ],
   [ 'wordpress-elementor', 'WordPress Elementor' ],
+  [ 'wordpress-elementor-pro', 'WordPress Elementor' ],
+  [ 'wordpress-woocommerce', 'WordPress WooCommerce' ],
+  [ 'woocommerce', 'WordPress WooCommerce' ],
   [ 'wordpress-js-composer', 'WordPress Visual Composer' ],
+  [ 'wordpress-js_composer', 'WordPress Visual Composer' ],
+  [ 'wordpress-revslider', 'WordPress Slider Revolution' ],
   [ 'wp-util', 'WordPress Utilities' ],
   [ 'gravityforms', 'Gravity Forms' ],
 
@@ -39,15 +45,17 @@ const labels = new Map([
   [ 'cookie-notice/front', 'Cookie Notice' ],
 
   [ 'bootstrap', 'Bootstrap' ],
-  [ 'wordpress-contact-form-7', 'WordPress Contact Form 7' ],
   [ 'jquery/ui/core', 'jQuery UI' ],
   [ 'jquery-ui', 'jQuery UI' ],
   [ 'imagesloaded', 'imagesLoaded' ],
+  [ 'imagesloaded.pkgd', 'imagesLoaded' ],
   [ 'jquery.flexslider', 'jQuery FlexSlider' ],
   [ 'popper', 'Popper' ],
   [ 'jquery.magnific-popup', 'jQuery Magnific Popup' ],
   [ 'jquery.fancybox', 'jQuery Fancybox' ],
   [ 'google-maps', 'Google Maps' ],
+  [ 'jquery.fitvids', 'jQuery FitVids' ],
+  [ 'aos', 'Animate on Scroll' ],
 
 ]);
 
@@ -63,7 +71,8 @@ const categories = new Map([
   ] ],
 
   [ 'CMS', [
-    'wordpress-core', 'wordpress-elementor', 'wordpress-js-composer', 'wp-util', 'gravityforms',
+    'wordpress-core', 'wordpress-contact-form-7', 'wordpress-elementor', 'wordpress-woocommerce', 'wordpress-revslider',
+    'wordpress-js-composer', 'wordpress-elementor-pro', 'wp-util', 'gravityforms',
   ] ],
 
   [ 'Advertising', [
@@ -80,8 +89,9 @@ const categories = new Map([
   ] ],
 
   [ 'UI Widgets', [
-    'bootstrap', 'wordpress-contact-form-7', 'jquery/ui/core', 'imagesloaded', 'jquery-ui',
+    'bootstrap', 'jquery/ui/core', 'imagesloaded', 'imagesloaded.pkgd', 'jquery-ui',
     'jquery.flexslider', 'popper', 'jquery.magnific-popup', 'jquery.fancybox', 'google-maps',
+    'jquery.fitvids', 'aos',
   ] ],
 
 ]);
