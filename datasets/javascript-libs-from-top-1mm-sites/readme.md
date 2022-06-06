@@ -41,3 +41,16 @@ terraform apply \
 cd charts/extract
 npx ts-node summarize-js-libs.ts
 ```
+
+#### Generate Chart(s)
+Start a basic http server serving static files from current directory on localhost:9000.
+```bash
+cd charts
+npx ts-node ../../utils/serve-static.ts
+```
+#### Most Used Javascript Libraries (percentage)
+![Most Used Javascript Libraries](./charts/most-used-js-libs-2022-06-05-thumb.png)
+
+- http://localhost:9000/most-used-js-libs.html
+- filters out libraries with less than 1% usage
+- groups libraries into categories with each category having a maximum of 9 entries
