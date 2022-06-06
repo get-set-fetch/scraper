@@ -1,11 +1,11 @@
 ### Javascript Libraries From Top 1 Million Sites
 
 CSV Files:
-- [scraped-js-libs-2022-06-05.csv.gz](exports/scraped-js-libs-2022-06-05.csv.gz) (139 MB)
+- [scraped-js-libs-2022-06-05.csv.gz](https://getsetfetch.org/data/scraped-js-libs-2022-06-05.csv.gz) (139 MB)
     - Each row contains a page URL followed by script source URLs (absolute or relative) encountered in that page. Inline scripts have an \"\<inline>" value. \
     ex: https:// sitemaps.org/,"\<inline>","/lang.js"
 
-- [js-libs-count-2022-06-05.csv.gz](charts/js-libs-count-2022-06-05.csv.gz) (208 KB) 
+- [js-libs-count-2022-06-05.csv.gz](https://getsetfetch.org/data/js-libs-count-2022-06-05.csv.gz) (208 KB) 
     - Each row contains a partial script pathname followed by a frequency count. 
     The pathname is split in fragments based on "/" and expanded from right to left until the first non-generic fragment is found. If the full pathname contains only generic keywords (index, main, dist, etc...) the script hostname is added as well. Common suffixes like .min, .min.js are removed. \
     ex: jquery/ui/core,62554
