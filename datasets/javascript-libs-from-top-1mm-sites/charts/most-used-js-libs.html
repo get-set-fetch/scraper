@@ -45,7 +45,7 @@
 
     // row ex: {category: 'analytics', " script": 'gtag', " count": '179849'}
     let data = await d3.csv(
-      "most-used-js-libs-2022-06-05.csv",
+      "most-used-js-libs.csv",
       (d) => {
         // map abs frequency value to percent
         const perc = (parseInt(d.value) / urlNo) * 100;
@@ -128,7 +128,7 @@
       .attr("text-anchor", "left")
       .attr('fill', d3.schemeAccent[4])
       .attr("class", "title")
-      .text("Most Used Javascript Libraries (percentage) - June 2022")
+      .text("Most Used JavaScript Libraries (percentage) - June 2022")
     // .text("Top Javascript Libraries Per Category")
 
     // plot github link
