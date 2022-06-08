@@ -1,6 +1,15 @@
 <html>
 
 <head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: antiquewhite;
+    }
+  </style>
+
   <!-- load the d3.js library -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
@@ -77,8 +86,8 @@
     const ctgCount = categories.map(ctg => data.filter(d => d.category === ctg).length);
 
     // set the dimensions and margins of the graph
-    const margin = { top: 20, right: 50, bottom: 40, left: 350 },
-      width = 1060 - margin.left - margin.right,
+    const margin = { top: 20, right: 50, bottom: 40, left: 310 },
+      width = 900 - margin.left - margin.right,
       height = 900 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
@@ -94,31 +103,42 @@
 
     // common styles
     svg.append("style").text(`
+      #chart {
+        background-color: antiquewhite;
+      }
       .title {
         font-size: 24px;
         font-weight: bold;
-        font-family: sans-serif;
+        font-family: 'Roboto Condensed', sans-serif;
       }
       .ctg-title {
         font-size: 16px;
         font-weight: bold;
-        font-family: sans-serif;
+        font-family: 'Roboto Condensed', sans-serif;
       }
       .y.axis text {
         font-size: 16px;
+        font-weight: normal;
+        font-family: 'Roboto Condensed', sans-serif;
       }
       .perc {
-        font-size: 18px;
+        font-size: 16px;
+        font-weight: normal;
+        font-family: 'Roboto Condensed', sans-serif;
       }
       .link {
         font-size: 14px;
         font-weight: bold;
-        font-family: sans-serif;
+        font-family: 'Roboto Condensed', sans-serif;
       }
       .curlyBrace {
         stroke: #000000;
         stroke-width: 10px;
         fill: none;
+      }
+
+      .domain {
+        opacity: 0;
       }
     `);
 
@@ -129,17 +149,16 @@
       .attr('fill', d3.schemeAccent[4])
       .attr("class", "title")
       .text("Most Used JavaScript Libraries (percentage) - June 2022")
-    // .text("Top Javascript Libraries Per Category")
 
     // plot github link
-    svg.append("a")
-      .attr("transform", `translate(0, ${height + (margin.bottom / 2) + 5})`)
-      .attr("xlink:href", "https://github.com/get-set-fetch/scraper/tree/main/datasets/javascript-libs-from-top-1mm-sites")
-      .append("text")
-      .attr('fill', "#0f0f0f")
-      .text("Dataset and source code available at github.com/get-set-fetch/scraper/tree/main/datasets/")
-      .attr("text-anchor", "left")
-      .attr("class", "link")
+    // svg.append("a")
+    //   .attr("transform", `translate(0, ${height + (margin.bottom / 2) + 5})`)
+    //   .attr("xlink:href", "https://github.com/get-set-fetch/scraper/tree/main/datasets")
+    //   .append("text")
+    //   .attr('fill', "#0f0f0f")
+    //   .text("https://github.com/get-set-fetch/scraper/tree/main/datasets")
+    //   .attr("text-anchor", "left")
+    //   .attr("class", "link")
 
     const scriptMaxVal = d3.max(data, (d) => d.value)
     const subChartVertPadding = 15;
@@ -160,7 +179,7 @@
       d3.schemeGreys, d3.schemeReds, d3.schemeBuGn,
     ]
 
-    let ctgTitlePosX = -270;
+    let ctgTitlePosX = -240;
     let subChartPosX = 0;
     let posY = 0;
     const colWidth = 550;
@@ -211,6 +230,7 @@
         .style("text-anchor", "end")
         .attr("dx", "-.8em")
         .attr('fill', ctgColor)
+        .attr("transform", `rotate(0)`)
 
       var bars = subchart.selectAll(".bar")
         .data(ctgData)
@@ -229,6 +249,7 @@
 
       bars.append("text")
         .attr("class", "perc")
+        .attr('fill', ctgColor)
         .style("alignment-baseline", "central")
         .attr("y", function (d) {
           return y(d.script) + y.bandwidth() / 2;

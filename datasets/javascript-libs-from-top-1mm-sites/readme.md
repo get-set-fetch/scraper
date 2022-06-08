@@ -49,7 +49,7 @@ cd charts
 npx ts-node ../../utils/serve-static.ts
 ```
 #### Most Used Javascript Libraries (percentage)
-![Most Used Javascript Libraries](./charts/most-used-js-libs-2022-06-05-thumb.png)
+[![Most Used Javascript Libraries](./charts/most-used-js-libs-2022-06-05-thumb.png)](./charts/most-used-js-libs-2022-06-05.svg)
 
 - http://localhost:9000/most-used-js-libs.html
 - filters out libraries with less than 1% usage
