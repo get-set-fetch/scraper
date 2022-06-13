@@ -1,0 +1,1 @@
+Details available on [getsetfetch.org/blog/tls-fingerprint.html](https://getsetfetch.org/blog/tls-fingerprint.html).
