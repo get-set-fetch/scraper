@@ -15,7 +15,7 @@
         scraper:
           uv_threadpool_size: 34 # 4 (default) + 30 (max concurrent dns.lookups)
           npm_install:
-            - knex@1.0.5
+            - knex@1.0.7
             - pg@8.7.3
             - cheerio@1.0.0-rc.10
             - "@get-set-fetch/scraper@0.11.0"

@@ -58,12 +58,12 @@ WORKDIR /home/gsfuser/scraper
 RUN case "$VERSION" in \
     'source') \
         case "$STORAGE" in \
-            'sqlite') npm install knex@1.0.5 @vscode/sqlite3@5.0.8 ;; \
-            'pg') npm install knex@1.0.5 pg@8.7.3 ;; \
-            'mysql') npm install knex@1.0.5 mysql@2.18.1 ;; \
+            'sqlite') npm install knex@1.0.7 @vscode/sqlite3@5.0.8 ;; \
+            'pg') npm install knex@1.0.7 pg@8.7.3 ;; \
+            'mysql') npm install knex@1.0.7 mysql@2.18.1 ;; \
         esac; \
         case "$BROWSER_CLIENT" in \
-            'puppeteer') npm install puppeteer@10.1.0 ;; \
+            'puppeteer') npm install puppeteer@14.3.0 ;; \
             'playwright') npm install playwright-core@1.13.1 playwright-chromium@1.13.1 ;; \
         esac; \
         case "$DOM_CLIENT" in \
